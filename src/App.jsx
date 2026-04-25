@@ -777,32 +777,77 @@ const NAV = [
   { id: 'sec-windows',  label: 'Links & Windows',     group: 'Windows' },
   { id: 'sec-iframe',   label: 'iFrame',              group: 'Advanced' },
   { id: 'sec-shadow',   label: 'Shadow DOM',          group: 'Advanced' },
-  { id: 'sec-table',    label: 'Pagination Table',    group: 'Advanced' },
+  { id: 'sec-table',    label: 'Pagination Table',    group: 'Advanced', subGroup: 'Data & Tables' },
   { id: 'sec-toggle',   label: 'Show / Hide & Tabs',  group: 'Advanced' },
 ]
 
 function Sidebar({ active }) {
   const groups = [...new Set(NAV.map(n => n.group))]
+  const [openGroups, setOpenGroups] = useState(() =>
+    Object.fromEntries(groups.map(g => [g, true]))
+  )
+  const [openSubGroups, setOpenSubGroups] = useState({})
+
   const scrollTo = id =>
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const toggleGroup = g => setOpenGroups(s => ({ ...s, [g]: !s[g] }))
+  const toggleSubGroup = sg => setOpenSubGroups(s => ({ ...s, [sg]: !s[sg] }))
+
   return (
     <nav className="sidebar">
       <div className="sidebar-logo">
         <span className="logo-mark">TP</span>
         <span>Test Playground</span>
       </div>
-      {groups.map(g => (
-        <div key={g} className="nav-group">
-          <div className="nav-group-label">{g}</div>
-          {NAV.filter(n => n.group === g).map(n => (
-            <button key={n.id}
-              className={`nav-item ${active === n.id ? 'nav-active' : ''}`}
-              onClick={() => scrollTo(n.id)}>
-              {n.label}
+      {groups.map(g => {
+        const groupItems = NAV.filter(n => n.group === g)
+        const subGroups  = [...new Set(groupItems.filter(n => n.subGroup).map(n => n.subGroup))]
+        const directItems = groupItems.filter(n => !n.subGroup)
+        const isOpen = openGroups[g]
+
+        return (
+          <div key={g} className="nav-group">
+            <button className="nav-group-label" onClick={() => toggleGroup(g)}>
+              <span>{g}</span>
+              <span className={`nav-chevron ${isOpen ? 'nav-chevron-open' : ''}`}>›</span>
             </button>
-          ))}
-        </div>
-      ))}
+            {isOpen && (
+              <>
+                {directItems.map(n => (
+                  <button key={n.id}
+                    className={`nav-item ${active === n.id ? 'nav-active' : ''}`}
+                    onClick={() => scrollTo(n.id)}>
+                    {n.label}
+                  </button>
+                ))}
+                {subGroups.map(sg => {
+                  const sgOpen = openSubGroups[sg]
+                  return (
+                    <div key={sg} className="nav-subgroup">
+                      <button className="nav-subgroup-label" onClick={() => toggleSubGroup(sg)}>
+                        <span className="nav-subgroup-icon">⊞</span>
+                        <span>{sg}</span>
+                        <span className={`nav-chevron ${sgOpen ? 'nav-chevron-open' : ''}`}>›</span>
+                      </button>
+                      {sgOpen && groupItems
+                        .filter(n => n.subGroup === sg)
+                        .map(n => (
+                          <button key={n.id}
+                            className={`nav-item nav-item-nested ${active === n.id ? 'nav-active' : ''}`}
+                            onClick={() => scrollTo(n.id)}>
+                            <span className="nav-item-dot" />
+                            {n.label}
+                          </button>
+                        ))
+                      }
+                    </div>
+                  )
+                })}
+              </>
+            )}
+          </div>
+        )
+      })}
     </nav>
   )
 }
