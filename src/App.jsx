@@ -756,6 +756,76 @@ function ShowHideSection() {
   )
 }
 
+// ─── 22. Popup Alerts ────────────────────────────────────────────────────────
+const POPUP_TYPES = {
+  warning: {
+    id: 'warning',
+    title: 'Warning',
+    icon: '⚠',
+    message: 'This action may have unintended consequences. Please review your changes before proceeding.',
+    colorVar: '#d97706',
+    bgVar: '#fffbeb',
+    borderVar: '#fde68a',
+  },
+  error: {
+    id: 'error',
+    title: 'Error',
+    icon: '✕',
+    message: 'An error occurred while processing your request. The operation could not be completed.',
+    colorVar: '#dc2626',
+    bgVar: '#fef2f2',
+    borderVar: '#fecaca',
+  },
+  exception: {
+    id: 'exception',
+    title: 'Unhandled Exception',
+    icon: '⚡',
+    message: 'TypeError: Cannot read properties of undefined\n  at PaginationTable (App.jsx:42:18)\n  at renderWithHooks (react-dom.js:14906)',
+    colorVar: '#7c3aed',
+    bgVar: '#f5f3ff',
+    borderVar: '#ddd6fe',
+    mono: true,
+  },
+}
+
+function PopupAlertsSection() {
+  const [active, setActive] = useState(null)
+  const popup = active ? POPUP_TYPES[active] : null
+
+  return (
+    <section id="sec-popup-alerts" className="card">
+      <SectionHeader num="22" title="Popup Alerts" locator="id / role" />
+      <p className="desc">Trigger warning, error, and exception modal overlays.</p>
+      <div className="button-row">
+        <button id="btn-warning-popup"   className="btn-warning" onClick={() => setActive('warning')}>Warning</button>
+        <button id="btn-error-popup"     className="btn-danger"  onClick={() => setActive('error')}>Error</button>
+        <button id="btn-exception-popup" className="btn-exception" onClick={() => setActive('exception')}>Exception</button>
+      </div>
+
+      {popup && (
+        <div className="popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popup-title"
+          onClick={() => setActive(null)}>
+          <div className="popup-modal"
+            style={{ '--popup-color': popup.colorVar, '--popup-bg': popup.bgVar, '--popup-border': popup.borderVar }}
+            onClick={e => e.stopPropagation()}>
+            <div className="popup-header">
+              <span className="popup-icon">{popup.icon}</span>
+              <h3 className="popup-title" id="popup-title">{popup.title}</h3>
+              <button className="popup-close" id="popup-close-btn" aria-label="Close" onClick={() => setActive(null)}>✕</button>
+            </div>
+            <p id="popup-message" className={`popup-message ${popup.mono ? 'popup-message-mono' : ''}`}>
+              {popup.message}
+            </p>
+            <div className="popup-footer">
+              <button id="popup-dismiss-btn" onClick={() => setActive(null)}>Dismiss</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 const NAV = [
   { id: 'sec-text',     label: 'Text Input',         group: 'Inputs' },
@@ -773,8 +843,9 @@ const NAV = [
   { id: 'sec-hover',    label: 'Mouse Hover',         group: 'Events' },
   { id: 'sec-focus',    label: 'Focus / Blur',        group: 'Events' },
   { id: 'sec-dragdrop', label: 'Drag & Drop',         group: 'Events' },
-  { id: 'sec-popups',   label: 'Browser Popups',      group: 'Windows' },
-  { id: 'sec-windows',  label: 'Links & Windows',     group: 'Windows' },
+  { id: 'sec-popups',        label: 'Browser Popups',  group: 'Windows' },
+  { id: 'sec-windows',       label: 'Links & Windows', group: 'Windows' },
+  { id: 'sec-popup-alerts',  label: 'Popup Alerts',    group: 'Windows' },
   { id: 'sec-iframe',   label: 'iFrame',              group: 'Advanced' },
   { id: 'sec-shadow',   label: 'Shadow DOM',          group: 'Advanced' },
   { id: 'sec-table',    label: 'Pagination Table',    group: 'Advanced', subGroup: 'Data & Tables' },
@@ -897,6 +968,7 @@ export default function App() {
           <ShadowDOMSection />
           <PaginationTableSection />
           <ShowHideSection />
+          <PopupAlertsSection />
         </div>
       </main>
     </div>

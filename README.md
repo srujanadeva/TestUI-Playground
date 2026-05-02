@@ -1,6 +1,6 @@
 # Test Automation Playground
 
-A React frontend built specifically for practising web automation. It covers 21 interaction types — from basic inputs to Shadow DOM and iFrames — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
+A React frontend built specifically for practising web automation. It covers 22 interaction types — from basic inputs to Shadow DOM and iFrames — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
 
 Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework.
 
@@ -89,8 +89,8 @@ npm run preview    # Serves the built output on a local static server
 
 The playground is a single-page app with:
 
-- A **fixed sidebar** on the left with grouped navigation. It highlights the currently visible section as you scroll and lets you jump to any section with a single click.
-- A **scrollable content area** on the right with 21 independent sections, each covering one interaction type.
+- A **fixed sidebar** on the left with collapsible grouped navigation. Click a group header to expand or collapse it. The **Advanced → Data & Tables** sub-group demonstrates nested menu navigation to the Pagination Table. The active section is highlighted as you scroll.
+- A **scrollable content area** on the right with 22 independent sections, each covering one interaction type.
 
 Each section is self-contained and designed around a single testing concern:
 
@@ -126,6 +126,7 @@ Each section is self-contained and designed around a single testing concern:
 | 19 | Shadow DOM | Type into and read from an encapsulated shadow root | `data-testid`, shadow root |
 | 20 | Pagination Table | Search, paginate, assert row data | `id`, `data-row-id`, `data-page` |
 | 21 | Show / Hide & Tabs | Expand/collapse panels, switch tabs, assert content | `className`, `role` |
+| 22 | Popup Alerts | Trigger warning, error, and exception modals, assert visibility and dismiss | `id`, `role` |
 
 ---
 
@@ -186,6 +187,13 @@ A quick cheat sheet of the key element identifiers used across sections.
 #toggle-panel-btn       Expand/collapse button (section 21)
 #collapsible-content    The collapsible panel (section 21)
 #tab-content            Active tab content area (section 21)
+#btn-warning-popup      Opens warning modal (section 22)
+#btn-error-popup        Opens error modal (section 22)
+#btn-exception-popup    Opens exception modal (section 22)
+#popup-title            Modal title text (section 22)
+#popup-message          Modal message / stack trace (section 22)
+#popup-close-btn        Modal close (✕) button (section 22)
+#popup-dismiss-btn      Modal dismiss button (section 22)
 ```
 
 ### By `data-testid`
@@ -244,7 +252,7 @@ test-playground/
 ├── package.json            Dependencies and npm scripts
 └── src/
     ├── main.jsx            React root — mounts <App /> into #root
-    ├── App.jsx             All 21 section components + sidebar navigation
+    ├── App.jsx             All 22 section components + sidebar navigation
     └── App.css             All styles — layout, components, utilities
 ```
 
@@ -278,6 +286,29 @@ const value = await page.evaluate(() =>
   document.querySelector('[data-testid="shadow-host"]')
     .shadowRoot.getElementById('shadow-output').textContent
 )
+```
+
+### Popup Alerts — Warning / Error / Exception (Section 22)
+
+Custom modal overlays rendered in the page DOM — no native browser dialog handling needed.
+
+```js
+// Playwright — open and dismiss a warning modal
+await page.locator('#btn-warning-popup').click()
+await expect(page.locator('[role="dialog"]')).toBeVisible()
+await expect(page.locator('#popup-title')).toHaveText('Warning')
+await page.locator('#popup-dismiss-btn').click()
+await expect(page.locator('[role="dialog"]')).not.toBeVisible()
+
+// Assert exception modal shows stack trace content
+await page.locator('#btn-exception-popup').click()
+await expect(page.locator('#popup-message')).toContainText('TypeError')
+await page.locator('#popup-close-btn').click()
+
+// Dismiss by clicking the backdrop
+await page.locator('#btn-error-popup').click()
+await page.locator('.popup-overlay').click({ position: { x: 10, y: 10 } })
+await expect(page.locator('[role="dialog"]')).not.toBeVisible()
 ```
 
 ### Browser Popups — Alert / Prompt / Confirm (Section 16)

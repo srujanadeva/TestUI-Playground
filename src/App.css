@@ -693,6 +693,98 @@ tr:hover td      { background: #f8fafc; }
   min-height: 56px;
 }
 
+/* ── Popup Alerts ────────────────────────────────────────────────────────── */
+.btn-exception { background: #7c3aed; color: #fff; }
+.btn-exception:hover { background: #6d28d9; }
+
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.popup-modal {
+  background: var(--popup-bg);
+  border: 1.5px solid var(--popup-border);
+  border-top: 4px solid var(--popup-color);
+  border-radius: 12px;
+  padding: 24px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.popup-icon {
+  font-size: 1.3rem;
+  color: var(--popup-color);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.popup-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--popup-color);
+  flex: 1;
+}
+
+.popup-close {
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background .15s, color .15s;
+}
+.popup-close:hover { background: #e2e8f0; color: var(--text); }
+
+.popup-message {
+  font-size: 0.875rem;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.popup-message-mono {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.78rem;
+  background: #1e293b;
+  color: #a5b4fc;
+  padding: 12px 14px;
+  border-radius: 8px;
+  line-height: 1.7;
+}
+
+.popup-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.popup-footer button {
+  background: var(--popup-color);
+  color: #fff;
+  padding: 8px 20px;
+  font-size: 0.875rem;
+}
+.popup-footer button:hover { opacity: 0.88; }
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar   { width: 200px; }
