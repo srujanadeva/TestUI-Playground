@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { LanguageProvider, useLang } from './i18n'
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 function SectionHeader({ num, title, locator }) {
@@ -17,17 +18,20 @@ function Output({ id, children }) {
 
 // ─── 01. Text Input ──────────────────────────────────────────────────────────
 function TextInputSection() {
+  const { t } = useLang()
   const [name, setName] = useState('')
   const [greeting, setGreeting] = useState('')
   return (
     <section id="sec-text" className="card">
-      <SectionHeader num="01" title="Text Input" locator="id" />
-      <p className="desc">Type a name and click Greet.</p>
+      <SectionHeader num="01" title={t('sec01Title')} locator="id" />
+      <p className="desc">{t('sec01Desc')}</p>
       <div className="input-row">
-        <input id="first-name-input" type="text" placeholder="Enter your name"
+        <input id="first-name-input" type="text" placeholder={t('phEnterName')}
           value={name} onChange={e => setName(e.target.value)} />
         <button id="greet-btn"
-          onClick={() => setGreeting(`Hello, ${name || 'stranger'}!`)}>Greet</button>
+          onClick={() => setGreeting(t('greetingHello', { name: name || 'stranger' }))}>
+          {t('btnGreet')}
+        </button>
       </div>
       {greeting && <Output id="greeting-output">{greeting}</Output>}
     </section>
@@ -36,72 +40,75 @@ function TextInputSection() {
 
 // ─── 02. Password & Textarea ─────────────────────────────────────────────────
 function PasswordTextareaSection() {
+  const { t } = useLang()
   const [pass, setPass] = useState('')
   const [note, setNote] = useState('')
   const [shown, setShown] = useState(false)
   return (
     <section id="sec-password" className="card">
-      <SectionHeader num="02" title="Password & Textarea" locator="id / className" />
-      <p className="desc">Password with show/hide toggle. Textarea for multi-line input.</p>
+      <SectionHeader num="02" title={t('sec02Title')} locator="id / className" />
+      <p className="desc">{t('sec02Desc')}</p>
       <div className="input-row">
         <input id="password-input" type={shown ? 'text' : 'password'}
-          placeholder="Enter password" value={pass} onChange={e => setPass(e.target.value)} />
+          placeholder={t('phPassword')} value={pass} onChange={e => setPass(e.target.value)} />
         <button className="btn-secondary" id="toggle-password-btn"
-          onClick={() => setShown(s => !s)}>{shown ? 'Hide' : 'Show'}</button>
+          onClick={() => setShown(s => !s)}>{shown ? t('btnHide') : t('btnShow')}</button>
       </div>
       <textarea id="notes-textarea" className="notes-textarea"
-        placeholder="Enter notes here…" rows={3}
+        placeholder={t('phNotes')} rows={3}
         value={note} onChange={e => setNote(e.target.value)} />
-      {note && <Output id="textarea-char-count">Characters: {note.length}</Output>}
+      {note && <Output id="textarea-char-count">{t('charCount', { n: note.length })}</Output>}
     </section>
   )
 }
 
 // ─── 03. Date Picker ─────────────────────────────────────────────────────────
 function DatePickerSection() {
+  const { t } = useLang()
   const [date, setDate] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo]     = useState('')
   return (
     <section id="sec-date" className="card">
-      <SectionHeader num="03" title="Date Picker" locator="id" />
-      <p className="desc">Single date and date-range inputs.</p>
-      <label className="field-label" htmlFor="single-date">Single date</label>
+      <SectionHeader num="03" title={t('sec03Title')} locator="id" />
+      <p className="desc">{t('sec03Desc')}</p>
+      <label className="field-label" htmlFor="single-date">{t('labelSingleDate')}</label>
       <input id="single-date" type="date" value={date} onChange={e => setDate(e.target.value)} />
-      {date && <Output id="selected-date">Selected: {date}</Output>}
+      {date && <Output id="selected-date">{t('selectedDate', { date })}</Output>}
       <div className="date-range">
         <div>
-          <label className="field-label" htmlFor="range-from">From</label>
+          <label className="field-label" htmlFor="range-from">{t('labelFrom')}</label>
           <input id="range-from" type="date" value={from} onChange={e => setFrom(e.target.value)} />
         </div>
         <div>
-          <label className="field-label" htmlFor="range-to">To</label>
+          <label className="field-label" htmlFor="range-to">{t('labelTo')}</label>
           <input id="range-to" type="date" value={to} onChange={e => setTo(e.target.value)} />
         </div>
       </div>
-      {from && to && <Output id="date-range-output">Range: {from} → {to}</Output>}
+      {from && to && <Output id="date-range-output">{t('dateRange', { from, to })}</Output>}
     </section>
   )
 }
 
 // ─── 04. Range Slider ────────────────────────────────────────────────────────
 function SliderSection() {
+  const { t } = useLang()
   const [qty, setQty]             = useState(50)
   const [brightness, setBrightness] = useState(70)
   return (
     <section id="sec-slider" className="card">
-      <SectionHeader num="04" title="Range Slider" locator="id" />
-      <p className="desc">Numeric sliders for continuous values.</p>
+      <SectionHeader num="04" title={t('sec04Title')} locator="id" />
+      <p className="desc">{t('sec04Desc')}</p>
       <div className="slider-group">
         <label className="field-label" htmlFor="qty-slider">
-          Quantity: <strong>{qty}</strong>
+          {t('labelQty', { n: '' })}<strong>{qty}</strong>
         </label>
         <input id="qty-slider" type="range" min={0} max={100} value={qty}
           onChange={e => setQty(Number(e.target.value))} />
       </div>
       <div className="slider-group">
         <label className="field-label" htmlFor="brightness-slider">
-          Brightness: <strong>{brightness}%</strong>
+          {t('labelBrightness', { n: '' })}<strong>{brightness}%</strong>
         </label>
         <input id="brightness-slider" type="range" min={0} max={100} value={brightness}
           onChange={e => setBrightness(Number(e.target.value))} />
@@ -114,6 +121,7 @@ function SliderSection() {
 
 // ─── 05. File Upload ─────────────────────────────────────────────────────────
 function FileUploadSection() {
+  const { t } = useLang()
   const [files, setFiles]         = useState([])
   const [draggingOver, setDraggingOver] = useState(false)
   const inputRef                  = useRef(null)
@@ -126,8 +134,8 @@ function FileUploadSection() {
 
   return (
     <section id="sec-file" className="card">
-      <SectionHeader num="05" title="File Upload" locator="id" />
-      <p className="desc">Click to browse or drag-and-drop files onto the zone.</p>
+      <SectionHeader num="05" title={t('sec05Title')} locator="id" />
+      <p className="desc">{t('sec05Desc')}</p>
       <div
         className={`drop-zone ${draggingOver ? 'drop-active' : ''}`}
         onClick={() => inputRef.current.click()}
@@ -136,8 +144,8 @@ function FileUploadSection() {
         onDrop={e => { e.preventDefault(); setDraggingOver(false); handleFiles(e.dataTransfer.files) }}
       >
         <div className="drop-icon">&#8679;</div>
-        <p>Drop files here or <span className="link-text">browse</span></p>
-        <p className="drop-hint">Accepts: PDF, PNG, JPG, CSV, XLSX</p>
+        <p>{t('dropOrBrowse')} <span className="link-text">{t('dropBrowse')}</span></p>
+        <p className="drop-hint">{t('dropHint')}</p>
         <input ref={inputRef} id="file-upload-input" type="file" multiple
           accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx" style={{ display: 'none' }}
           onChange={e => handleFiles(e.target.files)} />
@@ -158,15 +166,16 @@ function FileUploadSection() {
 
 // ─── 06. Form Validation ─────────────────────────────────────────────────────
 function FormValidationSection() {
+  const { t } = useLang()
   const [form, setForm]   = useState({ email: '', phone: '', password: '' })
   const [errors, setErrors] = useState({})
   const [ok, setOk]       = useState(false)
 
   const validate = () => {
     const e = {}
-    if (!form.email.includes('@'))         e.email    = 'Enter a valid email address'
-    if (!/^\d{10}$/.test(form.phone))      e.phone    = 'Phone must be exactly 10 digits'
-    if (form.password.length < 8)          e.password = 'Password must be at least 8 characters'
+    if (!form.email.includes('@'))         e.email    = t('errEmail')
+    if (!/^\d{10}$/.test(form.phone))      e.phone    = t('errPhone')
+    if (form.password.length < 8)          e.password = t('errPassword')
     return e
   }
 
@@ -178,50 +187,56 @@ function FormValidationSection() {
 
   const set = key => e => { setForm(f => ({ ...f, [key]: e.target.value })); setOk(false) }
 
+  const fields = [
+    { key: 'email',    labelKey: 'labelEmail',    id: 'val-email',    type: 'text',     phKey: 'phEmailField',    ariaKey: 'ariaEmail' },
+    { key: 'phone',    labelKey: 'labelPhone',    id: 'val-phone',    type: 'text',     phKey: 'phPhoneField',    ariaKey: 'ariaPhone' },
+    { key: 'password', labelKey: 'labelPassword', id: 'val-password', type: 'password', phKey: 'phPasswordField', ariaKey: 'ariaPassword' },
+  ]
+
   return (
     <section id="sec-form" className="card">
-      <SectionHeader num="06" title="Form Validation" locator="placeholder / aria-label" />
-      <p className="desc">Multi-field form with inline validation messages.</p>
-      {[
-        { key: 'email',    label: 'Email',    id: 'val-email',    type: 'text',     ph: 'your@email.com',   aria: 'Email address' },
-        { key: 'phone',    label: 'Phone',    id: 'val-phone',    type: 'text',     ph: '10-digit number',  aria: 'Phone number' },
-        { key: 'password', label: 'Password', id: 'val-password', type: 'password', ph: 'Min 8 characters', aria: 'Password' },
-      ].map(f => (
+      <SectionHeader num="06" title={t('sec06Title')} locator="placeholder / aria-label" />
+      <p className="desc">{t('sec06Desc')}</p>
+      {fields.map(f => (
         <div key={f.key} className="form-field">
-          <label className="field-label" htmlFor={f.id}>{f.label}</label>
-          <input id={f.id} type={f.type} placeholder={f.ph} aria-label={f.aria}
+          <label className="field-label" htmlFor={f.id}>{t(f.labelKey)}</label>
+          <input id={f.id} type={f.type} placeholder={t(f.phKey)} aria-label={t(f.ariaKey)}
             value={form[f.key]} onChange={set(f.key)}
             className={errors[f.key] ? 'input-error' : ''} />
           {errors[f.key] && <span id={`${f.key}-error`} className="error-msg">{errors[f.key]}</span>}
         </div>
       ))}
-      <button id="validate-submit-btn" onClick={submit}>Submit</button>
-      {ok && <span id="form-success" className="success-msg">Form submitted successfully!</span>}
+      <button id="validate-submit-btn" onClick={submit}>{t('btnSubmit')}</button>
+      {ok && <span id="form-success" className="success-msg">{t('formSuccess')}</span>}
     </section>
   )
 }
 
 // ─── 07. Checkboxes ──────────────────────────────────────────────────────────
-const SKILLS = ['JavaScript', 'Python', 'Java', 'Rust', 'Go', 'TypeScript']
+const SKILL_KEYS = ['javascript', 'python', 'java', 'rust', 'go', 'typescript']
 
 function CheckboxSection() {
+  const { t, tArr } = useLang()
+  const skills = tArr('skills')
   const [selected, setSelected] = useState([])
-  const toggle = v => setSelected(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v])
+  const toggle = i => setSelected(p => p.includes(i) ? p.filter(x => x !== i) : [...p, i])
   return (
     <section id="sec-checkbox" className="card">
-      <SectionHeader num="07" title="Checkboxes" locator="label[for]" />
-      <p className="desc">Multi-select using labeled checkboxes.</p>
+      <SectionHeader num="07" title={t('sec07Title')} locator="label[for]" />
+      <p className="desc">{t('sec07Desc')}</p>
       <div className="checkbox-grid">
-        {SKILLS.map(s => (
-          <label key={s} className="checkbox-label" htmlFor={`cb-${s.toLowerCase()}`}>
-            <input type="checkbox" id={`cb-${s.toLowerCase()}`}
-              checked={selected.includes(s)} onChange={() => toggle(s)} />
-            {s}
+        {SKILL_KEYS.map((key, i) => (
+          <label key={key} className="checkbox-label" htmlFor={`cb-${key}`}>
+            <input type="checkbox" id={`cb-${key}`}
+              checked={selected.includes(i)} onChange={() => toggle(i)} />
+            {skills[i]}
           </label>
         ))}
       </div>
       <Output id="checkbox-summary">
-        {selected.length === 0 ? 'Nothing selected' : `Selected: ${selected.join(', ')}`}
+        {selected.length === 0
+          ? t('nothingSelected')
+          : t('selectedSkills', { skills: selected.map(i => skills[i]).join(', ') })}
       </Output>
     </section>
   )
@@ -229,17 +244,18 @@ function CheckboxSection() {
 
 // ─── 08. Radio Group ─────────────────────────────────────────────────────────
 const PLANS = [
-  { id: 'plan-free',       value: 'Free',       price: '$0/mo',  desc: 'Basic features' },
-  { id: 'plan-pro',        value: 'Pro',        price: '$12/mo', desc: 'Advanced tools' },
-  { id: 'plan-enterprise', value: 'Enterprise', price: '$49/mo', desc: 'Full access' },
+  { id: 'plan-free',       value: 'Free',       price: '$0/mo',  descKey: 'planFreeDesc' },
+  { id: 'plan-pro',        value: 'Pro',        price: '$12/mo', descKey: 'planProDesc' },
+  { id: 'plan-enterprise', value: 'Enterprise', price: '$49/mo', descKey: 'planEnterpriseDesc' },
 ]
 
 function RadioSection() {
+  const { t } = useLang()
   const [plan, setPlan] = useState('')
   return (
     <section id="sec-radio" className="card">
-      <SectionHeader num="08" title="Radio Group" locator="name" />
-      <p className="desc">Single selection via radio buttons.</p>
+      <SectionHeader num="08" title={t('sec08Title')} locator="name" />
+      <p className="desc">{t('sec08Desc')}</p>
       <div className="radio-cards">
         {PLANS.map(p => (
           <label key={p.id} htmlFor={p.id}
@@ -249,62 +265,64 @@ function RadioSection() {
             <div className="radio-card-body">
               <strong>{p.value}</strong>
               <span className="radio-price">{p.price}</span>
-              <small>{p.desc}</small>
+              <small>{t(p.descKey)}</small>
             </div>
           </label>
         ))}
       </div>
-      {plan && <Output id="selected-plan">Selected: <strong>{plan}</strong></Output>}
+      {plan && <Output id="selected-plan">{t('selectedPlan', { plan })}</Output>}
     </section>
   )
 }
 
 // ─── 09. Dropdown & Multi-Select ─────────────────────────────────────────────
-const COUNTRIES = ['Australia', 'Germany', 'India', 'Japan', 'United Kingdom', 'United States']
-const TAG_LIST  = ['Frontend', 'Backend', 'Mobile', 'DevOps', 'Testing', 'Design']
-
 function DropdownSection() {
+  const { t, tArr } = useLang()
+  const countries = tArr('countries')
+  const tagList   = tArr('tagList')
   const [country, setCountry] = useState('')
   const [tags, setTags]       = useState([])
-  const toggleTag = t => setTags(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t])
+  const toggleTag = tag => setTags(p => p.includes(tag) ? p.filter(x => x !== tag) : [...p, tag])
+
   return (
     <section id="sec-dropdown" className="card">
-      <SectionHeader num="09" title="Dropdown & Tags" locator="id" />
-      <p className="desc">Native select and a custom tag multi-select.</p>
-      <label className="field-label" htmlFor="country-select">Country</label>
+      <SectionHeader num="09" title={t('sec09Title')} locator="id" />
+      <p className="desc">{t('sec09Desc')}</p>
+      <label className="field-label" htmlFor="country-select">{t('labelCountry')}</label>
       <select id="country-select" value={country} onChange={e => setCountry(e.target.value)}>
-        <option value="">-- Select a country --</option>
-        {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+        <option value="">{t('selectCountryDefault')}</option>
+        {countries.map((c, i) => <option key={i} value={c}>{c}</option>)}
       </select>
-      {country && <Output id="selected-country">Country: <strong>{country}</strong></Output>}
-      <label className="field-label">Skills (multi-select)</label>
+      {country && <Output id="selected-country">{t('selectedCountry', { country })}</Output>}
+      <label className="field-label">{t('labelSkillsMulti')}</label>
       <div id="tag-selector" className="tag-selector">
-        {TAG_LIST.map(t => (
-          <button key={t} type="button" data-tag={t}
-            className={`tag-btn ${tags.includes(t) ? 'tag-active' : ''}`}
-            onClick={() => toggleTag(t)}>{t}</button>
+        {tagList.map((tag, i) => (
+          <button key={i} type="button" data-tag={tag}
+            className={`tag-btn ${tags.includes(tag) ? 'tag-active' : ''}`}
+            onClick={() => toggleTag(tag)}>{tag}</button>
         ))}
       </div>
-      {tags.length > 0 && <Output id="selected-tags">Tags: {tags.join(', ')}</Output>}
+      {tags.length > 0 && <Output id="selected-tags">{t('selectedTags', { tags: tags.join(', ') })}</Output>}
     </section>
   )
 }
 
 // ─── 10. Click Counter ───────────────────────────────────────────────────────
 function ClickCounterSection() {
+  const { t } = useLang()
   const [counts, setCounts] = useState({ primary: 0, success: 0, danger: 0 })
   const inc = key => setCounts(c => ({ ...c, [key]: c[key] + 1 }))
   const reset = () => setCounts({ primary: 0, success: 0, danger: 0 })
   const total = counts.primary + counts.success + counts.danger
   return (
     <section id="sec-counter" className="card">
-      <SectionHeader num="10" title="Button Click Counter" locator="className" />
-      <p className="desc">Three independently tracked buttons. Verify counts in assertions.</p>
+      <SectionHeader num="10" title={t('sec10Title')} locator="className" />
+      <p className="desc">{t('sec10Desc')}</p>
       <div className="button-row">
-        <button className="btn-primary"   onClick={() => inc('primary')}>Primary</button>
-        <button className="btn-success"   onClick={() => inc('success')}>Success</button>
-        <button className="btn-danger"    onClick={() => inc('danger')}>Danger</button>
-        <button className="btn-secondary" onClick={reset}>Reset</button>
+        <button className="btn-primary"   onClick={() => inc('primary')}>{t('btnPrimary')}</button>
+        <button className="btn-success"   onClick={() => inc('success')}>{t('btnSuccess')}</button>
+        <button className="btn-danger"    onClick={() => inc('danger')}>{t('btnDanger')}</button>
+        <button className="btn-secondary" onClick={reset}>{t('btnReset')}</button>
       </div>
       <div className="counter-stats">
         {['primary', 'success', 'danger'].map(k => (
@@ -322,20 +340,21 @@ function ClickCounterSection() {
 
 // ─── 11. Double Click ────────────────────────────────────────────────────────
 function DoubleClickSection() {
+  const { t } = useLang()
   const [log, setLog] = useState([])
   const add = msg => setLog(l => [msg, ...l].slice(0, 4))
   return (
     <section id="sec-dblclick" className="card">
-      <SectionHeader num="11" title="Double Click" locator="data-testid" />
-      <p className="desc">Single-click, double-click, and right-click are distinct events.</p>
+      <SectionHeader num="11" title={t('sec11Title')} locator="data-testid" />
+      <p className="desc">{t('sec11Desc')}</p>
       <div
         className="click-area"
         data-testid="click-area"
-        onClick={() => add('single click')}
-        onDoubleClick={() => add('double click')}
-        onContextMenu={e => { e.preventDefault(); add('right click') }}
+        onClick={() => add(t('evtSingleClick'))}
+        onDoubleClick={() => add(t('evtDoubleClick'))}
+        onContextMenu={e => { e.preventDefault(); add(t('evtRightClick')) }}
       >
-        <span className="click-area-text">Click · Double-Click · Right-Click here</span>
+        <span className="click-area-text">{t('clickAreaLabel')}</span>
       </div>
       {log.length > 0 && (
         <div id="click-log" className="event-log">
@@ -350,6 +369,7 @@ function DoubleClickSection() {
 
 // ─── 12. Dynamic Buttons ─────────────────────────────────────────────────────
 function DynamicButtonsSection() {
+  const { t } = useLang()
   const [loading, setLoading]   = useState(false)
   const [loadDone, setLoadDone] = useState(false)
   const [visible, setVisible]   = useState(true)
@@ -362,26 +382,26 @@ function DynamicButtonsSection() {
 
   return (
     <section id="sec-dynamic" className="card">
-      <SectionHeader num="12" title="Dynamic Buttons" locator="id / data-dynamic-id" />
-      <p className="desc">Buttons that change state, appear, and disappear at runtime.</p>
+      <SectionHeader num="12" title={t('sec12Title')} locator="id / data-dynamic-id" />
+      <p className="desc">{t('sec12Desc')}</p>
       <div className="button-row">
         <button id="btn-load" onClick={simulateLoad} disabled={loading}
           className={loadDone ? 'btn-success' : 'btn-primary'}>
-          {loading ? 'Loading…' : loadDone ? 'Done!' : 'Start Loading'}
+          {loading ? t('btnLoading') : loadDone ? t('btnDone') : t('btnStartLoading')}
         </button>
         {visible
-          ? <button id="btn-disappear" className="btn-warning" onClick={() => setVisible(false)}>Disappear</button>
-          : <button id="btn-reappear"  className="btn-success" onClick={() => setVisible(true)}>Reappear</button>
+          ? <button id="btn-disappear" className="btn-warning" onClick={() => setVisible(false)}>{t('btnDisappear')}</button>
+          : <button id="btn-reappear"  className="btn-success" onClick={() => setVisible(true)}>{t('btnReappear')}</button>
         }
         <button id="btn-add-dynamic" className="btn-secondary"
-          onClick={() => setExtras(e => [...e, Date.now()])}>Add Button</button>
+          onClick={() => setExtras(e => [...e, Date.now()])}>{t('btnAddButton')}</button>
       </div>
       {extras.length > 0 && (
         <div className="extra-buttons">
           {extras.map(id => (
             <button key={id} data-dynamic-id={id} className="btn-extra"
               onClick={() => setExtras(e => e.filter(x => x !== id))}>
-              × Remove ({String(id).slice(-4)})
+              {t('btnRemove', { id: String(id).slice(-4) })}
             </button>
           ))}
         </div>
@@ -392,27 +412,28 @@ function DynamicButtonsSection() {
 
 // ─── 13. Mouse Hover ─────────────────────────────────────────────────────────
 const HOVER_CARDS = [
-  { id: 'hover-info',    label: 'Info',    tip: 'Tooltip: information message',  color: '#3b82f6' },
-  { id: 'hover-warn',    label: 'Warning', tip: 'Tooltip: something needs attention', color: '#f59e0b' },
-  { id: 'hover-success', label: 'Success', tip: 'Tooltip: action was successful', color: '#10b981' },
-  { id: 'hover-danger',  label: 'Danger',  tip: 'Tooltip: destructive action',   color: '#ef4444' },
+  { id: 'hover-info',    labelKey: 'hoverInfo',    tipKey: 'tipInfo',    color: '#3b82f6' },
+  { id: 'hover-warn',    labelKey: 'hoverWarning', tipKey: 'tipWarning', color: '#f59e0b' },
+  { id: 'hover-success', labelKey: 'hoverSuccess', tipKey: 'tipSuccess', color: '#10b981' },
+  { id: 'hover-danger',  labelKey: 'hoverDanger',  tipKey: 'tipDanger',  color: '#ef4444' },
 ]
 
 function HoverSection() {
+  const { t } = useLang()
   const [active, setActive] = useState(null)
   return (
     <section id="sec-hover" className="card">
-      <SectionHeader num="13" title="Mouse Hover" locator="data-testid" />
-      <p className="desc">Hover over a card to reveal its tooltip.</p>
+      <SectionHeader num="13" title={t('sec13Title')} locator="data-testid" />
+      <p className="desc">{t('sec13Desc')}</p>
       <div className="hover-cards">
         {HOVER_CARDS.map(c => (
           <div key={c.id} data-testid={c.id} className="hover-card"
             style={{ '--hc': c.color }}
             onMouseEnter={() => setActive(c.id)}
             onMouseLeave={() => setActive(null)}>
-            <span className="hover-card-label">{c.label}</span>
+            <span className="hover-card-label">{t(c.labelKey)}</span>
             {active === c.id && (
-              <div data-testid={`${c.id}-tooltip`} className="hover-tooltip">{c.tip}</div>
+              <div data-testid={`${c.id}-tooltip`} className="hover-tooltip">{t(c.tipKey)}</div>
             )}
           </div>
         ))}
@@ -422,27 +443,35 @@ function HoverSection() {
 }
 
 // ─── 14. Focus / Blur ────────────────────────────────────────────────────────
+const FOCUS_FIELD_KEYS = ['focusUsername', 'focusEmail', 'focusComment']
+const FOCUS_IDS        = ['username', 'email', 'comment']
+
 function FocusBlurSection() {
+  const { t, tArr } = useLang()
+  const focusFields = tArr('focusFields')
   const [events, setEvents] = useState([])
   const [active, setActive] = useState('')
-  const log = (field, type) => {
-    setEvents(e => [`${field} → ${type}`, ...e].slice(0, 5))
-    setActive(type === 'focus' ? field : '')
+  const log = (label, type) => {
+    setEvents(e => [`${label} → ${type}`, ...e].slice(0, 5))
+    setActive(type === 'focus' ? label : '')
   }
   return (
     <section id="sec-focus" className="card">
-      <SectionHeader num="14" title="Focus / Blur" locator="id" />
-      <p className="desc">Tab through fields — focus and blur events are captured.</p>
-      {['Username', 'Email', 'Comment'].map(f => (
-        <div key={f} className="form-field">
-          <label className="field-label" htmlFor={`focus-${f.toLowerCase()}`}>{f}</label>
-          <input id={`focus-${f.toLowerCase()}`} type="text"
-            placeholder={`Click to focus ${f}`}
-            className={active === f ? 'input-focused' : ''}
-            onFocus={() => log(f, 'focus')}
-            onBlur={() => log(f, 'blur')} />
-        </div>
-      ))}
+      <SectionHeader num="14" title={t('sec14Title')} locator="id" />
+      <p className="desc">{t('sec14Desc')}</p>
+      {FOCUS_IDS.map((id, i) => {
+        const label = focusFields[i] ?? t(FOCUS_FIELD_KEYS[i])
+        return (
+          <div key={id} className="form-field">
+            <label className="field-label" htmlFor={`focus-${id}`}>{label}</label>
+            <input id={`focus-${id}`} type="text"
+              placeholder={t('phFocusField', { field: label })}
+              className={active === label ? 'input-focused' : ''}
+              onFocus={() => log(label, 'focus')}
+              onBlur={() => log(label, 'blur')} />
+          </div>
+        )
+      })}
       {events.length > 0 && (
         <div id="focus-event-log" className="event-log">
           {events.map((e, i) => <div key={i} className="event-entry">{e}</div>)}
@@ -453,18 +482,19 @@ function FocusBlurSection() {
 }
 
 // ─── 15. Drag & Drop ─────────────────────────────────────────────────────────
-const DRAG_ITEMS = [
-  { id: 'drag-1', label: 'Alpha Task',   color: '#6366f1' },
-  { id: 'drag-2', label: 'Beta Task',    color: '#ec4899' },
-  { id: 'drag-3', label: 'Gamma Task',   color: '#10b981' },
-  { id: 'drag-4', label: 'Delta Task',   color: '#f59e0b' },
-  { id: 'drag-5', label: 'Epsilon Task', color: '#ef4444' },
+const DRAG_KEYS = [
+  { id: 'drag-1', labelKey: 'dragAlpha',   color: '#6366f1' },
+  { id: 'drag-2', labelKey: 'dragBeta',    color: '#ec4899' },
+  { id: 'drag-3', labelKey: 'dragGamma',   color: '#10b981' },
+  { id: 'drag-4', labelKey: 'dragDelta',   color: '#f59e0b' },
+  { id: 'drag-5', labelKey: 'dragEpsilon', color: '#ef4444' },
 ]
 
 function DragDropSection() {
-  const [items, setItems]   = useState(DRAG_ITEMS)
+  const { t } = useLang()
+  const [items, setItems]       = useState(DRAG_KEYS)
   const [dragging, setDragging] = useState(null)
-  const [log, setLog]       = useState('')
+  const [log, setLog]           = useState('')
 
   const onDrop = targetId => {
     if (!dragging || dragging === targetId) return
@@ -474,14 +504,14 @@ function DragDropSection() {
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
     setItems(next)
-    setLog(`Moved "${moved.label}" → position ${to + 1}`)
+    setLog(t('dragMoved', { label: t(moved.labelKey), pos: to + 1 }))
     setDragging(null)
   }
 
   return (
     <section id="sec-dragdrop" className="card">
-      <SectionHeader num="15" title="Drag & Drop" locator="data-drag-id" />
-      <p className="desc">Drag items to reorder the list.</p>
+      <SectionHeader num="15" title={t('sec15Title')} locator="data-drag-id" />
+      <p className="desc">{t('sec15Desc')}</p>
       <div className="drag-list">
         {items.map((item, idx) => (
           <div key={item.id} data-drag-id={item.id} data-drag-pos={idx + 1}
@@ -492,7 +522,7 @@ function DragDropSection() {
             onDrop={() => onDrop(item.id)}
             style={{ borderLeftColor: item.color }}>
             <span className="drag-handle">⠿</span>
-            <span className="drag-label">{item.label}</span>
+            <span className="drag-label">{t(item.labelKey)}</span>
             <span className="drag-pos">{idx + 1}</span>
           </div>
         ))}
@@ -504,29 +534,30 @@ function DragDropSection() {
 
 // ─── 16. Browser Popups ──────────────────────────────────────────────────────
 function PopupsSection() {
+  const { t } = useLang()
   const [result, setResult] = useState('')
   return (
     <section id="sec-popups" className="card">
-      <SectionHeader num="16" title="Browser Popups" locator="id" />
-      <p className="desc">Native browser alert, prompt, and confirm dialogs.</p>
+      <SectionHeader num="16" title={t('sec16Title')} locator="id" />
+      <p className="desc">{t('sec16Desc')}</p>
       <div className="button-row">
         <button id="btn-alert" className="btn-warning"
-          onClick={() => { window.alert('This is a browser alert!'); setResult('Alert was dismissed') }}>
-          Alert
+          onClick={() => { window.alert(t('alertMsg')); setResult(t('alertDismissed')) }}>
+          {t('btnAlert')}
         </button>
         <button id="btn-prompt" className="btn-primary"
           onClick={() => {
-            const v = window.prompt('What is your name?')
-            setResult(v !== null ? `Prompt returned: "${v}"` : 'Prompt was cancelled')
+            const v = window.prompt(t('promptMsg'))
+            setResult(v !== null ? t('promptReturned', { val: v }) : t('promptCancelled'))
           }}>
-          Prompt
+          {t('btnPrompt')}
         </button>
         <button id="btn-confirm" className="btn-success"
           onClick={() => {
-            const ok = window.confirm('Do you confirm this action?')
-            setResult(ok ? 'Confirmed: OK clicked' : 'Cancelled: Cancel clicked')
+            const ok = window.confirm(t('confirmMsg'))
+            setResult(ok ? t('confirmOk') : t('confirmCancel'))
           }}>
-          Confirm
+          {t('btnConfirm')}
         </button>
       </div>
       {result && <Output id="popup-result">{result}</Output>}
@@ -536,29 +567,30 @@ function PopupsSection() {
 
 // ─── 17. Links & New Windows ─────────────────────────────────────────────────
 function LinksWindowsSection() {
+  const { t } = useLang()
   const [log, setLog] = useState('')
   return (
     <section id="sec-windows" className="card">
-      <SectionHeader num="17" title="Links & New Windows" locator="id / href / target" />
-      <p className="desc">Anchor links, JS-opened tabs and windows.</p>
+      <SectionHeader num="17" title={t('sec17Title')} locator="id / href / target" />
+      <p className="desc">{t('sec17Desc')}</p>
       <div className="links-grid">
-        <a id="link-anchor"  href="#sec-text" className="link-chip">Anchor (same page)</a>
+        <a id="link-anchor"  href="#sec-text" className="link-chip">{t('linkAnchor')}</a>
         <a id="link-newtab"  href="https://example.com" target="_blank" rel="noreferrer" className="link-chip">
-          External (new tab)
+          {t('linkExternal')}
         </a>
         <a id="link-download" href="data:text/plain,Hello" download="sample.txt" className="link-chip">
-          Download link
+          {t('linkDownload')}
         </a>
         <button id="btn-js-newtab" className="btn-secondary"
-          onClick={() => { window.open('https://example.com', '_blank'); setLog('New tab opened via JS') }}>
-          JS New Tab
+          onClick={() => { window.open('https://example.com', '_blank'); setLog(t('newTabOpened')) }}>
+          {t('btnJsNewTab')}
         </button>
         <button id="btn-js-newwindow" className="btn-secondary"
           onClick={() => {
             window.open('https://example.com', 'popup', 'width=700,height=500,left=200,top=100')
-            setLog('New window opened via JS')
+            setLog(t('newWindowOpened'))
           }}>
-          JS New Window
+          {t('btnJsNewWindow')}
         </button>
       </div>
       {log && <Output id="window-log">{log}</Output>}
@@ -567,7 +599,8 @@ function LinksWindowsSection() {
 }
 
 // ─── 18. iFrame ──────────────────────────────────────────────────────────────
-const IFRAME_HTML = `<!DOCTYPE html><html><head><style>
+function getIframeHtml(t) {
+  return `<!DOCTYPE html><html><head><style>
   *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,sans-serif}
   body{padding:20px;background:linear-gradient(135deg,#ede9fe,#dbeafe);height:100%}
   .badge{display:inline-block;background:#4f46e5;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em}
@@ -579,34 +612,40 @@ const IFRAME_HTML = `<!DOCTYPE html><html><head><style>
   button:hover{background:#4338ca}
   #iframe-result{margin-top:10px;padding:10px 12px;background:#fff;border-radius:6px;color:#4f46e5;font-size:14px;border:1px solid #c4b5fd;min-height:38px}
 </style></head><body>
-  <span class="badge">Inside iFrame</span>
-  <h3>Iframe Content Area</h3>
+  <span class="badge">${t('iframeBadge')}</span>
+  <h3>${t('iframeTitle')}</h3>
   <div class="row">
-    <input id="iframe-input" type="text" placeholder="Type inside the iframe…"/>
-    <button id="iframe-btn" onclick="document.getElementById('iframe-result').textContent='Value: '+document.getElementById('iframe-input').value">Read</button>
+    <input id="iframe-input" type="text" placeholder="${t('iframePlaceholder')}"/>
+    <button id="iframe-btn" onclick="document.getElementById('iframe-result').textContent='Value: '+document.getElementById('iframe-input').value">${t('iframeBtnRead')}</button>
   </div>
-  <div id="iframe-result">Result will appear here</div>
+  <div id="iframe-result">${t('iframeResultInit')}</div>
 </body></html>`
+}
 
 function IFrameSection() {
+  const { t } = useLang()
   return (
     <section id="sec-iframe" className="card">
-      <SectionHeader num="18" title="iFrame" locator="id (within frame)" />
-      <p className="desc">Embedded page in an iframe. Elements live in a separate DOM context.</p>
+      <SectionHeader num="18" title={t('sec18Title')} locator="id (within frame)" />
+      <p className="desc">{t('sec18Desc')}</p>
       <iframe id="practice-iframe" title="Practice iFrame"
-        srcDoc={IFRAME_HTML} className="practice-iframe" />
+        srcDoc={getIframeHtml(t)} className="practice-iframe" />
     </section>
   )
 }
 
 // ─── 19. Shadow DOM ──────────────────────────────────────────────────────────
 function ShadowDOMSection() {
+  const { t, lang } = useLang()
   const hostRef = useRef(null)
 
   useEffect(() => {
     const host = hostRef.current
-    if (!host || host.shadowRoot) return
-    const shadow = host.attachShadow({ mode: 'open' })
+    if (!host) return
+    if (!host.shadowRoot) {
+      host.attachShadow({ mode: 'open' })
+    }
+    const shadow = host.shadowRoot
     shadow.innerHTML = `
       <style>
         :host{display:block}
@@ -621,25 +660,25 @@ function ShadowDOMSection() {
         #shadow-output{margin-top:10px;padding:10px 12px;background:rgba(99,102,241,.15);border-radius:6px;color:#a5b4fc;font-size:14px;min-height:38px}
       </style>
       <div class="wrap">
-        <span class="badge">Shadow DOM</span>
-        <p>Encapsulated from the main document. Use element.shadowRoot to reach inside.</p>
+        <span class="badge">${t('shadowBadge')}</span>
+        <p>${t('shadowDesc')}</p>
         <div class="row">
-          <input id="shadow-input" type="text" placeholder="Shadow DOM input…"/>
-          <button id="shadow-btn">Read</button>
+          <input id="shadow-input" type="text" placeholder="${t('shadowPlaceholder')}"/>
+          <button id="shadow-btn">${t('shadowBtnRead')}</button>
         </div>
-        <div id="shadow-output">Value will appear here</div>
+        <div id="shadow-output">${t('shadowResultInit')}</div>
       </div>`
     shadow.getElementById('shadow-btn').addEventListener('click', () => {
       const val = shadow.getElementById('shadow-input').value
       shadow.getElementById('shadow-output').textContent =
-        val ? `Value: "${val}"` : 'Enter something first'
+        val ? t('shadowValue', { val }) : t('shadowEmpty')
     })
-  }, [])
+  }, [lang])
 
   return (
     <section id="sec-shadow" className="card">
-      <SectionHeader num="19" title="Shadow DOM" locator="data-testid / shadowRoot" />
-      <p className="desc">Elements encapsulated in a shadow root. Use <code>locator.shadowRoot()</code> in Playwright.</p>
+      <SectionHeader num="19" title={t('sec19Title')} locator="data-testid / shadowRoot" />
+      <p className="desc">{t('sec19Desc')} <code>locator.shadowRoot()</code></p>
       <div ref={hostRef} data-testid="shadow-host" />
     </section>
   )
@@ -659,6 +698,7 @@ const EMPLOYEES = Array.from({ length: 25 }, (_, i) => ({
 const PER_PAGE = 5
 
 function PaginationTableSection() {
+  const { t } = useLang()
   const [page, setPage]     = useState(1)
   const [search, setSearch] = useState('')
 
@@ -672,14 +712,20 @@ function PaginationTableSection() {
 
   return (
     <section id="sec-table" className="card">
-      <SectionHeader num="20" title="Pagination Table" locator="id / data-row-id" />
-      <p className="desc">25 rows, 5 per page. Filter by name, department, or ID.</p>
-      <input id="employee-search" placeholder="Search name, dept, or ID…"
+      <SectionHeader num="20" title={t('sec20Title')} locator="id / data-row-id" />
+      <p className="desc">{t('sec20Desc')}</p>
+      <input id="employee-search" placeholder={t('phSearch')}
         value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
       <div className="table-wrap">
         <table id="employee-table">
           <thead>
-            <tr><th>ID</th><th>Name</th><th>Department</th><th>Role</th><th>Status</th></tr>
+            <tr>
+              <th>{t('colId')}</th>
+              <th>{t('colName')}</th>
+              <th>{t('colDept')}</th>
+              <th>{t('colRole')}</th>
+              <th>{t('colStatus')}</th>
+            </tr>
           </thead>
           <tbody>
             {rows.map(r => (
@@ -690,13 +736,13 @@ function PaginationTableSection() {
                 <td>{r.role}</td>
                 <td>
                   <span className={`status-badge ${r.status === 'Active' ? 'badge-active' : 'badge-inactive'}`}>
-                    {r.status}
+                    {r.status === 'Active' ? t('statusActive') : t('statusInactive')}
                   </span>
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={5} id="no-results" className="no-results">No matching records</td></tr>
+              <tr><td colSpan={5} id="no-results" className="no-results">{t('noResults')}</td></tr>
             )}
           </tbody>
         </table>
@@ -712,45 +758,41 @@ function PaginationTableSection() {
         <button id="page-last" onClick={() => setPage(totalPages)} disabled={page >= totalPages}>»</button>
       </div>
       <p id="page-info" className="page-info">
-        Showing {rows.length} of {filtered.length} records — Page {page} of {totalPages}
+        {t('pageInfo', { shown: rows.length, total: filtered.length, page, totalPages })}
       </p>
     </section>
   )
 }
 
 // ─── 21. Show / Hide & Tabs ──────────────────────────────────────────────────
-const TABS = ['Details', 'Settings', 'Preview']
-const TAB_CONTENT = [
-  'This is the Details tab. Assert it is visible using toBeVisible().',
-  'Settings tab is active. Toggle state and verify the update.',
-  'Preview tab shows the final rendered output for inspection.',
-]
-
 function ShowHideSection() {
+  const { t, tArr } = useLang()
+  const tabs       = tArr('tabs')
+  const tabContent = tArr('tabContent')
   const [open, setOpen] = useState(false)
   const [tab, setTab]   = useState(0)
   return (
     <section id="sec-toggle" className="card">
-      <SectionHeader num="21" title="Show / Hide & Tabs" locator="className / role" />
-      <p className="desc">Collapsible panel and tab switching for visibility assertions.</p>
+      <SectionHeader num="21" title={t('sec21Title')} locator="className / role" />
+      <p className="desc">{t('sec21Desc')}</p>
       <button className="toggle-btn" id="toggle-panel-btn" onClick={() => setOpen(o => !o)}>
-        {open ? 'Collapse Panel' : 'Expand Panel'}
+        {open ? t('btnCollapsePanel') : t('btnExpandPanel')}
       </button>
       {open && (
         <div id="collapsible-content" className="collapsible-panel">
-          <p>Panel is now <strong>visible</strong>.</p>
+          <p>{t('panelVisible')} <strong>{t('panelVisibleBold')}</strong>.</p>
           <code data-testid="secret-value">Secret: PANEL-XYZ-789</code>
         </div>
       )}
       <div className="tab-bar" role="tablist">
-        {TABS.map((t, i) => (
-          <button key={t} role="tab" id={`tab-${t.toLowerCase()}`}
+        {tabs.map((label, i) => (
+          <button key={i} role="tab" id={`tab-${['details','settings','preview'][i]}`}
             className={`tab-btn ${tab === i ? 'tab-active' : ''}`}
-            onClick={() => setTab(i)}>{t}</button>
+            onClick={() => setTab(i)}>{label}</button>
         ))}
       </div>
       <div id="tab-content" className="tab-content" role="tabpanel">
-        {TAB_CONTENT[tab]}
+        {tabContent[tab]}
       </div>
     </section>
   )
@@ -760,27 +802,27 @@ function ShowHideSection() {
 const POPUP_TYPES = {
   warning: {
     id: 'warning',
-    title: 'Warning',
     icon: '⚠',
-    message: 'This action may have unintended consequences. Please review your changes before proceeding.',
+    titleKey: 'popupWarningTitle',
+    messageKey: 'popupWarningMsg',
     colorVar: '#d97706',
     bgVar: '#fffbeb',
     borderVar: '#fde68a',
   },
   error: {
     id: 'error',
-    title: 'Error',
     icon: '✕',
-    message: 'An error occurred while processing your request. The operation could not be completed.',
+    titleKey: 'popupErrorTitle',
+    messageKey: 'popupErrorMsg',
     colorVar: '#dc2626',
     bgVar: '#fef2f2',
     borderVar: '#fecaca',
   },
   exception: {
     id: 'exception',
-    title: 'Unhandled Exception',
     icon: '⚡',
-    message: 'TypeError: Cannot read properties of undefined\n  at PaginationTable (App.jsx:42:18)\n  at renderWithHooks (react-dom.js:14906)',
+    titleKey: 'popupExceptionTitle',
+    messageKey: 'popupExceptionMsg',
     colorVar: '#7c3aed',
     bgVar: '#f5f3ff',
     borderVar: '#ddd6fe',
@@ -789,17 +831,18 @@ const POPUP_TYPES = {
 }
 
 function PopupAlertsSection() {
+  const { t } = useLang()
   const [active, setActive] = useState(null)
   const popup = active ? POPUP_TYPES[active] : null
 
   return (
     <section id="sec-popup-alerts" className="card">
-      <SectionHeader num="22" title="Popup Alerts" locator="id / role" />
-      <p className="desc">Trigger warning, error, and exception modal overlays.</p>
+      <SectionHeader num="22" title={t('sec22Title')} locator="id / role" />
+      <p className="desc">{t('sec22Desc')}</p>
       <div className="button-row">
-        <button id="btn-warning-popup"   className="btn-warning" onClick={() => setActive('warning')}>Warning</button>
-        <button id="btn-error-popup"     className="btn-danger"  onClick={() => setActive('error')}>Error</button>
-        <button id="btn-exception-popup" className="btn-exception" onClick={() => setActive('exception')}>Exception</button>
+        <button id="btn-warning-popup"   className="btn-warning"   onClick={() => setActive('warning')}>{t('btnWarningPopup')}</button>
+        <button id="btn-error-popup"     className="btn-danger"    onClick={() => setActive('error')}>{t('btnErrorPopup')}</button>
+        <button id="btn-exception-popup" className="btn-exception" onClick={() => setActive('exception')}>{t('btnExceptionPopup')}</button>
       </div>
 
       {popup && (
@@ -810,14 +853,14 @@ function PopupAlertsSection() {
             onClick={e => e.stopPropagation()}>
             <div className="popup-header">
               <span className="popup-icon">{popup.icon}</span>
-              <h3 className="popup-title" id="popup-title">{popup.title}</h3>
+              <h3 className="popup-title" id="popup-title">{t(popup.titleKey)}</h3>
               <button className="popup-close" id="popup-close-btn" aria-label="Close" onClick={() => setActive(null)}>✕</button>
             </div>
             <p id="popup-message" className={`popup-message ${popup.mono ? 'popup-message-mono' : ''}`}>
-              {popup.message}
+              {t(popup.messageKey)}
             </p>
             <div className="popup-footer">
-              <button id="popup-dismiss-btn" onClick={() => setActive(null)}>Dismiss</button>
+              <button id="popup-dismiss-btn" onClick={() => setActive(null)}>{t('btnDismiss')}</button>
             </div>
           </div>
         </div>
@@ -828,34 +871,36 @@ function PopupAlertsSection() {
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 const NAV = [
-  { id: 'sec-text',     label: 'Text Input',         group: 'Inputs' },
-  { id: 'sec-password', label: 'Password & Textarea', group: 'Inputs' },
-  { id: 'sec-date',     label: 'Date Picker',         group: 'Inputs' },
-  { id: 'sec-slider',   label: 'Slider',              group: 'Inputs' },
-  { id: 'sec-file',     label: 'File Upload',         group: 'Inputs' },
-  { id: 'sec-form',     label: 'Form Validation',     group: 'Inputs' },
-  { id: 'sec-checkbox', label: 'Checkboxes',          group: 'Selection' },
-  { id: 'sec-radio',    label: 'Radio Group',         group: 'Selection' },
-  { id: 'sec-dropdown', label: 'Dropdown & Tags',     group: 'Selection' },
-  { id: 'sec-counter',  label: 'Click Counter',       group: 'Buttons' },
-  { id: 'sec-dblclick', label: 'Double Click',        group: 'Buttons' },
-  { id: 'sec-dynamic',  label: 'Dynamic Buttons',     group: 'Buttons' },
-  { id: 'sec-hover',    label: 'Mouse Hover',         group: 'Events' },
-  { id: 'sec-focus',    label: 'Focus / Blur',        group: 'Events' },
-  { id: 'sec-dragdrop', label: 'Drag & Drop',         group: 'Events' },
-  { id: 'sec-popups',        label: 'Browser Popups',  group: 'Windows' },
-  { id: 'sec-windows',       label: 'Links & Windows', group: 'Windows' },
-  { id: 'sec-popup-alerts',  label: 'Popup Alerts',    group: 'Windows' },
-  { id: 'sec-iframe',   label: 'iFrame',              group: 'Advanced' },
-  { id: 'sec-shadow',   label: 'Shadow DOM',          group: 'Advanced' },
-  { id: 'sec-table',    label: 'Pagination Table',    group: 'Advanced', subGroup: 'Data & Tables' },
-  { id: 'sec-toggle',   label: 'Show / Hide & Tabs',  group: 'Advanced' },
+  { id: 'sec-text',        labelKey: 'navTextInput',        groupKey: 'navInputs' },
+  { id: 'sec-password',    labelKey: 'navPasswordTextarea', groupKey: 'navInputs' },
+  { id: 'sec-date',        labelKey: 'navDatePicker',       groupKey: 'navInputs' },
+  { id: 'sec-slider',      labelKey: 'navSlider',           groupKey: 'navInputs' },
+  { id: 'sec-file',        labelKey: 'navFileUpload',       groupKey: 'navInputs' },
+  { id: 'sec-form',        labelKey: 'navFormValidation',   groupKey: 'navInputs' },
+  { id: 'sec-checkbox',    labelKey: 'navCheckboxes',       groupKey: 'navSelection' },
+  { id: 'sec-radio',       labelKey: 'navRadioGroup',       groupKey: 'navSelection' },
+  { id: 'sec-dropdown',    labelKey: 'navDropdownTags',     groupKey: 'navSelection' },
+  { id: 'sec-counter',     labelKey: 'navClickCounter',     groupKey: 'navButtons' },
+  { id: 'sec-dblclick',    labelKey: 'navDoubleClick',      groupKey: 'navButtons' },
+  { id: 'sec-dynamic',     labelKey: 'navDynamicButtons',   groupKey: 'navButtons' },
+  { id: 'sec-hover',       labelKey: 'navMouseHover',       groupKey: 'navEvents' },
+  { id: 'sec-focus',       labelKey: 'navFocusBlur',        groupKey: 'navEvents' },
+  { id: 'sec-dragdrop',    labelKey: 'navDragDrop',         groupKey: 'navEvents' },
+  { id: 'sec-popups',      labelKey: 'navBrowserPopups',    groupKey: 'navWindows' },
+  { id: 'sec-windows',     labelKey: 'navLinksWindows',     groupKey: 'navWindows' },
+  { id: 'sec-popup-alerts',labelKey: 'navPopupAlerts',      groupKey: 'navWindows' },
+  { id: 'sec-iframe',      labelKey: 'navIFrame',           groupKey: 'navAdvanced' },
+  { id: 'sec-shadow',      labelKey: 'navShadowDOM',        groupKey: 'navAdvanced' },
+  { id: 'sec-table',       labelKey: 'navPaginationTable',  groupKey: 'navAdvanced', subGroupKey: 'navDataTables' },
+  { id: 'sec-toggle',      labelKey: 'navShowHide',         groupKey: 'navAdvanced' },
 ]
 
+const GROUP_KEYS = ['navInputs', 'navSelection', 'navButtons', 'navEvents', 'navWindows', 'navAdvanced']
+
 function Sidebar({ active }) {
-  const groups = [...new Set(NAV.map(n => n.group))]
+  const { t, lang, toggleLang } = useLang()
   const [openGroups, setOpenGroups] = useState(() =>
-    Object.fromEntries(groups.map(g => [g, true]))
+    Object.fromEntries(GROUP_KEYS.map(g => [g, true]))
   )
   const [openSubGroups, setOpenSubGroups] = useState({})
 
@@ -868,18 +913,21 @@ function Sidebar({ active }) {
     <nav className="sidebar">
       <div className="sidebar-logo">
         <span className="logo-mark">TP</span>
-        <span>Test Playground</span>
+        <span>{t('appName')}</span>
       </div>
-      {groups.map(g => {
-        const groupItems = NAV.filter(n => n.group === g)
-        const subGroups  = [...new Set(groupItems.filter(n => n.subGroup).map(n => n.subGroup))]
-        const directItems = groupItems.filter(n => !n.subGroup)
-        const isOpen = openGroups[g]
+      <button className="lang-toggle" onClick={toggleLang} aria-label="Toggle language">
+        {t('langToggle')}
+      </button>
+      {GROUP_KEYS.map(gKey => {
+        const groupItems  = NAV.filter(n => n.groupKey === gKey)
+        const subGroupKeys = [...new Set(groupItems.filter(n => n.subGroupKey).map(n => n.subGroupKey))]
+        const directItems  = groupItems.filter(n => !n.subGroupKey)
+        const isOpen = openGroups[gKey]
 
         return (
-          <div key={g} className="nav-group">
-            <button className="nav-group-label" onClick={() => toggleGroup(g)}>
-              <span>{g}</span>
+          <div key={gKey} className="nav-group">
+            <button className="nav-group-label" onClick={() => toggleGroup(gKey)}>
+              <span>{t(gKey)}</span>
               <span className={`nav-chevron ${isOpen ? 'nav-chevron-open' : ''}`}>›</span>
             </button>
             {isOpen && (
@@ -888,26 +936,26 @@ function Sidebar({ active }) {
                   <button key={n.id}
                     className={`nav-item ${active === n.id ? 'nav-active' : ''}`}
                     onClick={() => scrollTo(n.id)}>
-                    {n.label}
+                    {t(n.labelKey)}
                   </button>
                 ))}
-                {subGroups.map(sg => {
-                  const sgOpen = openSubGroups[sg]
+                {subGroupKeys.map(sgKey => {
+                  const sgOpen = openSubGroups[sgKey]
                   return (
-                    <div key={sg} className="nav-subgroup">
-                      <button className="nav-subgroup-label" onClick={() => toggleSubGroup(sg)}>
+                    <div key={sgKey} className="nav-subgroup">
+                      <button className="nav-subgroup-label" onClick={() => toggleSubGroup(sgKey)}>
                         <span className="nav-subgroup-icon">⊞</span>
-                        <span>{sg}</span>
+                        <span>{t(sgKey)}</span>
                         <span className={`nav-chevron ${sgOpen ? 'nav-chevron-open' : ''}`}>›</span>
                       </button>
                       {sgOpen && groupItems
-                        .filter(n => n.subGroup === sg)
+                        .filter(n => n.subGroupKey === sgKey)
                         .map(n => (
                           <button key={n.id}
                             className={`nav-item nav-item-nested ${active === n.id ? 'nav-active' : ''}`}
                             onClick={() => scrollTo(n.id)}>
                             <span className="nav-item-dot" />
-                            {n.label}
+                            {t(n.labelKey)}
                           </button>
                         ))
                       }
@@ -924,7 +972,8 @@ function Sidebar({ active }) {
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function App() {
+function AppInner() {
+  const { lang, t } = useLang()
   const [active, setActive] = useState('sec-text')
   const contentRef = useRef(null)
 
@@ -943,7 +992,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="layout">
+    <div className="layout" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <Sidebar active={active} />
       <main className="content" ref={contentRef}>
         <div className="content-grid">
@@ -970,7 +1019,19 @@ export default function App() {
           <ShowHideSection />
           <PopupAlertsSection />
         </div>
+        <footer className="site-footer">
+          <span className="footer-copy">© 2026 Srujana Deva · {t('footerRights')}</span>
+          <span className="footer-wit">{t('footerWit')}</span>
+        </footer>
       </main>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppInner />
+    </LanguageProvider>
   )
 }
