@@ -869,6 +869,73 @@ function PopupAlertsSection() {
   )
 }
 
+// ─── 23. Conditional Fields ──────────────────────────────────────────────────
+function ConditionalFieldsSection() {
+  const { t } = useLang()
+  const [enabled, setEnabled] = useState(false)
+  const [text, setText]       = useState('')
+  const [chosen, setChosen]   = useState('')
+  const [radio, setRadio]     = useState('')
+
+  return (
+    <section id="sec-conditional" className="card">
+      <SectionHeader num="23" title={t('sec23Title')} locator="id / data-testid" />
+      <p className="desc">{t('sec23Desc')}</p>
+
+      <label className="checkbox-label" htmlFor="conditional-toggle">
+        <input type="checkbox" id="conditional-toggle" data-testid="conditional-toggle"
+          checked={enabled} onChange={e => setEnabled(e.target.checked)} />
+        {t('conditionalToggleLabel')}
+      </label>
+
+      {enabled && (
+        <div id="conditional-fields" className="conditional-fields">
+          <div className="form-field">
+            <label className="field-label" htmlFor="conditional-text">{t('conditionalTextLabel')}</label>
+            <input id="conditional-text" data-testid="conditional-text" type="text"
+              placeholder={t('conditionalTextPh')} value={text}
+              onChange={e => setText(e.target.value)} />
+          </div>
+
+          <div className="form-field">
+            <label className="field-label" htmlFor="conditional-dropdown">{t('conditionalDropdownLabel')}</label>
+            <select id="conditional-dropdown" data-testid="conditional-dropdown"
+              value={chosen} onChange={e => setChosen(e.target.value)}>
+              <option value="">{t('conditionalDropdownPh')}</option>
+              <option value="alpha">{t('conditionalOpt1')}</option>
+              <option value="beta">{t('conditionalOpt2')}</option>
+              <option value="gamma">{t('conditionalOpt3')}</option>
+            </select>
+          </div>
+
+          <div className="form-field">
+            <span className="field-label">{t('conditionalRadioLabel')}</span>
+            <div className="cond-radio-group">
+              {['alpha', 'beta', 'gamma'].map(val => (
+                <label key={val} className="cond-radio-label"
+                  htmlFor={`conditional-radio-${val}`}>
+                  <input type="radio" name="conditional-radio"
+                    id={`conditional-radio-${val}`}
+                    data-testid={`conditional-radio-${val}`}
+                    value={val} checked={radio === val}
+                    onChange={() => setRadio(val)} />
+                  {t(`conditionalRadio${val.charAt(0).toUpperCase() + val.slice(1)}`)}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {(text || chosen || radio) && (
+            <Output id="conditional-output">
+              {t('conditionalOutput', { text: text || '—', select: chosen || '—', radio: radio || '—' })}
+            </Output>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 const NAV = [
   { id: 'sec-text',        labelKey: 'navTextInput',        groupKey: 'navInputs' },
@@ -893,6 +960,7 @@ const NAV = [
   { id: 'sec-shadow',      labelKey: 'navShadowDOM',        groupKey: 'navAdvanced' },
   { id: 'sec-table',       labelKey: 'navPaginationTable',  groupKey: 'navAdvanced', subGroupKey: 'navDataTables' },
   { id: 'sec-toggle',      labelKey: 'navShowHide',         groupKey: 'navAdvanced' },
+  { id: 'sec-conditional', labelKey: 'navConditionalFields', groupKey: 'navAdvanced' },
 ]
 
 const GROUP_KEYS = ['navInputs', 'navSelection', 'navButtons', 'navEvents', 'navWindows', 'navAdvanced']
@@ -1018,6 +1086,7 @@ function AppInner() {
           <PaginationTableSection />
           <ShowHideSection />
           <PopupAlertsSection />
+          <ConditionalFieldsSection />
         </div>
         <footer className="site-footer">
           <span className="footer-copy">© 2026 Srujana Deva · {t('footerRights')}</span>

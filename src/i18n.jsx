@@ -273,6 +273,24 @@ const translations = {
     popupExceptionMsg:   'TypeError: Cannot read properties of undefined\n  at PaginationTable (App.jsx:42:18)\n  at renderWithHooks (react-dom.js:14906)',
     btnDismiss: 'Dismiss',
 
+    // ── 23 Conditional Fields ──
+    sec23Title:               'Conditional Fields',
+    sec23Desc:                'Check the box to reveal hidden fields. Great for practising waitForElement, asserting visibility, and chaining interactions.',
+    conditionalToggleLabel:   'Show additional fields',
+    conditionalTextLabel:     'Text field',
+    conditionalTextPh:        'Type something here…',
+    conditionalDropdownLabel: 'Dropdown',
+    conditionalDropdownPh:    '— Select an option —',
+    conditionalOpt1:          'Option Alpha',
+    conditionalOpt2:          'Option Beta',
+    conditionalOpt3:          'Option Gamma',
+    conditionalRadioLabel:    'Radio group',
+    conditionalRadioAlpha:    'Alpha',
+    conditionalRadioBeta:     'Beta',
+    conditionalRadioGamma:    'Gamma',
+    conditionalOutput:        'Text: {text} · Dropdown: {select} · Radio: {radio}',
+    navConditionalFields:     'Conditional Fields',
+
     // ── Footer ──
     footerRights: 'All rights reserved · Not for commercial use',
     footerWit:    'findElement(By.Copyright, "violator") → NoSuchElementException',
@@ -549,6 +567,24 @@ const translations = {
     popupErrorMsg:       'حدث خطأ أثناء معالجة طلبك. تعذّر إتمام العملية.',
     popupExceptionMsg:   'TypeError: Cannot read properties of undefined\n  at PaginationTable (App.jsx:42:18)\n  at renderWithHooks (react-dom.js:14906)',
     btnDismiss: 'رفض',
+
+    // ── 23 Conditional Fields ──
+    sec23Title:               'الحقول الشرطية',
+    sec23Desc:                'حدّد المربع لإظهار الحقول المخفية. مثالي للتدرب على waitForElement والتحقق من الظهور والتفاعل المتسلسل.',
+    conditionalToggleLabel:   'عرض الحقول الإضافية',
+    conditionalTextLabel:     'حقل النص',
+    conditionalTextPh:        'اكتب شيئاً هنا…',
+    conditionalDropdownLabel: 'القائمة المنسدلة',
+    conditionalDropdownPh:    '— اختر خياراً —',
+    conditionalOpt1:          'الخيار ألفا',
+    conditionalOpt2:          'الخيار بيتا',
+    conditionalOpt3:          'الخيار غاما',
+    conditionalRadioLabel:    'مجموعة الاختيار',
+    conditionalRadioAlpha:    'ألفا',
+    conditionalRadioBeta:     'بيتا',
+    conditionalRadioGamma:    'غاما',
+    conditionalOutput:        'النص: {text} · القائمة: {select} · الاختيار: {radio}',
+    navConditionalFields:     'الحقول الشرطية',
 
     // ── Footer ──
     footerRights: 'جميع الحقوق محفوظة · غير مخصص للاستخدام التجاري',
