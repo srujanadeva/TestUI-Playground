@@ -2,3 +2,4 @@
 dist/
 .vscode/
 certs/
+node_modules/
