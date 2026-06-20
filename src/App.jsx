@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import { Routes, Route, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { LanguageProvider, useLang } from './i18n'
+import { useAuth } from './auth/AuthContext.jsx'
+import LoginPage from './auth/LoginPage.jsx'
+import SignupPage from './auth/SignupPage.jsx'
+import ForgotPasswordPage from './auth/ForgotPasswordPage.jsx'
+import AccountPage from './auth/AccountPage.jsx'
+import ProtectedRoute from './auth/ProtectedRoute.jsx'
+import PetstorePage from './petstore/PetstorePage.jsx'
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 function SectionHeader({ num, title, locator }) {
@@ -965,17 +973,22 @@ const NAV = [
 
 const GROUP_KEYS = ['navInputs', 'navSelection', 'navButtons', 'navEvents', 'navWindows', 'navAdvanced']
 
-function Sidebar({ active }) {
+function Sidebar({ active, onPlaygroundItem }) {
   const { t, lang, toggleLang } = useLang()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [openGroups, setOpenGroups] = useState(() =>
     Object.fromEntries(GROUP_KEYS.map(g => [g, true]))
   )
   const [openSubGroups, setOpenSubGroups] = useState({})
 
-  const scrollTo = id =>
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const toggleGroup = g => setOpenGroups(s => ({ ...s, [g]: !s[g] }))
   const toggleSubGroup = sg => setOpenSubGroups(s => ({ ...s, [sg]: !s[sg] }))
+
+  async function handleLogout() {
+    await logout()
+    navigate('/', { replace: true })
+  }
 
   return (
     <nav className="sidebar">
@@ -986,6 +999,16 @@ function Sidebar({ active }) {
       <button className="lang-toggle" onClick={toggleLang} aria-label="Toggle language">
         {t('langToggle')}
       </button>
+
+      <NavLink
+        to="/petstore"
+        className={({ isActive }) => `nav-petstore-cta ${isActive ? 'is-active' : ''}`}
+        data-testid="nav-test-pet-store"
+      >
+        <span className="nav-petstore-icon" aria-hidden>🐾</span>
+        <span className="nav-petstore-label">{t('navTestPetStore')}</span>
+      </NavLink>
+
       {GROUP_KEYS.map(gKey => {
         const groupItems  = NAV.filter(n => n.groupKey === gKey)
         const subGroupKeys = [...new Set(groupItems.filter(n => n.subGroupKey).map(n => n.subGroupKey))]
@@ -1003,7 +1026,7 @@ function Sidebar({ active }) {
                 {directItems.map(n => (
                   <button key={n.id}
                     className={`nav-item ${active === n.id ? 'nav-active' : ''}`}
-                    onClick={() => scrollTo(n.id)}>
+                    onClick={() => onPlaygroundItem(n.id)}>
                     {t(n.labelKey)}
                   </button>
                 ))}
@@ -1021,7 +1044,7 @@ function Sidebar({ active }) {
                         .map(n => (
                           <button key={n.id}
                             className={`nav-item nav-item-nested ${active === n.id ? 'nav-active' : ''}`}
-                            onClick={() => scrollTo(n.id)}>
+                            onClick={() => onPlaygroundItem(n.id)}>
                             <span className="nav-item-dot" />
                             {t(n.labelKey)}
                           </button>
@@ -1035,15 +1058,43 @@ function Sidebar({ active }) {
           </div>
         )
       })}
+
+      <div className="sidebar-account" data-testid="sidebar-account">
+        {user ? (
+          <>
+            <NavLink to="/account" className="sidebar-account-user" data-testid="sidebar-account-link">
+              <span className="sidebar-account-avatar" aria-hidden>
+                {(user.name || '?').charAt(0).toUpperCase()}
+              </span>
+              <span className="sidebar-account-name">{user.name}</span>
+            </NavLink>
+            <button
+              className="sidebar-account-logout"
+              onClick={handleLogout}
+              data-testid="sidebar-logout"
+            >
+              {t('authLogout')}
+            </button>
+          </>
+        ) : (
+          <>
+            <NavLink to="/login" className="sidebar-account-login" data-testid="sidebar-login-link">
+              {t('authLogin')}
+            </NavLink>
+            <NavLink to="/signup" className="sidebar-account-signup" data-testid="sidebar-signup-link">
+              {t('authSignup')}
+            </NavLink>
+          </>
+        )}
+      </div>
     </nav>
   )
 }
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
-function AppInner() {
-  const { lang, t } = useLang()
-  const [active, setActive] = useState('sec-text')
-  const contentRef = useRef(null)
+// ─── Playground (the original 22-section page) ────────────────────────────────
+function Playground({ contentRef, setActive }) {
+  const { t } = useLang()
+  const location = useLocation()
 
   useEffect(() => {
     const content = contentRef.current
@@ -1057,41 +1108,92 @@ function AppInner() {
     )
     NAV.forEach(n => { const el = document.getElementById(n.id); if (el) observer.observe(el) })
     return () => observer.disconnect()
-  }, [])
+  }, [contentRef, setActive])
+
+  // Scroll to hash on mount (when navigated from another route with /#sec-id).
+  useEffect(() => {
+    if (!location.hash) return
+    const id = location.hash.slice(1)
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [location.hash])
+
+  return (
+    <>
+      <div className="content-grid">
+        <TextInputSection />
+        <PasswordTextareaSection />
+        <DatePickerSection />
+        <SliderSection />
+        <FileUploadSection />
+        <FormValidationSection />
+        <CheckboxSection />
+        <RadioSection />
+        <DropdownSection />
+        <ClickCounterSection />
+        <DoubleClickSection />
+        <DynamicButtonsSection />
+        <HoverSection />
+        <FocusBlurSection />
+        <DragDropSection />
+        <PopupsSection />
+        <LinksWindowsSection />
+        <IFrameSection />
+        <ShadowDOMSection />
+        <PaginationTableSection />
+        <ShowHideSection />
+        <PopupAlertsSection />
+        <ConditionalFieldsSection />
+      </div>
+      <footer className="site-footer">
+        <span className="footer-copy">© 2026 Srujana Deva · {t('footerRights')}</span>
+        <span className="footer-wit">{t('footerWit')}</span>
+      </footer>
+    </>
+  )
+}
+
+// ─── Shell (sidebar + routed main) ────────────────────────────────────────────
+function Shell() {
+  const { lang } = useLang()
+  const [active, setActive] = useState('sec-text')
+  const contentRef = useRef(null)
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  function handlePlaygroundItem(id) {
+    if (location.pathname === '/') {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      navigate(`/#${id}`)
+    }
+  }
 
   return (
     <div className="layout" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <Sidebar active={active} />
+      <Sidebar active={active} onPlaygroundItem={handlePlaygroundItem} />
       <main className="content" ref={contentRef}>
-        <div className="content-grid">
-          <TextInputSection />
-          <PasswordTextareaSection />
-          <DatePickerSection />
-          <SliderSection />
-          <FileUploadSection />
-          <FormValidationSection />
-          <CheckboxSection />
-          <RadioSection />
-          <DropdownSection />
-          <ClickCounterSection />
-          <DoubleClickSection />
-          <DynamicButtonsSection />
-          <HoverSection />
-          <FocusBlurSection />
-          <DragDropSection />
-          <PopupsSection />
-          <LinksWindowsSection />
-          <IFrameSection />
-          <ShadowDOMSection />
-          <PaginationTableSection />
-          <ShowHideSection />
-          <PopupAlertsSection />
-          <ConditionalFieldsSection />
-        </div>
-        <footer className="site-footer">
-          <span className="footer-copy">© 2026 Srujana Deva · {t('footerRights')}</span>
-          <span className="footer-wit">{t('footerWit')}</span>
-        </footer>
+        <Routes>
+          <Route index element={<Playground contentRef={contentRef} setActive={setActive} />} />
+          <Route
+            path="account"
+            element={
+              <ProtectedRoute>
+                <AccountPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="petstore"
+            element={
+              <ProtectedRoute>
+                <PetstorePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
   )
@@ -1100,7 +1202,19 @@ function AppInner() {
 export default function App() {
   return (
     <LanguageProvider>
-      <AppInner />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <Shell />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </LanguageProvider>
   )
 }

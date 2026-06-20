@@ -3,3 +3,5 @@ dist/
 .vscode/
 certs/
 node_modules/
+server/.env
+
