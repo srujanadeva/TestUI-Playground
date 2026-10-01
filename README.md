@@ -63,9 +63,12 @@ No external UI libraries, no CSS frameworks. The 22 playground sections are self
 # 1. Navigate to the project directory
 cd test-playground
 
-# 2. Install dependencies
-npm install
+# 2. One-time setup — installs Node/MongoDB if missing, runs npm install,
+#    generates dev TLS certs (certs/*.pem) and server/.env if they don't exist yet
+npm run setup
 ```
+
+`npm run setup` is safe to re-run — it detects what's already in place and only does the missing parts. If you're setting up manually instead, run `npm install` yourself and see [Prerequisites](#prerequisites) for MongoDB.
 
 ---
 
@@ -424,7 +427,8 @@ test-playground/
 ├── vite.config.js          Vite config — dev server on port 3000, proxies /api → :4000
 ├── package.json            Dependencies and npm scripts
 ├── scripts/
-│   ├── start.sh            Starts MongoDB (if needed) + frontend + API — npm run start:all
+│   ├── setup.sh             One-time bootstrap (Node, Mongo, certs, .env) — npm run setup
+│   ├── start.sh             Starts MongoDB (if needed) + frontend + API — npm run start:all
 │   └── stop.sh              Stops frontend + API + MongoDB — npm run stop:all
 ├── server/                 Express + MongoDB API (port 4000)
 │   ├── index.js             App bootstrap, middleware, route mounting

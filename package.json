@@ -7,6 +7,8 @@
     "dev": "concurrently -k -n web,api -c blue,green \"npm:dev:web\" \"npm:server\"",
     "dev:web": "vite",
     "server": "nodemon server/index.js",
+    "setup": "bash scripts/setup.sh",
+    "seed": "node server/seed.js",
     "start:all": "bash scripts/start.sh",
     "stop:all": "bash scripts/stop.sh",
     "build": "vite build",
