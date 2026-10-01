@@ -11,6 +11,9 @@
     "seed": "node server/seed.js",
     "start:all": "bash scripts/start.sh",
     "stop:all": "bash scripts/stop.sh",
+    "setup:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup.ps1",
+    "start:all:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start.ps1",
+    "stop:all:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop.ps1",
     "build": "vite build",
     "preview": "vite preview"
   },

@@ -5,6 +5,7 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
+source "$PROJECT_DIR/scripts/mongo.sh"
 
 NODE_MIN_MAJOR=18
 SUMMARY=()
@@ -57,15 +58,36 @@ npm install
 note_done "npm dependencies installed"
 
 # ── 4. MongoDB ────────────────────────────────────────────────────────────────
-echo "==> Checking MongoDB..."
-if command -v mongod >/dev/null 2>&1; then
-  echo "    mongod found."
+echo "==> Checking MongoDB ($MONGO_FORMULA)..."
+if brew list --versions "$MONGO_FORMULA" >/dev/null 2>&1; then
+  echo "    $(brew list --versions "$MONGO_FORMULA") already installed."
   note_skipped "MongoDB"
+elif command -v mongod >/dev/null 2>&1; then
+  # Don't replace someone else's MongoDB: other projects may depend on it or its data.
+  echo
+  echo "ERROR: A different MongoDB is installed: $(mongod --version | head -1)" >&2
+  echo "This project uses $MONGO_FORMULA. To switch, stop and unlink the current one:" >&2
+  echo "  brew services stop <formula>   # e.g. mongodb-community" >&2
+  echo "  brew unlink <formula>" >&2
+  echo "MongoDB 8.0 can't open data written by a newer version, so also move" >&2
+  echo "$(brew --prefix)/var/mongodb aside (it will be recreated). Then re-run this script." >&2
+  exit 1
 else
-  echo "    mongod not found — installing mongodb-community + mongosh via brew..."
+  echo "    Installing $MONGO_FORMULA via brew..."
   brew tap mongodb/brew
-  brew install mongodb-community mongosh
-  note_done "MongoDB (mongodb-community + mongosh) installed via brew"
+  # --without-mongosh: Homebrew has no prebuilt mongosh for some Macs and would
+  # compile it (plus Node) from source. mongosh comes from npm below instead.
+  brew install "mongodb/brew/$MONGO_FORMULA" --without-mongosh
+  note_done "MongoDB ($MONGO_FORMULA) installed via brew"
+fi
+
+if ! command -v mongosh >/dev/null 2>&1; then
+  echo "    mongosh (optional shell) not found — installing via npm..."
+  if npm install -g mongosh; then
+    note_done "mongosh installed via npm"
+  else
+    echo "    Couldn't install mongosh; the app doesn't need it. Install later with: npm install -g mongosh"
+  fi
 fi
 
 # ── 5. Dev TLS certs ──────────────────────────────────────────────────────────
@@ -102,29 +124,11 @@ fi
 
 # ── 7. Seed sample users ──────────────────────────────────────────────────────
 echo "==> Seeding sample users (alice@example.com, bob@example.com)..."
-if nc -z 127.0.0.1 27017 2>/dev/null; then
-  : # already running
-else
-  echo "    Starting MongoDB to seed sample data..."
-  brew services start mongodb-community
-  echo -n "    Waiting for Mongo to accept connections"
-  for _ in $(seq 1 30); do
-    if nc -z 127.0.0.1 27017 2>/dev/null; then
-      echo " done."
-      break
-    fi
-    echo -n "."
-    sleep 1
-  done
-  if ! nc -z 127.0.0.1 27017 2>/dev/null; then
-    echo
-    echo "ERROR: MongoDB did not start within 30s — skipping seed. Run 'npm run seed' manually once Mongo is up." >&2
-  fi
-fi
-
-if nc -z 127.0.0.1 27017 2>/dev/null; then
+if start_mongo; then
   node server/seed.js
   note_done "Sample users seeded (alice@example.com / bob@example.com)"
+else
+  echo "ERROR: MongoDB did not start within 30s — skipping seed. Run 'npm run seed' manually once Mongo is up." >&2
 fi
 # Leave Mongo running either way — start:all will just detect it's already up.
 

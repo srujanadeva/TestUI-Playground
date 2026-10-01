@@ -26,12 +26,18 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 
 ## Prerequisites
 
-| Tool | Minimum Version | How to Install |
-|------|----------------|----------------|
-| [Node.js](https://nodejs.org/) | 18.x or higher | Download from nodejs.org or use `brew install node` |
-| npm | 9.x or higher | Bundled with Node.js |
-| [MongoDB Community](https://www.mongodb.com/try/download/community) | 7.x or higher | `brew tap mongodb/brew && brew install mongodb-community mongosh` |
-| A modern browser | Latest Chrome / Edge / Firefox / Safari | For manual browsing and automation targets |
+| Tool | Minimum Version | macOS | Windows |
+|------|----------------|-------|---------|
+| [Node.js](https://nodejs.org/) | 18.x or higher | `brew install node` | `winget install OpenJS.NodeJS.LTS` |
+| npm | 9.x or higher | Bundled with Node.js | Bundled with Node.js |
+| [MongoDB Community](https://www.mongodb.com/try/download/community) | **8.0** (pinned) | `brew tap mongodb/brew && brew install mongodb/brew/mongodb-community@8.0 --without-mongosh` | the 8.0.32 `.msi` from mongodb.com, installed as the `MongoDB` service |
+| mongosh (optional shell) | any | `npm install -g mongosh` | `winget install MongoDB.Shell` |
+| Package manager (used by the setup script) | — | [Homebrew](https://brew.sh) | `winget` (comes with Windows 10/11 as "App Installer") |
+| A modern browser | Latest Chrome / Edge / Firefox / Safari | | |
+
+You don't need to install Node or MongoDB by hand — the setup script does it for you (see [Installation](#installation)). This table is for reference or manual setup.
+
+**Supported platforms:** the scripts support **macOS** (bash + Homebrew) and **Windows 10/11** (PowerShell + winget). On **Linux** the scripts don't work yet, because they rely on Homebrew services: install Node and MongoDB with your distro's package manager, start MongoDB with `sudo systemctl start mongod`, create `certs/` and `server/.env` the same way steps 5–6 of `scripts/setup.sh` do, then run `npm install`, `npm run seed` and `npm run dev`.
 
 Verify your environment before proceeding:
 
@@ -63,12 +69,51 @@ No external UI libraries, no CSS frameworks. The 22 playground sections are self
 # 1. Navigate to the project directory
 cd test-playground
 
-# 2. One-time setup — installs Node/MongoDB if missing, runs npm install,
-#    generates dev TLS certs (certs/*.pem) and server/.env if they don't exist yet
-npm run setup
+# 2. One-time setup
+npm run setup        # macOS
+npm run setup:win    # Windows
 ```
 
-`npm run setup` is safe to re-run — it detects what's already in place and only does the missing parts. If you're setting up manually instead, run `npm install` yourself and see [Prerequisites](#prerequisites) for MongoDB.
+`npm run setup` runs `scripts/setup.sh`, and `npm run setup:win` runs `scripts/setup.ps1`. Both:
+
+1. Checks for Homebrew (macOS) or winget (Windows)
+2. Installs Node.js if it's missing or older than 18
+3. Runs `npm install`
+4. Installs **MongoDB 8.0** if missing: `mongodb-community@8.0` via Homebrew on macOS, or the 8.0.32 installer on Windows (as the `MongoDB` Windows service). It also installs the optional `mongosh` shell (from npm on macOS, winget on Windows). If a *different* MongoDB version is already installed, setup stops and explains how to switch instead of replacing it.
+5. Generates self-signed dev TLS certs in `certs/` if missing (Vite serves the app over HTTPS)
+6. Creates `server/.env` from `server/.env.example` with a randomly generated `JWT_SECRET`, if missing
+7. Starts MongoDB and seeds the sample users (see [Sample login](#sample-login))
+
+It's safe to re-run: it detects what's already in place and only does the missing parts.
+
+**If Node isn't installed yet**, `npm` doesn't exist either, so run the script directly instead:
+
+```bash
+# macOS
+bash scripts/setup.sh
+```
+
+```powershell
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+```
+
+**Windows notes:**
+- Installing MongoDB, and starting or stopping its Windows service, may show a UAC prompt or require an **Administrator** PowerShell. If a script says it couldn't start or stop the service, run `Start-Service MongoDB` or `Stop-Service MongoDB` from an Administrator PowerShell.
+- OpenSSL is needed to create the dev certs. The script uses the copy bundled with Git for Windows if it's installed, and otherwise installs one with `winget install ShiningLight.OpenSSL.Light`.
+- If a newly installed tool isn't found, open a new PowerShell window (so it picks up the updated `PATH`) and run the setup again.
+- The MongoDB installer is about 750 MB, so the first run takes a while.
+
+### MongoDB version
+
+Setup pins MongoDB to the **8.0** long-term-support line on both platforms, so everyone runs the same major version and Homebrew can't jump to a new major on its own:
+
+| Platform | Where the version is set | Current value |
+|----------|-------------------------|---------------|
+| macOS | `MONGO_FORMULA` in `scripts/mongo.sh` | `mongodb-community@8.0` (Homebrew installs the newest 8.0.x patch) |
+| Windows | `$MongoVersion` in `scripts/setup.ps1` | `8.0.32` |
+
+To change versions, update both values to the same line. MongoDB can't open data written by a newer version, so when **downgrading**, move the old data folder aside first (macOS: `$(brew --prefix)/var/mongodb`; Windows: `C:\Program Files\MongoDB\Server\<version>\data`) and run setup again to re-seed.
 
 ---
 
@@ -76,19 +121,28 @@ npm run setup
 
 ### Start everything (MongoDB + API + frontend)
 
-The app now includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script — it starts MongoDB (via `brew services`, if not already running) and then the Vite frontend + Express API together:
+The app includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script. It starts MongoDB if it isn't already running (`brew services` on macOS, the `MongoDB` Windows service on Windows), then starts the Vite frontend and the Express API together:
 
 ```bash
-npm run start:all
+npm run start:all        # macOS
+npm run start:all:win    # Windows
 ```
 
-The app will be available at **https://localhost:3000** and the API at **http://localhost:4000**.
+The app will be available at **https://localhost:3000** and the API at **http://localhost:4000**. Press `Ctrl+C` to stop the frontend and API.
 
 To stop everything (frontend, API, and MongoDB):
 
 ```bash
-npm run stop:all
+npm run stop:all         # macOS
+npm run stop:all:win     # Windows
 ```
+
+| Task | macOS | Windows |
+|------|-------|---------|
+| One-time setup | `npm run setup` → `scripts/setup.sh` | `npm run setup:win` → `scripts/setup.ps1` |
+| Start everything | `npm run start:all` → `scripts/start.sh` | `npm run start:all:win` → `scripts/start.ps1` |
+| Stop everything | `npm run stop:all` → `scripts/stop.sh` | `npm run stop:all:win` → `scripts/stop.ps1` |
+| Re-seed sample users | `npm run seed` | `npm run seed` |
 
 ### Sample login
 
@@ -426,13 +480,16 @@ test-playground/
 ├── index.html              Entry point HTML
 ├── vite.config.js          Vite config — dev server on port 3000, proxies /api → :4000
 ├── package.json            Dependencies and npm scripts
+├── .gitattributes          Keeps *.sh files LF-only on Windows checkouts
 ├── scripts/
-│   ├── setup.sh             One-time bootstrap (Node, Mongo, certs, .env) — npm run setup
-│   ├── start.sh             Starts MongoDB (if needed) + frontend + API — npm run start:all
-│   └── stop.sh              Stops frontend + API + MongoDB — npm run stop:all
+│   ├── mongo.sh             Shared MongoDB start/stop helpers used by the macOS scripts
+│   ├── setup.sh / .ps1      One-time bootstrap (Node, Mongo, certs, .env, seed) — npm run setup / setup:win
+│   ├── start.sh / .ps1      Starts MongoDB (if needed) + frontend + API — npm run start:all / start:all:win
+│   └── stop.sh / .ps1       Stops frontend + API + MongoDB — npm run stop:all / stop:all:win
 ├── server/                 Express + MongoDB API (port 4000)
 │   ├── index.js             App bootstrap, middleware, route mounting
 │   ├── db.js                Mongoose connection
+│   ├── seed.js              Creates the sample users and pets — npm run seed
 │   ├── .env / .env.example  MONGO_URI, JWT_SECRET, PORT
 │   ├── models/
 │   │   ├── User.js
@@ -661,8 +718,14 @@ await expect(page.locator('[data-testid="pets-empty"]')).toBeVisible()
 **Port 3000 already in use**
 
 ```bash
-# Find and kill the process using port 3000
+# macOS: find and kill the process using port 3000
 lsof -ti:3000 | xargs kill -9
+npm run dev
+```
+
+```powershell
+# Windows (PowerShell): find and kill the process using port 3000
+Get-NetTCPConnection -LocalPort 3000 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
 npm run dev
 ```
 
@@ -702,20 +765,57 @@ await source.dragTo(target)
 MongoDB isn't running. Either use the bundled script, which starts Mongo for you:
 
 ```bash
-npm run start:all
+npm run start:all        # macOS
+npm run start:all:win    # Windows
 ```
 
 or start it manually:
 
 ```bash
-brew services start mongodb-community
+# macOS
+brew services start mongodb-community@8.0
 ```
+
+```powershell
+# Windows (Administrator PowerShell)
+Start-Service MongoDB
+```
+
+**macOS: `brew services` says "has not implemented #plist, #service or provided a locatable service file"**
+
+Homebrew updated the MongoDB formula to a newer patch than the one installed, so `brew services` looks for a service file that doesn't exist yet. The start and setup scripts detect this and start `mongod` directly instead (and `npm run stop:all` shuts it down), so they keep working. To fix `brew services` itself, upgrade within the pinned 8.0 line:
+
+```bash
+brew upgrade mongodb-community@8.0
+```
+
+**macOS: Homebrew starts compiling Node or Rust from source**
+
+Homebrew no longer ships prebuilt packages for Intel Macs, so installing or upgrading `mongosh` (or `node`) through Homebrew can mean hours of compiling. The setup avoids this by installing MongoDB with `--without-mongosh` and getting `mongosh` from npm instead. If a `brew upgrade` starts building `rust` or `node`, it's safe to press `Ctrl+C`; the packages you already have keep working.
 
 **Port 4000 already in use**
 
 ```bash
+# macOS
 lsof -ti:4000 | xargs kill -9
 ```
+
+```powershell
+# Windows (PowerShell)
+Get-NetTCPConnection -LocalPort 4000 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+```
+
+**Windows: "running scripts is disabled on this system"**
+
+PowerShell's execution policy is blocking the `.ps1` file. `npm run setup:win` / `start:all:win` / `stop:all:win` already bypass it for that one run. If you run a script yourself, launch it the same way:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+```
+
+**Windows: "Could not start (or stop) the MongoDB service"**
+
+Controlling a Windows service usually needs admin rights. Open PowerShell with **Run as administrator** and run `Start-Service MongoDB` (or `Stop-Service MongoDB`), then run the npm command again.
 
 **Logged in but every page redirects back to `/login`**
 
@@ -727,3 +827,5 @@ The stored JWT is missing, expired (tokens last 24h), or invalid. Log in again, 
 mongosh test-playground --eval 'db.users.find({}, {email:1,name:1}).pretty()'
 mongosh test-playground --eval 'db.pets.find().pretty()'
 ```
+
+These work the same in PowerShell on Windows.

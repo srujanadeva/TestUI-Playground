@@ -3,6 +3,7 @@
 set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$PROJECT_DIR/scripts/mongo.sh"
 
 echo "==> Stopping dev processes for $PROJECT_DIR ..."
 
@@ -29,8 +30,8 @@ if [ "$killed_any" -eq 1 ]; then
   sleep 1
 fi
 
-echo "==> Stopping MongoDB (brew services)..."
-brew services stop mongodb-community 2>&1 | sed 's/^/    /' || true
+echo "==> Stopping MongoDB..."
+stop_mongo
 
 sleep 1
 echo "==> Final status:"
