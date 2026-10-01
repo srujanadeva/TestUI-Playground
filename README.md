@@ -2,7 +2,9 @@
 
 A React frontend built specifically for practising web automation. It covers 22 interaction types — from basic inputs to Shadow DOM and iFrames — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
 
-Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework.
+The app also includes a login-gated **Test Pet Store** page backed by a real Express + MongoDB API, so you can practise authentication flows (signup, login, remember-me, forgot-password) and full CRUD against a persisted backend — not just client-side state.
+
+Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework. Fully bilingual (English / Arabic, with RTL layout).
 
 ---
 
@@ -14,6 +16,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 - [Running the App](#running-the-app)
 - [What the App Does](#what-the-app-does)
 - [Section Reference](#section-reference)
+- [Auth & Test Pet Store Reference](#auth--test-pet-store-reference)
 - [Locator Quick Reference](#locator-quick-reference)
 - [Project Structure](#project-structure)
 - [Automation Tester Notes](#automation-tester-notes)
@@ -27,6 +30,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 |------|----------------|----------------|
 | [Node.js](https://nodejs.org/) | 18.x or higher | Download from nodejs.org or use `brew install node` |
 | npm | 9.x or higher | Bundled with Node.js |
+| [MongoDB Community](https://www.mongodb.com/try/download/community) | 7.x or higher | `brew tap mongodb/brew && brew install mongodb-community mongosh` |
 | A modern browser | Latest Chrome / Edge / Firefox / Safari | For manual browsing and automation targets |
 
 Verify your environment before proceeding:
@@ -42,13 +46,14 @@ npm --version     # should print 9.x.x or higher
 
 | Layer | Technology |
 |-------|-----------|
-| UI framework | React 18 |
-| Build tool | Vite 5 |
+| UI framework | React 18 (+ React Router) |
+| Build tool | Vite 8 |
 | Styling | Plain CSS (custom properties, CSS Grid, Flexbox) |
+| Backend | Express, Mongoose (MongoDB), JWT auth, bcrypt |
 | Language | JavaScript (ES Modules) |
 | Package manager | npm |
 
-No external UI libraries, no CSS frameworks. All components are self-contained to keep the DOM clean and predictable for automation.
+No external UI libraries, no CSS frameworks. The 22 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
 
 ---
 
@@ -66,15 +71,40 @@ npm install
 
 ## Running the App
 
-### Development server
+### Start everything (MongoDB + API + frontend)
 
-This is the recommended mode for automation practice — hot-reloads on any source changes.
+The app now includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script — it starts MongoDB (via `brew services`, if not already running) and then the Vite frontend + Express API together:
+
+```bash
+npm run start:all
+```
+
+The app will be available at **https://localhost:3000** and the API at **http://localhost:4000**.
+
+To stop everything (frontend, API, and MongoDB):
+
+```bash
+npm run stop:all
+```
+
+### Sample login
+
+The app is login-gated. Use one of these seeded accounts, or sign up your own at `/signup`:
+
+| Email | Password | Notes |
+|-------|----------|-------|
+| `alice@example.com` | `hunter2pass` | Has 2 pets in the Test Pet Store |
+| `bob@example.com` | `hunter2pass` | Empty Test Pet Store |
+
+### Development server only (frontend + API, no MongoDB check)
+
+If MongoDB is already running, you can skip the start script and just run:
 
 ```bash
 npm run dev
 ```
 
-The app will be available at **http://localhost:3000**
+This starts the Vite frontend and Express API together via `concurrently`.
 
 ### Production build
 
@@ -87,17 +117,26 @@ npm run preview    # Serves the built output on a local static server
 
 ## What the App Does
 
-The playground is a single-page app with:
+The playground is a React Router app with two kinds of practice targets:
+
+**1. The 22-section playground (`/`, login required)**
 
 - A **fixed sidebar** on the left with collapsible grouped navigation. Click a group header to expand or collapse it. The **Advanced → Data & Tables** sub-group demonstrates nested menu navigation to the Pagination Table. The active section is highlighted as you scroll.
 - A **scrollable content area** on the right with 22 independent sections, each covering one interaction type.
+- Each section is self-contained and designed around a single testing concern:
+  - One interaction type per section — no mixed responsibilities
+  - Deliberate, stable locator attributes (`id`, `data-testid`, `data-row-id`, etc.) on every interactive element
+  - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
+  - No external API calls from within these 22 sections — they work entirely offline once installed
 
-Each section is self-contained and designed around a single testing concern:
+**2. Auth + Test Pet Store (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`)**
 
-- One interaction type per section — no mixed responsibilities
-- Deliberate, stable locator attributes (`id`, `data-testid`, `data-row-id`, etc.) on every interactive element
-- Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
-- No external API calls or backend dependencies — the app works entirely offline once installed
+- The whole app is login-gated: opening any URL while logged out redirects to `/login`.
+- **Login** (`/login`) — email + password, show/hide password toggle, "Remember me" (persists the session in `localStorage`; unchecked uses `sessionStorage`), and a "Forgot password?" link.
+- **Signup** (`/signup`) — name, email, password, confirm password, terms checkbox, with inline field-level validation.
+- **Forgot password** (`/forgot-password`) — a UI-only stub: the backend endpoint always responds `{ ok: true }` and no email is actually sent.
+- **Account** (`/account`) — shows the logged-in user's name, email, and member-since date, with a logout button and a shortcut into the Test Pet Store.
+- **Test Pet Store** (`/petstore`) — reached from the gradient "🐾 Test Pet Store" entry at the top of the sidebar. Full pet CRUD (add / edit / delete), status filtering (available / pending / sold), live stat tiles, and toast notifications on every mutation. Pets are persisted in MongoDB and scoped per-user — each account only ever sees its own pets.
 
 ---
 
@@ -127,6 +166,38 @@ Each section is self-contained and designed around a single testing concern:
 | 20 | Pagination Table | Search, paginate, assert row data | `id`, `data-row-id`, `data-page` |
 | 21 | Show / Hide & Tabs | Expand/collapse panels, switch tabs, assert content | `className`, `role` |
 | 22 | Popup Alerts | Trigger warning, error, and exception modals, assert visibility and dismiss | `id`, `role` |
+
+---
+
+## Auth & Test Pet Store Reference
+
+### Pages & routes
+
+| Route | Access | Purpose |
+|-------|--------|---------|
+| `/login` | Public | Email + password, remember-me, forgot-password link |
+| `/signup` | Public | Name, email, password, confirm, terms |
+| `/forgot-password` | Public | Stub — always confirms, no email sent |
+| `/` | Protected | The 22-section playground |
+| `/account` | Protected | Logged-in user's profile + logout |
+| `/petstore` | Protected | Test Pet Store — pet CRUD |
+
+### Backend API (Express + MongoDB, `http://localhost:4000`)
+
+| Method & Path | Auth | Description |
+|---|---|---|
+| `POST /api/auth/signup` | — | `{ name, email, password }` → `{ user, token }`; `409` on duplicate email |
+| `POST /api/auth/login` | — | `{ email, password }` → `{ user, token }`; `401` on bad credentials |
+| `POST /api/auth/forgot-password` | — | `{ email }` → always `{ ok: true }` (stub) |
+| `GET /api/auth/me` | Bearer token | Returns the current user |
+| `POST /api/auth/logout` | Bearer token | `{ ok: true }` (JWT is stateless — client discards the token) |
+| `GET /api/pets?status=` | Bearer token | List the current user's pets, optional status filter |
+| `POST /api/pets` | Bearer token | Create a pet |
+| `GET /api/pets/:id` | Bearer token | Fetch one pet (`404` if not owned) |
+| `PUT /api/pets/:id` | Bearer token | Update a pet (`404` if not owned) |
+| `DELETE /api/pets/:id` | Bearer token | Delete a pet (`404` if not owned) |
+
+Passwords are hashed with bcrypt before storage; access tokens are JWTs valid for 24 hours.
 
 ---
 
@@ -207,6 +278,108 @@ data-testid="hover-danger"          Danger hover card (section 13)
 data-testid="hover-info-tooltip"    Info tooltip (section 13)
 data-testid="shadow-host"           Shadow DOM host element (section 19)
 data-testid="secret-value"          Hidden panel value (section 21)
+data-testid="conditional-toggle"    Enables the conditional fields (section 23)
+data-testid="conditional-text"      Conditional text field (section 23)
+data-testid="conditional-dropdown"  Conditional dropdown (section 23)
+data-testid="conditional-radio-{value}"  Conditional radio options (section 23)
+```
+
+### Sidebar
+
+```
+data-testid="nav-test-pet-store"    Gradient "Test Pet Store" nav entry
+data-testid="sidebar-account"       Bottom account block container
+data-testid="sidebar-account-link"  Link to /account (when logged in)
+data-testid="sidebar-logout"        Logout button (when logged in)
+data-testid="sidebar-login-link"    Link to /login (when logged out)
+data-testid="sidebar-signup-link"   Link to /signup (when logged out)
+```
+
+### Login (`/login`)
+
+```
+data-testid="login-email"           Email input
+data-testid="login-password"        Password input
+data-testid="login-password-toggle" Show/hide password toggle
+data-testid="login-remember"        "Remember me" checkbox
+data-testid="login-forgot-link"     "Forgot password?" link
+data-testid="login-submit"          Submit button
+data-testid="login-error"           Inline error message
+data-testid="login-signup-link"     Link to /signup
+```
+
+### Signup (`/signup`)
+
+```
+data-testid="signup-name"               Name input
+data-testid="signup-email"              Email input
+data-testid="signup-password"           Password input
+data-testid="signup-password-toggle"    Show/hide toggle
+data-testid="signup-confirm"            Confirm-password input
+data-testid="signup-confirm-toggle"     Show/hide toggle
+data-testid="signup-terms"              Terms checkbox
+data-testid="signup-submit"             Submit button
+data-testid="signup-error"              Form-level error message
+data-testid="signup-name-error"         Field error (name)
+data-testid="signup-email-error"        Field error (email)
+data-testid="signup-password-error"     Field error (password)
+data-testid="signup-confirm-error"      Field error (confirm password)
+data-testid="signup-terms-error"        Field error (terms)
+data-testid="signup-login-link"         Link to /login
+```
+
+### Forgot password (`/forgot-password`)
+
+```
+data-testid="forgot-email"          Email input
+data-testid="forgot-submit"         Submit button
+data-testid="forgot-confirm"        Stub confirmation message (after submit)
+data-testid="forgot-login-link"     Link to /login
+```
+
+### Account (`/account`)
+
+```
+data-testid="account-welcome"           Welcome heading
+data-testid="account-email"             Displayed email
+data-testid="account-member-since"      Displayed join date
+data-testid="account-goto-petstore"     Shortcut button into /petstore
+data-testid="account-logout"            Logout button
+```
+
+### Test Pet Store (`/petstore`)
+
+```
+data-testid="petstore-welcome"          Hero welcome chip
+data-testid="petstore-error"            Page-level error banner
+data-testid="stat-total"                Total-pets stat tile
+data-testid="stat-available"            Available stat tile
+data-testid="stat-pending"              Pending stat tile
+data-testid="stat-sold"                 Sold stat tile
+data-testid="pets-filter-all"           "All" filter chip
+data-testid="pets-filter-available"     "Available" filter chip
+data-testid="pets-filter-pending"       "Pending" filter chip
+data-testid="pets-filter-sold"          "Sold" filter chip
+data-testid="pets-grid"                 Pet card grid container
+data-testid="pets-empty"                Empty-state container
+data-testid="pets-empty-add"            "Add Pet" CTA inside empty state
+data-testid="pets-add-button"           Floating "Add Pet" button (FAB)
+data-testid="pet-toast"                 Toast notification (add/update/delete)
+data-testid="pet-card-{id}"             A pet card
+data-testid="pet-name-{id}"             Pet name inside its card
+data-testid="pet-status-{id}"           Status pill inside its card
+data-testid="pet-edit-{id}"             Edit icon button on a card
+data-testid="pet-delete-{id}"           Delete icon button on a card
+data-testid="pet-form-modal"            Add/Edit modal container
+data-testid="pet-form-name"             Name input (modal)
+data-testid="pet-form-status"           Status select (modal)
+data-testid="pet-form-category"         Category input (modal)
+data-testid="pet-form-photos"           Photo URLs textarea (modal)
+data-testid="pet-form-tags"             Tags input (modal)
+data-testid="pet-form-error"            Modal error message
+data-testid="pet-form-cancel"           Cancel button (modal)
+data-testid="pet-form-save"             Save button (modal)
+data-testid="pet-form-close"            Modal close (✕) button
 ```
 
 ### By `data-*` attributes
@@ -248,12 +421,45 @@ Access these only after piercing the shadow root:
 ```
 test-playground/
 ├── index.html              Entry point HTML
-├── vite.config.js          Vite config — dev server runs on port 3000
+├── vite.config.js          Vite config — dev server on port 3000, proxies /api → :4000
 ├── package.json            Dependencies and npm scripts
+├── scripts/
+│   ├── start.sh            Starts MongoDB (if needed) + frontend + API — npm run start:all
+│   └── stop.sh              Stops frontend + API + MongoDB — npm run stop:all
+├── server/                 Express + MongoDB API (port 4000)
+│   ├── index.js             App bootstrap, middleware, route mounting
+│   ├── db.js                Mongoose connection
+│   ├── .env / .env.example  MONGO_URI, JWT_SECRET, PORT
+│   ├── models/
+│   │   ├── User.js
+│   │   └── Pet.js
+│   ├── middleware/
+│   │   └── auth.js          JWT verification (requireAuth)
+│   └── routes/
+│       ├── auth.js          signup / login / forgot-password / me / logout
+│       └── pets.js          Pet CRUD, scoped to the authenticated user
 └── src/
-    ├── main.jsx            React root — mounts <App /> into #root
-    ├── App.jsx             All 22 section components + sidebar navigation
-    └── App.css             All styles — layout, components, utilities
+    ├── main.jsx            React root — BrowserRouter + AuthProvider + <App />
+    ├── App.jsx             22 section components, sidebar nav, route shell
+    ├── App.css             All styles — layout, components, utilities
+    ├── i18n.jsx            English/Arabic translations + LanguageProvider
+    ├── api/
+    │   └── client.js        Shared fetch wrapper (ApiError)
+    ├── auth/
+    │   ├── AuthContext.jsx   Auth state, login/signup/logout, token storage
+    │   ├── ProtectedRoute.jsx
+    │   ├── AuthLayout.jsx
+    │   ├── PasswordInput.jsx
+    │   ├── LoginPage.jsx
+    │   ├── SignupPage.jsx
+    │   ├── ForgotPasswordPage.jsx
+    │   └── AccountPage.jsx
+    └── petstore/
+        ├── PetstorePage.jsx  Hero, stats, filters, grid, FAB, toasts
+        ├── PetCard.jsx
+        ├── PetFormModal.jsx
+        ├── petAvatars.js     Emoji avatar mapping
+        └── api.js            listPets / createPet / updatePet / deletePet
 ```
 
 ---
@@ -384,6 +590,66 @@ await page.locator('#toggle-panel-btn').click()
 await expect(page.locator('#collapsible-content')).not.toBeVisible()
 ```
 
+### Login flow
+
+```js
+// Playwright — log in and land on the playground
+await page.goto('https://localhost:3000/login')
+await page.locator('[data-testid="login-email"]').fill('alice@example.com')
+await page.locator('[data-testid="login-password"]').fill('hunter2pass')
+await page.locator('[data-testid="login-submit"]').click()
+await expect(page).toHaveURL('https://localhost:3000/')
+
+// Toggle password visibility
+await page.locator('[data-testid="login-password-toggle"]').click()
+await expect(page.locator('[data-testid="login-password"]')).toHaveAttribute('type', 'text')
+```
+
+### Signup validation
+
+```js
+// Mismatched passwords surface a field-level error
+await page.goto('https://localhost:3000/signup')
+await page.locator('[data-testid="signup-password"]').fill('password123')
+await page.locator('[data-testid="signup-confirm"]').fill('different123')
+await page.locator('[data-testid="signup-submit"]').click()
+await expect(page.locator('[data-testid="signup-confirm-error"]')).toBeVisible()
+```
+
+### Test Pet Store CRUD
+
+```js
+// Add a pet and assert it appears in the grid
+await page.locator('[data-testid="pets-add-button"]').click()
+await page.locator('[data-testid="pet-form-name"]').fill('Fido')
+await page.locator('[data-testid="pet-form-status"]').selectOption('available')
+await page.locator('[data-testid="pet-form-save"]').click()
+await expect(page.locator('[data-testid="pet-toast"]')).toContainText('Pet added')
+
+// Filter by status
+await page.locator('[data-testid="pets-filter-available"]').click()
+await expect(page.locator('[data-testid="pets-grid"] .pet-card')).toHaveCount(1)
+
+// Delete a pet (confirm dialog is a native window.confirm)
+page.on('dialog', dialog => dialog.accept())
+await page.locator('[data-testid^="pet-delete-"]').first().click()
+await expect(page.locator('[data-testid="pet-toast"]')).toContainText('Pet deleted')
+```
+
+### Ownership isolation
+
+Each account only ever sees its own pets — useful for testing multi-tenant assumptions:
+
+```js
+// Log in as a second account and confirm the store starts empty
+await page.goto('https://localhost:3000/login')
+await page.locator('[data-testid="login-email"]').fill('bob@example.com')
+await page.locator('[data-testid="login-password"]').fill('hunter2pass')
+await page.locator('[data-testid="login-submit"]').click()
+await page.locator('[data-testid="nav-test-pet-store"]').click()
+await expect(page.locator('[data-testid="pets-empty"]')).toBeVisible()
+```
+
 ---
 
 ## Troubleshooting
@@ -425,4 +691,35 @@ Some frameworks require explicit `pointerdown → pointermove → pointerup` seq
 const source = page.locator('[data-drag-id="drag-1"]')
 const target = page.locator('[data-drag-id="drag-3"]')
 await source.dragTo(target)
+```
+
+**API fails to start — `ECONNREFUSED 127.0.0.1:27017`**
+
+MongoDB isn't running. Either use the bundled script, which starts Mongo for you:
+
+```bash
+npm run start:all
+```
+
+or start it manually:
+
+```bash
+brew services start mongodb-community
+```
+
+**Port 4000 already in use**
+
+```bash
+lsof -ti:4000 | xargs kill -9
+```
+
+**Logged in but every page redirects back to `/login`**
+
+The stored JWT is missing, expired (tokens last 24h), or invalid. Log in again, or inspect storage in devtools — the token is under the key `tp-auth-token` in either `localStorage` (when "Remember me" was checked) or `sessionStorage`.
+
+**Inspecting the database directly**
+
+```bash
+mongosh test-playground --eval 'db.users.find({}, {email:1,name:1}).pretty()'
+mongosh test-playground --eval 'db.pets.find().pretty()'
 ```
