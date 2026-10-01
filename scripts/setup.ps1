@@ -1,6 +1,6 @@
-# One-time bootstrap for a fresh clone on Windows: Node, npm deps, MongoDB,
-# dev TLS certs, server\.env, and sample users. Safe to re-run: every step
-# detects existing state and skips it.
+# One-time bootstrap (Windows). Every step checks the machine first: whatever already
+# exists is used as is, and only missing pieces are created or installed. Nothing
+# existing is replaced. Safe to re-run.
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less scripts as ANSI.
 $ErrorActionPreference = 'Stop'
 
@@ -8,32 +8,40 @@ $ProjectDir = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectDir
 
 $NodeMinMajor = 18
-# The only place the Windows MongoDB version is set. Keep it on the same line as
-# MONGO_FORMULA in scripts/mongo.sh (macOS).
-$MongoVersion = '8.0.32'
-$MongoLine = ($MongoVersion.Split('.')[0..1]) -join '.'
-$Summary = New-Object System.Collections.Generic.List[string]
+# Installed only when the machine has no MongoDB at all.
+$MongoInstallVersion = '8.0.32'
 
+$Summary = New-Object System.Collections.Generic.List[string]
+$script:Failed = $false
 function Note-Done($msg)    { $Summary.Add("  [done] $msg") }
-function Note-Skipped($msg) { $Summary.Add("  [skip] $msg (already set up)") }
-function Fail($msg) { Write-Host "ERROR: $msg" -ForegroundColor Red; exit 1 }
+function Note-Skipped($msg) { $Summary.Add("  [skip] $msg (already present)") }
+function Note-Failed($msg)  { $Summary.Add("  [FAIL] $msg"); $script:Failed = $true }
 
 function Refresh-Path {
   $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
               [Environment]::GetEnvironmentVariable('Path', 'User')
 }
 
+function Has-Command($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
+
+# Returns $true on success. Needs winget, which is only required when something is missing.
 function Winget-Install($id) {
+  if (-not (Has-Command winget)) {
+    Write-Host "    winget isn't available to install $id. Install 'App Installer' from the Microsoft Store." -ForegroundColor Yellow
+    return $false
+  }
   & winget install -e --id $id --accept-source-agreements --accept-package-agreements
-  if ($LASTEXITCODE -ne 0) { Fail "winget install $id failed (exit code $LASTEXITCODE)." }
+  $ok = ($LASTEXITCODE -eq 0)
   Refresh-Path
+  return $ok
 }
 
 function Get-NodeMajor {
-  if (-not (Get-Command node -ErrorAction SilentlyContinue)) { return 0 }
+  if (-not (Has-Command node)) { return 0 }
   $version = (& node -v) -replace '^v', ''
   return [int]($version.Split('.')[0])
 }
+function Node-Ok { return ((Get-NodeMajor) -ge $NodeMinMajor) }
 
 function Test-Port([int]$Port) {
   $client = New-Object System.Net.Sockets.TcpClient
@@ -61,147 +69,188 @@ function Find-OpenSSL {
   return $null
 }
 
+function Get-MongoService { Get-CimInstance Win32_Service -Filter "Name = 'MongoDB'" -ErrorAction SilentlyContinue }
+
 Write-Host "==> Setting up $ProjectDir"
+
+# -- 1. Node.js ----------------------------------------------------------------
 Write-Host ""
-
-# -- 1. winget -----------------------------------------------------------------
-Write-Host "==> Checking winget..."
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-  Fail "winget is required. Install 'App Installer' from the Microsoft Store, then re-run this script."
-}
-Write-Host "    winget found."
-
-# -- 2. Node.js ----------------------------------------------------------------
-Write-Host "==> Checking Node.js (need >= $NodeMinMajor.x)..."
-if ((Get-NodeMajor) -ge $NodeMinMajor) {
-  Write-Host "    Node $(& node -v) found."
-  Note-Skipped "Node.js"
+Write-Host "==> Node.js (need $NodeMinMajor+)"
+if (Node-Ok) {
+  Write-Host "    Found Node $(& node -v)."
+  Note-Skipped "Node.js $(& node -v)"
 } else {
-  Write-Host "    Node missing or older than v$NodeMinMajor - installing Node.js LTS via winget..."
-  Winget-Install 'OpenJS.NodeJS.LTS'
-  if ((Get-NodeMajor) -lt $NodeMinMajor) {
-    Fail "Node.js was installed but isn't visible yet. Open a new PowerShell window and re-run this script."
-  }
-  Write-Host "    Installed Node $(& node -v)."
-  Note-Done "Node.js installed via winget"
-}
-
-# -- 3. npm dependencies -------------------------------------------------------
-Write-Host "==> Installing npm dependencies..."
-& npm install
-if ($LASTEXITCODE -ne 0) { Fail "npm install failed." }
-Note-Done "npm dependencies installed"
-
-# -- 4. MongoDB ----------------------------------------------------------------
-Write-Host "==> Checking MongoDB ($MongoVersion)..."
-$mongoService = Get-CimInstance Win32_Service -Filter "Name = 'MongoDB'" -ErrorAction SilentlyContinue
-if ($mongoService) {
-  if ($mongoService.PathName -like "*\Server\$MongoLine\*") {
-    Write-Host "    MongoDB $MongoLine service found."
-    Note-Skipped "MongoDB"
+  Write-Host "    Node $NodeMinMajor+ missing - installing Node.js LTS via winget..."
+  if ((Winget-Install 'OpenJS.NodeJS.LTS') -and (Node-Ok)) {
+    Note-Done "Node.js $(& node -v) installed via winget"
   } else {
-    # Don't replace someone else's MongoDB: other projects may depend on it or its data.
-    Fail ("A different MongoDB is installed as the 'MongoDB' service ($($mongoService.PathName)). " +
-          "This project uses MongoDB $MongoLine. Uninstall the other version (Settings > Apps) and move its " +
-          "data folder aside, then re-run this script.")
+    Note-Failed "Node.js missing or not visible yet (if it was just installed, open a new PowerShell window and re-run)"
   }
+}
+
+# -- 2. npm dependencies -------------------------------------------------------
+Write-Host ""
+Write-Host "==> npm dependencies"
+if (-not (Node-Ok)) {
+  Write-Host "    Skipped: needs Node."
+  Note-Failed "npm dependencies not installed (needs Node)"
 } else {
-  $msiName = "mongodb-windows-x86_64-$MongoVersion-signed.msi"
-  $msiPath = Join-Path $env:TEMP $msiName
-  Write-Host "    Downloading the MongoDB $MongoVersion installer (about 750 MB)..."
-  # The progress bar makes large downloads very slow in Windows PowerShell 5.1.
-  $previousProgress = $ProgressPreference
-  $ProgressPreference = 'SilentlyContinue'
-  Invoke-WebRequest -Uri "https://fastdl.mongodb.org/windows/$msiName" -OutFile $msiPath -UseBasicParsing
-  $ProgressPreference = $previousProgress
-
-  Write-Host "    Installing MongoDB $MongoVersion as the 'MongoDB' service (approve the UAC prompt)..."
-  $msiArgs = "/qb /i `"$msiPath`" ADDLOCAL=`"ServerService`" SHOULD_INSTALL_COMPASS=`"0`""
-  $installer = Start-Process msiexec.exe -ArgumentList $msiArgs -Verb RunAs -Wait -PassThru
-  Remove-Item $msiPath -ErrorAction SilentlyContinue
-  # 3010 = installed successfully, reboot recommended.
-  if ($installer.ExitCode -notin 0, 3010) { Fail "The MongoDB installer failed (exit code $($installer.ExitCode))." }
-  if (-not (Get-Service -Name MongoDB -ErrorAction SilentlyContinue)) {
-    Fail "MongoDB $MongoVersion was installed but no 'MongoDB' Windows service exists."
-  }
-  Note-Done "MongoDB $MongoVersion installed (Windows service 'MongoDB')"
-}
-if (-not (Get-Command mongosh -ErrorAction SilentlyContinue)) {
-  Write-Host "    mongosh not found - installing via winget..."
-  Winget-Install 'MongoDB.Shell'
-  Note-Done "mongosh installed via winget"
+  & npm install
+  if ($LASTEXITCODE -eq 0) { Note-Done "npm dependencies installed" } else { Note-Failed "npm install failed (see output above)" }
 }
 
-# -- 5. Dev TLS certs ----------------------------------------------------------
-Write-Host "==> Checking dev TLS certs (certs\key.pem, certs\cert.pem)..."
-if ((Test-Path certs\key.pem) -and (Test-Path certs\cert.pem)) {
-  Write-Host "    Certs already present."
+# -- 3. Dev TLS certs ----------------------------------------------------------
+Write-Host ""
+Write-Host "==> Dev TLS certs (certs\cert.pem, certs\key.pem)"
+if ((Test-Path certs\cert.pem) -and (Test-Path certs\key.pem)) {
+  Write-Host "    Both present."
   Note-Skipped "Dev TLS certs"
 } else {
   $openssl = Find-OpenSSL
   if (-not $openssl) {
     Write-Host "    OpenSSL not found - installing via winget..."
-    Winget-Install 'ShiningLight.OpenSSL.Light'
-    $openssl = Find-OpenSSL
-    if (-not $openssl) { Fail "OpenSSL was installed but couldn't be located. Open a new PowerShell window and re-run." }
+    if (Winget-Install 'ShiningLight.OpenSSL.Light') { $openssl = Find-OpenSSL }
   }
-  Write-Host "    Generating self-signed localhost cert with $openssl ..."
-  New-Item -ItemType Directory -Force -Path certs | Out-Null
-  # openssl prints progress to stderr; under 'Stop', PowerShell 5.1 would treat that as a fatal error.
-  $previous = $ErrorActionPreference
-  $ErrorActionPreference = 'Continue'
-  & $openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj "/CN=localhost" 2>&1 | Out-Null
-  $code = $LASTEXITCODE
-  $ErrorActionPreference = $previous
-  if ($code -ne 0 -or -not (Test-Path certs\cert.pem)) { Fail "openssl failed to generate the dev certs (exit code $code)." }
-  Note-Done "Dev TLS certs generated (certs\key.pem, certs\cert.pem)"
+  if (-not $openssl) {
+    Note-Failed "Dev TLS certs couldn't be created (OpenSSL not available)"
+  } else {
+    Write-Host "    Missing - generating a self-signed localhost certificate with $openssl ..."
+    New-Item -ItemType Directory -Force -Path certs | Out-Null
+    # openssl prints progress to stderr; under 'Stop', PowerShell 5.1 would treat that as a fatal error.
+    $ErrorActionPreference = 'Continue'
+    $certOutput = & $openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/key.pem -out certs/cert.pem -days 365 -subj "/CN=localhost" 2>&1
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($code -eq 0 -and (Test-Path certs\cert.pem) -and (Test-Path certs\key.pem)) {
+      Note-Done "Dev TLS certs created (certs\cert.pem, certs\key.pem)"
+    } else {
+      $certOutput | ForEach-Object { Write-Host "    $_" }
+      Note-Failed "Dev TLS certs couldn't be created (openssl output above)"
+    }
+  }
 }
 
-# -- 6. server\.env ------------------------------------------------------------
-Write-Host "==> Checking server\.env..."
+# -- 4. server\.env ------------------------------------------------------------
+Write-Host ""
+Write-Host "==> server\.env"
 if (Test-Path server\.env) {
-  Write-Host "    server\.env already present."
+  Write-Host "    Present."
   Note-Skipped "server\.env"
 } else {
-  Write-Host "    Creating server\.env from server\.env.example with a generated JWT secret..."
-  $bytes = New-Object byte[] 32
-  [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-  $secret = -join ($bytes | ForEach-Object { $_.ToString('x2') })
-  $content = (Get-Content server\.env.example -Raw) -replace '(?m)^JWT_SECRET=.*$', "JWT_SECRET=$secret"
-  # Write without a BOM: a BOM would become part of the first variable name for dotenv.
-  [System.IO.File]::WriteAllText((Join-Path $ProjectDir 'server\.env'), $content, (New-Object System.Text.UTF8Encoding($false)))
-  Note-Done "server\.env created with a freshly generated JWT_SECRET"
+  Write-Host "    Missing - creating it from server\.env.example with a generated JWT secret..."
+  try {
+    $bytes = New-Object byte[] 32
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $secret = -join ($bytes | ForEach-Object { $_.ToString('x2') })
+    $content = (Get-Content server\.env.example -Raw) -replace '(?m)^JWT_SECRET=.*$', "JWT_SECRET=$secret"
+    # Write without a BOM: a BOM would become part of the first variable name for dotenv.
+    [System.IO.File]::WriteAllText((Join-Path $ProjectDir 'server\.env'), $content, (New-Object System.Text.UTF8Encoding($false)))
+    Note-Done "server\.env created with a generated JWT_SECRET"
+  } catch {
+    Write-Host "    $($_.Exception.Message)"
+    Note-Failed "server\.env couldn't be created"
+  }
 }
 
-# -- 7. Seed sample users ------------------------------------------------------
-Write-Host "==> Seeding sample users (alice@example.com, bob@example.com)..."
-$mongoUp = Test-Port 27017
-if (-not $mongoUp) {
-  Write-Host "    Starting the MongoDB service to seed sample data..."
+# -- 5. MongoDB installed ------------------------------------------------------
+Write-Host ""
+Write-Host "==> MongoDB"
+$mongoService = Get-MongoService
+if ($mongoService) {
+  Write-Host "    Found the 'MongoDB' service ($($mongoService.PathName)) - using it."
+  Note-Skipped "MongoDB (Windows service)"
+} elseif (Has-Command mongod) {
+  Write-Host "    Found mongod ($((Get-Command mongod).Source)) - using it."
+  Note-Skipped "MongoDB"
+} else {
+  $msiName = "mongodb-windows-x86_64-$MongoInstallVersion-signed.msi"
+  $msiPath = Join-Path $env:TEMP $msiName
+  try {
+    Write-Host "    MongoDB isn't installed - downloading the $MongoInstallVersion installer (about 750 MB)..."
+    # The progress bar makes large downloads very slow in Windows PowerShell 5.1.
+    $previousProgress = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -Uri "https://fastdl.mongodb.org/windows/$msiName" -OutFile $msiPath -UseBasicParsing
+    $ProgressPreference = $previousProgress
+
+    Write-Host "    Installing MongoDB $MongoInstallVersion as the 'MongoDB' service (approve the UAC prompt)..."
+    $msiArgs = "/qb /i `"$msiPath`" ADDLOCAL=`"ServerService`" SHOULD_INSTALL_COMPASS=`"0`""
+    $installer = Start-Process msiexec.exe -ArgumentList $msiArgs -Verb RunAs -Wait -PassThru
+    # 3010 = installed successfully, reboot recommended.
+    if (($installer.ExitCode -in 0, 3010) -and (Get-MongoService)) {
+      Note-Done "MongoDB $MongoInstallVersion installed (Windows service 'MongoDB')"
+    } else {
+      Note-Failed "MongoDB install failed (installer exit code $($installer.ExitCode))"
+    }
+  } catch {
+    Write-Host "    $($_.Exception.Message)"
+    Note-Failed "MongoDB install failed"
+  } finally {
+    Remove-Item $msiPath -ErrorAction SilentlyContinue
+  }
+}
+if (-not (Has-Command mongosh)) {
+  Write-Host "    mongosh (optional shell) not found - installing via winget..."
+  if (Winget-Install 'MongoDB.Shell') {
+    Note-Done "mongosh installed via winget"
+  } else {
+    Write-Host "    Couldn't install mongosh; the app doesn't need it."
+  }
+}
+
+# -- 6. MongoDB running --------------------------------------------------------
+Write-Host ""
+Write-Host "==> MongoDB running on 127.0.0.1:27017"
+if (Test-Port 27017) {
+  Write-Host "    Already running."
+  Note-Skipped "MongoDB running"
+} elseif (-not (Get-MongoService)) {
+  if (Has-Command mongod) {
+    Write-Host "    mongod is installed but not as a service, so it can't be started automatically. Start it the way you normally do, then re-run."
+    Note-Failed "MongoDB isn't running"
+  } else {
+    Write-Host "    Skipped: MongoDB isn't installed."
+    Note-Failed "MongoDB not running (not installed)"
+  }
+} else {
+  Write-Host "    Starting the MongoDB service..."
+  $up = $false
   try {
     Start-Service -Name MongoDB
+    for ($i = 0; $i -lt 30 -and -not $up; $i++) {
+      Start-Sleep -Seconds 1
+      $up = Test-Port 27017
+    }
   } catch {
-    Write-Host "    Could not start the MongoDB service: $($_.Exception.Message)" -ForegroundColor Yellow
-    Write-Host "    Run 'Start-Service MongoDB' from an Administrator PowerShell, then 'npm run seed'." -ForegroundColor Yellow
+    Write-Host "    Could not start the MongoDB service: $($_.Exception.Message)"
+    Write-Host "    Run 'Start-Service MongoDB' from an Administrator PowerShell, then re-run."
   }
-  for ($i = 0; $i -lt 30 -and -not $mongoUp; $i++) {
-    Start-Sleep -Seconds 1
-    $mongoUp = Test-Port 27017
-  }
+  if ($up) { Note-Done "MongoDB started" } else { Note-Failed "MongoDB couldn't be started (see messages above)" }
 }
-if ($mongoUp) {
-  & node server/seed.js
-  if ($LASTEXITCODE -ne 0) { Fail "Seeding failed." }
-  Note-Done "Sample users seeded (alice@example.com / bob@example.com)"
-} else {
-  Write-Host "    MongoDB isn't reachable on 127.0.0.1:27017 - skipping seed. Run 'npm run seed' once it's up." -ForegroundColor Yellow
-}
-# Leave MongoDB running either way; start.ps1 just detects it's already up.
 
-# -- 8. Summary ----------------------------------------------------------------
+# -- 7. Sample users -----------------------------------------------------------
 Write-Host ""
-Write-Host "==> Setup complete:"
+Write-Host "==> Sample users (alice@example.com, bob@example.com)"
+if (-not (Test-Port 27017)) {
+  Write-Host "    Skipped: MongoDB isn't running."
+  Note-Failed "Sample users not seeded (MongoDB isn't running)"
+} elseif (-not (Node-Ok) -or -not (Test-Path node_modules)) {
+  Write-Host "    Skipped: needs Node and npm dependencies."
+  Note-Failed "Sample users not seeded (needs Node and npm dependencies)"
+} else {
+  & node server/seed.js
+  if ($LASTEXITCODE -eq 0) { Note-Done "Sample users ready (existing ones are left as is)" } else { Note-Failed "Seeding failed (see output above)" }
+}
+# MongoDB is left running; start:all:win just detects that it's already up.
+
+# -- Summary -------------------------------------------------------------------
+Write-Host ""
+Write-Host "==> Summary"
 $Summary | ForEach-Object { Write-Host $_ }
 Write-Host ""
-Write-Host "Next step:"
+if ($script:Failed) {
+  Write-Host "Some steps failed ([FAIL] above). Fix them and re-run: npm run setup:win" -ForegroundColor Yellow
+  exit 1
+}
+Write-Host "All set. Next step:"
 Write-Host "  npm run start:all:win   # starts MongoDB + the API + the frontend"

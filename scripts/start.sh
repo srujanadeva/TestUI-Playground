@@ -8,7 +8,7 @@ source "$PROJECT_DIR/scripts/mongo.sh"
 
 echo "==> Checking MongoDB (127.0.0.1:27017)..."
 if ! start_mongo; then
-  echo "ERROR: MongoDB did not start within 30s. Check 'brew services list' and $(brew --prefix)/var/log/mongodb/mongo.log" >&2
+  echo "ERROR: MongoDB isn't running (reason above). Run 'npm run setup' if it isn't installed yet." >&2
   exit 1
 fi
 

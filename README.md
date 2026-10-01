@@ -30,7 +30,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 |------|----------------|-------|---------|
 | [Node.js](https://nodejs.org/) | 18.x or higher | `brew install node` | `winget install OpenJS.NodeJS.LTS` |
 | npm | 9.x or higher | Bundled with Node.js | Bundled with Node.js |
-| [MongoDB Community](https://www.mongodb.com/try/download/community) | **8.0** (pinned) | `brew tap mongodb/brew && brew install mongodb/brew/mongodb-community@8.0 --without-mongosh` | the 8.0.32 `.msi` from mongodb.com, installed as the `MongoDB` service |
+| [MongoDB Community](https://www.mongodb.com/try/download/community) | Any installed version is used; new installs get 8.0 | `brew tap mongodb/brew && brew install mongodb/brew/mongodb-community@8.0 --without-mongosh` | the 8.0.32 `.msi` from mongodb.com, installed as the `MongoDB` service |
 | mongosh (optional shell) | any | `npm install -g mongosh` | `winget install MongoDB.Shell` |
 | Package manager (used by the setup script) | — | [Homebrew](https://brew.sh) | `winget` (comes with Windows 10/11 as "App Installer") |
 | A modern browser | Latest Chrome / Edge / Firefox / Safari | | |
@@ -74,17 +74,23 @@ npm run setup        # macOS
 npm run setup:win    # Windows
 ```
 
-`npm run setup` runs `scripts/setup.sh`, and `npm run setup:win` runs `scripts/setup.ps1`. Both:
+`npm run setup` runs `scripts/setup.sh`, and `npm run setup:win` runs `scripts/setup.ps1`. Both follow one rule for every step: **if it's already on the machine, use it and skip; if it's missing, create or install it.** Nothing that already exists is replaced.
 
-1. Checks for Homebrew (macOS) or winget (Windows)
-2. Installs Node.js if it's missing or older than 18
-3. Runs `npm install`
-4. Installs **MongoDB 8.0** if missing: `mongodb-community@8.0` via Homebrew on macOS, or the 8.0.32 installer on Windows (as the `MongoDB` Windows service). It also installs the optional `mongosh` shell (from npm on macOS, winget on Windows). If a *different* MongoDB version is already installed, setup stops and explains how to switch instead of replacing it.
-5. Generates self-signed dev TLS certs in `certs/` if missing (Vite serves the app over HTTPS)
-6. Creates `server/.env` from `server/.env.example` with a randomly generated `JWT_SECRET`, if missing
-7. Starts MongoDB and seeds the sample users (see [Sample login](#sample-login))
+| Step | Already there | Missing |
+|------|---------------|---------|
+| 1. Node.js 18+ | Used as is | Installed (Homebrew on macOS, winget on Windows) |
+| 2. npm dependencies | `npm install` (no-op if up to date) | Installed |
+| 3. Dev TLS certs (`certs/cert.pem`, `certs/key.pem`) | Kept | Generated (self-signed, `localhost`, 1 year) |
+| 4. `server/.env` | Kept | Created from `server/.env.example` with a random `JWT_SECRET` |
+| 5. MongoDB | **Any installed version is used as is** | MongoDB 8.0 is installed (`mongodb-community@8.0` via Homebrew on macOS; the 8.0.32 installer as the `MongoDB` service on Windows) |
+| 6. MongoDB running on `127.0.0.1:27017` | Used as is | Started (`brew services` for whichever MongoDB formula is installed on macOS; the `MongoDB` service on Windows) |
+| 7. Sample users | Left as is | Created (see [Sample login](#sample-login)) |
 
-It's safe to re-run: it detects what's already in place and only does the missing parts.
+It also installs the optional `mongosh` shell if it's missing (from npm on macOS, winget on Windows).
+
+Each step prints whether it was skipped, done, or failed. If a step fails, the steps that don't depend on it still run, the summary at the end lists what failed and why, and the command exits with an error. It's safe to re-run at any time.
+
+Homebrew (macOS) or winget (Windows) is only needed when something has to be installed.
 
 **If Node isn't installed yet**, `npm` doesn't exist either, so run the script directly instead:
 
@@ -102,18 +108,18 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 - Installing MongoDB, and starting or stopping its Windows service, may show a UAC prompt or require an **Administrator** PowerShell. If a script says it couldn't start or stop the service, run `Start-Service MongoDB` or `Stop-Service MongoDB` from an Administrator PowerShell.
 - OpenSSL is needed to create the dev certs. The script uses the copy bundled with Git for Windows if it's installed, and otherwise installs one with `winget install ShiningLight.OpenSSL.Light`.
 - If a newly installed tool isn't found, open a new PowerShell window (so it picks up the updated `PATH`) and run the setup again.
-- The MongoDB installer is about 750 MB, so the first run takes a while.
+- If MongoDB has to be installed, its installer is about 750 MB, so that first run takes a while.
 
 ### MongoDB version
 
-Setup pins MongoDB to the **8.0** long-term-support line on both platforms, so everyone runs the same major version and Homebrew can't jump to a new major on its own:
+If a machine already has MongoDB, of any version, setup and the start/stop scripts use it as is.
 
-| Platform | Where the version is set | Current value |
-|----------|-------------------------|---------------|
-| macOS | `MONGO_FORMULA` in `scripts/mongo.sh` | `mongodb-community@8.0` (Homebrew installs the newest 8.0.x patch) |
-| Windows | `$MongoVersion` in `scripts/setup.ps1` | `8.0.32` |
+Only when a machine has **no** MongoDB does setup install one, and then it installs the **8.0** long-term-support line:
 
-To change versions, update both values to the same line. MongoDB can't open data written by a newer version, so when **downgrading**, move the old data folder aside first (macOS: `$(brew --prefix)/var/mongodb`; Windows: `C:\Program Files\MongoDB\Server\<version>\data`) and run setup again to re-seed.
+| Platform | Where the version for new installs is set | Current value |
+|----------|-------------------------------------------|---------------|
+| macOS | `MONGO_INSTALL_FORMULA` in `scripts/setup.sh` | `mongodb-community@8.0` (Homebrew installs the newest 8.0.x patch) |
+| Windows | `$MongoInstallVersion` in `scripts/setup.ps1` | `8.0.32` |
 
 ---
 
@@ -773,7 +779,7 @@ or start it manually:
 
 ```bash
 # macOS
-brew services start mongodb-community@8.0
+brew services start <formula>   # find it with: brew list | grep mongodb-community
 ```
 
 ```powershell
@@ -783,11 +789,15 @@ Start-Service MongoDB
 
 **macOS: `brew services` says "has not implemented #plist, #service or provided a locatable service file"**
 
-Homebrew updated the MongoDB formula to a newer patch than the one installed, so `brew services` looks for a service file that doesn't exist yet. The start and setup scripts detect this and start `mongod` directly instead (and `npm run stop:all` shuts it down), so they keep working. To fix `brew services` itself, upgrade within the pinned 8.0 line:
+Homebrew updated the MongoDB formula to a newer version than the one installed, so `brew services` looks for a service file that doesn't exist yet. The start and setup scripts detect this and start `mongod` directly instead (and `npm run stop:all` shuts it down), so they keep working. To fix `brew services` itself, upgrade the MongoDB formula you have installed (find it with `brew list | grep mongodb-community`):
 
 ```bash
-brew upgrade mongodb-community@8.0
+brew upgrade <formula>   # e.g. mongodb-community or mongodb-community@8.0
 ```
+
+**Setup says "Couldn't start MongoDB automatically"**
+
+Your MongoDB isn't a Homebrew service and has no Homebrew config file, so setup can't know how you normally run it. Start MongoDB the way you usually do, so it listens on `127.0.0.1:27017`, then re-run `npm run setup`.
 
 **macOS: Homebrew starts compiling Node or Rust from source**
 
