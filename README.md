@@ -1,6 +1,6 @@
 # Test Automation Playground
 
-A React frontend built specifically for practising web automation. It covers 22 interaction types — from basic inputs to Shadow DOM and iFrames — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
+A React frontend built specifically for practising web automation. It covers 24 interaction types — from basic inputs to Shadow DOM and iFrames — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
 
 The app also includes a login-gated **Test Pet Store** page backed by a real Express + MongoDB API, so you can practise authentication flows (signup, login, remember-me, forgot-password) and full CRUD against a persisted backend — not just client-side state.
 
@@ -59,7 +59,7 @@ npm --version     # should print 9.x.x or higher
 | Language | JavaScript (ES Modules) |
 | Package manager | npm |
 
-No external UI libraries, no CSS frameworks. The 22 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
+No external UI libraries, no CSS frameworks. The 24 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
 
 ---
 
@@ -182,15 +182,15 @@ npm run preview    # Serves the built output on a local static server
 
 The playground is a React Router app with two kinds of practice targets:
 
-**1. The 22-section playground (`/`, login required)**
+**1. The 24-section playground (`/`, login required)**
 
 - A **fixed sidebar** on the left with collapsible grouped navigation. Click a group header to expand or collapse it. The **Advanced → Data & Tables** sub-group demonstrates nested menu navigation to the Pagination Table. The active section is highlighted as you scroll.
-- A **scrollable content area** on the right with 22 independent sections, each covering one interaction type.
+- A **scrollable content area** on the right with 24 independent sections, each covering one interaction type.
 - Each section is self-contained and designed around a single testing concern:
   - One interaction type per section — no mixed responsibilities
   - Deliberate, stable locator attributes (`id`, `data-testid`, `data-row-id`, etc.) on every interactive element
   - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
-  - No external API calls from within these 22 sections — they work entirely offline once installed
+  - No external API calls from within these 24 sections — they work entirely offline once installed
 
 **2. Auth + Test Pet Store (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`)**
 
@@ -229,6 +229,8 @@ The playground is a React Router app with two kinds of practice targets:
 | 20 | Pagination Table | Search, paginate, assert row data | `id`, `data-row-id`, `data-page` |
 | 21 | Show / Hide & Tabs | Expand/collapse panels, switch tabs, assert content | `className`, `role` |
 | 22 | Popup Alerts | Trigger warning, error, and exception modals, assert visibility and dismiss | `id`, `role` |
+| 23 | Conditional Fields | Reveal hidden fields with a checkbox, then fill and assert them | `id`, `data-testid` |
+| 24 | Delayed Widget | Wait for a widget that loads 1–6 s (random) after the page. Wait for `data-state="loaded"` on `[data-testid="delayed-widget"]`; `data-delay-ms` gives the delay picked. Add `?delay=<ms>` to the URL for a fixed delay. **Reload** repeats with a new delay. | `data-testid`, `data-state` |
 
 ---
 
@@ -241,7 +243,7 @@ The playground is a React Router app with two kinds of practice targets:
 | `/login` | Public | Email + password, remember-me, forgot-password link |
 | `/signup` | Public | Name, email, password, confirm, terms |
 | `/forgot-password` | Public | Stub — always confirms, no email sent |
-| `/` | Protected | The 22-section playground |
+| `/` | Protected | The 24-section playground |
 | `/account` | Protected | Logged-in user's profile + logout |
 | `/petstore` | Protected | Test Pet Store — pet CRUD |
 
@@ -328,6 +330,8 @@ A quick cheat sheet of the key element identifiers used across sections.
 #popup-message          Modal message / stack trace (section 22)
 #popup-close-btn        Modal close (✕) button (section 22)
 #popup-dismiss-btn      Modal dismiss button (section 22)
+#delayed-load-time      "Loaded in X.X s" text, shown once loaded (section 24)
+#btn-reload-widget      Reloads the widget with a new random delay (section 24)
 ```
 
 ### By `data-testid`
@@ -507,7 +511,7 @@ test-playground/
 │       └── pets.js          Pet CRUD, scoped to the authenticated user
 └── src/
     ├── main.jsx            React root — BrowserRouter + AuthProvider + <App />
-    ├── App.jsx             22 section components, sidebar nav, route shell
+    ├── App.jsx             24 section components, sidebar nav, route shell
     ├── App.css             All styles — layout, components, utilities
     ├── i18n.jsx            English/Arabic translations + LanguageProvider
     ├── api/

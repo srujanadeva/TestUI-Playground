@@ -291,6 +291,17 @@ const translations = {
     conditionalOutput:        'Text: {text} · Dropdown: {select} · Radio: {radio}',
     navConditionalFields:     'Conditional Fields',
 
+    // ── 24 Delayed Widget ──
+    sec24Title:       'Delayed Widget',
+    sec24Desc:        'Loads 1–6 seconds after the page, like a slow API. Wait for data-state="loaded" instead of sleeping. Add ?delay=<ms> to the URL for a fixed delay.',
+    statOrders:       'Orders',
+    statRevenue:      'Revenue',
+    statUsers:        'Active users',
+    delayedLoading:   'Loading live stats…',
+    delayedLoadedIn:  'Loaded in {seconds} s',
+    btnReloadWidget:  'Reload',
+    navDelayedWidget: 'Delayed Widget',
+
     // ── Sidebar (new tab) ──
     navTestPetStore: 'Test Pet Store',
 
@@ -646,6 +657,17 @@ const translations = {
     conditionalRadioGamma:    'غاما',
     conditionalOutput:        'النص: {text} · القائمة: {select} · الاختيار: {radio}',
     navConditionalFields:     'الحقول الشرطية',
+
+    // ── 24 Delayed Widget ──
+    sec24Title:       'عنصر متأخر التحميل',
+    sec24Desc:        'يُحمَّل بعد 1–6 ثوانٍ من الصفحة، مثل واجهة برمجية بطيئة. انتظر data-state="loaded" بدلاً من الانتظار الثابت. أضف ?delay=<ms> إلى الرابط لتأخير ثابت.',
+    statOrders:       'الطلبات',
+    statRevenue:      'الإيرادات',
+    statUsers:        'المستخدمون النشطون',
+    delayedLoading:   'جارٍ تحميل الإحصاءات…',
+    delayedLoadedIn:  'تم التحميل في {seconds} ث',
+    btnReloadWidget:  'إعادة التحميل',
+    navDelayedWidget: 'عنصر متأخر التحميل',
 
     // ── Sidebar (new tab) ──
     navTestPetStore: 'متجر الحيوانات الأليفة',

@@ -944,6 +944,81 @@ function ConditionalFieldsSection() {
   )
 }
 
+// ─── 24. Delayed Widget ──────────────────────────────────────────────────────
+// Loads 1–6 s after the page renders, like a slow backend call. ?delay=<ms>
+// in the URL fixes the delay for deterministic test runs.
+function pickDelay() {
+  const override = Number.parseInt(new URLSearchParams(window.location.search).get('delay'), 10)
+  if (Number.isFinite(override) && override >= 0) return override
+  return 1000 + Math.floor(Math.random() * 5001)
+}
+
+const DELAYED_STATS = [
+  { key: 'orders',  labelKey: 'statOrders',  value: '1,284' },
+  { key: 'revenue', labelKey: 'statRevenue', value: '$48,920' },
+  { key: 'users',   labelKey: 'statUsers',   value: '312' },
+]
+
+function DelayedWidgetSection() {
+  const { t } = useLang()
+  const [run, setRun]     = useState(0)
+  const [delay, setDelay] = useState(null)
+  const [state, setState] = useState('loading')
+
+  useEffect(() => {
+    const ms = pickDelay()
+    setDelay(ms)
+    setState('loading')
+    const timer = setTimeout(() => setState('loaded'), ms)
+    return () => clearTimeout(timer)
+  }, [run])
+
+  const loading = state === 'loading'
+
+  return (
+    <section id="sec-delayed" className="card">
+      <SectionHeader num="24" title={t('sec24Title')} locator="data-state / data-testid" />
+      <p className="desc">{t('sec24Desc')}</p>
+
+      <div className="delayed-widget" data-testid="delayed-widget" data-state={state}
+        data-delay-ms={delay ?? undefined} aria-busy={loading}>
+        {loading ? (
+          <div role="status" aria-live="polite">
+            <div className="stats-grid">
+              {DELAYED_STATS.map(s => (
+                <div key={s.key} className="stat-card">
+                  <span className="skeleton skeleton-label" />
+                  <span className="skeleton skeleton-value" />
+                </div>
+              ))}
+            </div>
+            <p className="delayed-status">{t('delayedLoading')}</p>
+          </div>
+        ) : (
+          <>
+            <div className="stats-grid">
+              {DELAYED_STATS.map(s => (
+                <div key={s.key} className="stat-card">
+                  <span className="stat-label">{t(s.labelKey)}</span>
+                  <span className="stat-value" data-testid={`stat-${s.key}`}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+            <p id="delayed-load-time" className="delayed-status">
+              {t('delayedLoadedIn', { seconds: (delay / 1000).toFixed(1) })}
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="button-row">
+        <button id="btn-reload-widget" className="btn-secondary" disabled={loading}
+          onClick={() => setRun(r => r + 1)}>{t('btnReloadWidget')}</button>
+      </div>
+    </section>
+  )
+}
+
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 const NAV = [
   { id: 'sec-text',        labelKey: 'navTextInput',        groupKey: 'navInputs' },
@@ -969,6 +1044,7 @@ const NAV = [
   { id: 'sec-table',       labelKey: 'navPaginationTable',  groupKey: 'navAdvanced', subGroupKey: 'navDataTables' },
   { id: 'sec-toggle',      labelKey: 'navShowHide',         groupKey: 'navAdvanced' },
   { id: 'sec-conditional', labelKey: 'navConditionalFields', groupKey: 'navAdvanced' },
+  { id: 'sec-delayed',     labelKey: 'navDelayedWidget',     groupKey: 'navAdvanced' },
 ]
 
 const GROUP_KEYS = ['navInputs', 'navSelection', 'navButtons', 'navEvents', 'navWindows', 'navAdvanced']
@@ -1145,6 +1221,7 @@ function Playground({ contentRef, setActive }) {
         <ShowHideSection />
         <PopupAlertsSection />
         <ConditionalFieldsSection />
+        <DelayedWidgetSection />
       </div>
       <footer className="site-footer">
         <span className="footer-copy">© 2026 Srujana Deva · {t('footerRights')}</span>

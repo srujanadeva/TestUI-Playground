@@ -855,6 +855,46 @@ tr:hover td      { background: #f8fafc; }
 
 .cond-radio-label input { width: auto; accent-color: var(--primary); cursor: pointer; }
 
+/* ── Delayed Widget ──────────────────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 78px;
+}
+
+.delayed-widget[data-state="loaded"] .stat-card { animation: fadeSlideIn 0.2s ease; }
+
+.stat-label { font-size: 0.8rem; color: var(--text-muted); }
+.stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+
+.skeleton {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--border) 25%, #f8fafc 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+.skeleton-label { inline-size: 55%; block-size: 12px; }
+.skeleton-value { inline-size: 75%; block-size: 24px; }
+
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.delayed-status { margin-block-start: 10px; font-size: 0.85rem; color: var(--text-muted); }
+
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .site-footer {
   max-width: 1400px;
