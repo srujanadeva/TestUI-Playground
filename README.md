@@ -1,10 +1,12 @@
 # Test Automation Playground
 
-A React frontend built specifically for practising web automation. It covers 24 interaction types — from basic inputs to Shadow DOM and iFrames — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
+A React frontend built specifically for practising web automation. It covers 23 interaction types on the main page — from basic inputs to Shadow DOM — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
 
 The app also includes a login-gated **Test Pet Store** page backed by a real Express + MongoDB API, so you can practise authentication flows (signup, login, remember-me, forgot-password) and full CRUD against a persisted backend — not just client-side state.
 
 A login-gated **Media** page adds image, video and banner widgets: images and videos that load, fail, or only load when scrolled into view, plus a carousel, a promo banner, an announcement bar and a cookie-consent banner.
+
+A login-gated **Frames** page covers iframes: a basic frame, three levels of nested frames, a frame that is added late, and several look-alike frames with no ids. Clicking inside a frame expands its card into a large overlay; one card (F5) expands only from its Expand button.
 
 Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework. Fully bilingual (English / Arabic, with RTL layout).
 
@@ -20,6 +22,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 - [Section Reference](#section-reference)
 - [Auth & Test Pet Store Reference](#auth--test-pet-store-reference)
 - [Media Page Reference](#media-page-reference)
+- [Frames Page Reference](#frames-page-reference)
 - [Locator Quick Reference](#locator-quick-reference)
 - [Project Structure](#project-structure)
 - [Automation Tester Notes](#automation-tester-notes)
@@ -62,7 +65,7 @@ npm --version     # should print 9.x.x or higher
 | Language | JavaScript (ES Modules) |
 | Package manager | npm |
 
-No external UI libraries, no CSS frameworks. The 24 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
+No external UI libraries, no CSS frameworks. The 23 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
 
 ---
 
@@ -185,17 +188,17 @@ npm run preview    # Serves the built output on a local static server
 
 The playground is a React Router app with two kinds of practice targets:
 
-**1. The 24-section playground (`/`, login required)**
+**1. The 23-section playground (`/`, login required)**
 
 - A **fixed sidebar** on the left with collapsible grouped navigation. Click a group header to expand or collapse it. The **Advanced → Data & Tables** sub-group demonstrates nested menu navigation to the Pagination Table. The active section is highlighted as you scroll.
-- A **scrollable content area** on the right with 24 independent sections, each covering one interaction type.
+- A **scrollable content area** on the right with 23 independent sections, each covering one interaction type.
 - Each section is self-contained and designed around a single testing concern:
   - One interaction type per section — no mixed responsibilities
   - Deliberate, stable locator attributes (`id`, `data-testid`, `data-row-id`, etc.) on every interactive element
   - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
-  - No external API calls from within these 24 sections — they work entirely offline once installed
+  - No external API calls from within these 23 sections — they work entirely offline once installed
 
-**2. Auth + Test Pet Store + Media (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`)**
+**2. Auth + Test Pet Store + Media + Frames (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`)**
 
 - The whole app is login-gated: opening any URL while logged out redirects to `/login`.
 - **Login** (`/login`) — email + password, show/hide password toggle, "Remember me" (persists the session in `localStorage`; unchecked uses `sessionStorage`), and a "Forgot password?" link.
@@ -204,6 +207,7 @@ The playground is a React Router app with two kinds of practice targets:
 - **Account** (`/account`) — shows the logged-in user's name, email, and member-since date, with a logout button and a shortcut into the Test Pet Store.
 - **Test Pet Store** (`/petstore`) — reached from the gradient "🐾 Test Pet Store" entry at the top of the sidebar. Full pet CRUD (add / edit / delete), status filtering (available / pending / sold), live stat tiles, and toast notifications on every mutation. Pets are persisted in MongoDB and scoped per-user — each account only ever sees its own pets.
 - **Media** (`/media`) — reached from the blue "🎬 Media" entry under the Test Pet Store one in the sidebar. Nine widgets (M1–M9) for images, videos and banners; see [Media Page Reference](#media-page-reference). Works offline: the test image and video are bundled from `src/testresources/`.
+- **Frames** (`/frames`) — reached from the green "🪟 Frames" entry under Media in the sidebar. Five widgets (F1–F5) for iframes; see [Frames Page Reference](#frames-page-reference).
 
 ---
 
@@ -228,7 +232,7 @@ The playground is a React Router app with two kinds of practice targets:
 | 15 | Drag & Drop | Drag items to reorder, assert new positions | `data-drag-id` |
 | 16 | Browser Popups | Trigger alert, prompt, and confirm dialogs | `id` |
 | 17 | Links & Windows | Click anchor, external, download, JS-opened tab/window | `id`, `href`, `target` |
-| 18 | iFrame | Interact with elements inside an embedded frame | `id` (frame context) |
+| 18 | *(moved)* | The iFrame section now lives on the [Frames page](#frames-page-reference) as F1. Number 18 is left unused so the other section numbers stay the same. | — |
 | 19 | Shadow DOM | Type into and read from an encapsulated shadow root | `data-testid`, shadow root |
 | 20 | Pagination Table | Search, paginate, assert row data | `id`, `data-row-id`, `data-page` |
 | 21 | Show / Hide & Tabs | Expand/collapse panels, switch tabs, assert content | `className`, `role` |
@@ -247,10 +251,11 @@ The playground is a React Router app with two kinds of practice targets:
 | `/login` | Public | Email + password, remember-me, forgot-password link |
 | `/signup` | Public | Name, email, password, confirm, terms |
 | `/forgot-password` | Public | Stub — always confirms, no email sent |
-| `/` | Protected | The 24-section playground |
+| `/` | Protected | The 23-section playground |
 | `/account` | Protected | Logged-in user's profile + logout |
 | `/petstore` | Protected | Test Pet Store — pet CRUD |
 | `/media` | Protected | Media page — images, videos, banners |
+| `/frames` | Protected | Frames page — basic, nested, late-loading and multiple iframes |
 
 ### Backend API (Express + MongoDB, `http://localhost:4000`)
 
@@ -292,6 +297,29 @@ Every widget exposes its state as a `data-state` attribute, so wait on the attri
 **Banner storage:** the announcement bar and cookie banner store their state in `localStorage` under `tp-media-announcement-dismissed` (`"true"`) and `tp-media-cookie-consent` (`"accepted"` / `"rejected"`). A fresh browser context always shows both banners. To skip the cookie banner in a test, set the key before the page loads (see the [Media page notes](#media-page)).
 
 **Media files:** `src/testresources/testimage.jpg` and `src/testresources/testvideo.mp4`. Vite adds a content hash to their file names, so check `data-state`, not the `src` path. The broken widgets point to `/testresources/missing-image.jpg` and `/testresources/missing-video.mp4`, which don't exist.
+
+---
+
+## Frames Page Reference
+
+All frames use `srcdoc`, so they are same-origin and work offline. Inside every frame there is an input, a **Read** button and a result line: clicking **Read** writes `<prefix><what you typed>` into the result.
+
+| # | Widget | What to Practise | Frame locator → inner ids |
+|---|--------|-----------------|---------------------------|
+| F1 | Basic iFrame | Switch into one frame (moved from main-page section 18, locators unchanged) | `#practice-iframe` → `#iframe-input`, `#iframe-btn`, `#iframe-result` (`Value: …`) |
+| F2 | Nested iFrames | Switch down three levels, then back up with `parentFrame()` / `defaultContent()` | `#nested-level-1` → `#nested-level-2` → `#nested-level-3`; inside level *n*: `#level{n}-input`, `#level{n}-btn`, `#level{n}-result` (`Level n: …`) |
+| F3 | Late-loading iFrame | Wait for a frame that is added 1–6 s after the page loads. `?delay=<ms>` fixes the delay; **Reload frame** removes it and adds it again | `[data-testid="late-frame-slot"]` (`data-state`: `loading` → `loaded`, `data-delay-ms`) → `#late-iframe` → `#late-input`, `#late-btn`, `#late-result` (`Value: …`) |
+| F4 | Multiple iFrames without ids | Pick the right frame when none has an id and all three share the same inner ids | `iframe[name="orders-frame"]`, `iframe[title="Payments frame"]`, and the third by index only (`#sec-frames-multiple iframe` → `nth(2)`) → `#frame-input`, `#frame-btn`, `#frame-result` (`Orders: …` / `Payments: …` / `Reviews: …`) |
+| F5 | Expand-button only | A card that ignores clicks inside its frame and on the card; only **⤢ Expand** opens it | `#button-only-iframe` → `#button-only-input`, `#button-only-btn`, `#button-only-result` (`Value: …`) |
+
+**Expanding a card:** each card has `data-expand-on` set to `click` or `button`, and `data-expanded="true|false"`.
+
+- **F1–F4 (`data-expand-on="click"`)** expand when you press anywhere inside one of their frames, click the card itself, or click **⤢ Expand** (`data-testid="{section-id}-toggle"`). Events inside a frame never reach the page, so each frame tells the page about presses with `window.top.postMessage({ type: 'tp-frame-click', card: '<section id>' }, '*')`. This works from every nesting level in F2. The press still reaches the element it landed on, so a test can click the input, let the card expand, and keep typing.
+- **F5 (`data-expand-on="button"`)** expands only from **⤢ Expand**. Its frame doesn't report presses, and clicking the card does nothing.
+
+The card element stays the same when it expands, so frames don't reload and what you typed stays put. Close it with **✕ Close**, the backdrop (`data-testid="frame-backdrop"`) or `Escape` (Escape only works while focus is outside the frame).
+
+**Language switch:** switching English ↔ Arabic rebuilds each frame's content, which reloads all frames and clears what was typed in them.
 
 ---
 
@@ -338,10 +366,6 @@ A quick cheat sheet of the key element identifiers used across sections.
 #link-download          Download link (section 17)
 #btn-js-newtab          JS-opened new tab (section 17)
 #btn-js-newwindow       JS-opened new window (section 17)
-#practice-iframe        The iframe element (section 18)
-#iframe-input           Input inside the iframe (section 18)
-#iframe-btn             Button inside the iframe (section 18)
-#iframe-result          Result text inside the iframe (section 18)
 #employee-search        Table search input (section 20)
 #employee-table         The data table (section 20)
 #page-first             First page button (section 20)
@@ -384,6 +408,8 @@ data-testid="conditional-radio-{value}"  Conditional radio options (section 23)
 
 ```
 data-testid="nav-test-pet-store"    Gradient "Test Pet Store" nav entry
+data-testid="nav-media"             Media nav entry
+data-testid="nav-frames"            Frames nav entry
 data-testid="sidebar-account"       Bottom account block container
 data-testid="sidebar-account-link"  Link to /account (when logged in)
 data-testid="sidebar-logout"        Logout button (when logged in)
@@ -538,14 +564,28 @@ data-tag="{tag-name}"               Tag selector buttons (section 09)
 data-stat="primary|success|danger|total"  Counter stat boxes (section 10)
 ```
 
-### Inside the iFrame (`#practice-iframe`)
+### Frames (`/frames`)
 
-Access these only after switching to the frame context:
+Elements inside a frame can only be reached after switching to that frame.
 
 ```
-#iframe-input     Text field inside the iframe
-#iframe-btn       Button inside the iframe
-#iframe-result    Result text inside the iframe
+data-testid="frames-welcome"            Hero welcome chip
+#sec-frames-basic / -nested / -late / -multiple / -button-only   Cards (data-expanded, data-expand-on)
+data-testid="{card-id}-toggle"          Expand / Close button, e.g. sec-frames-nested-toggle
+data-testid="frame-backdrop"            Overlay behind an expanded card
+
+#practice-iframe                        F1 frame → #iframe-input, #iframe-btn, #iframe-result
+#nested-level-1                         F2 outer frame → #level1-input, #level1-btn, #level1-result
+  #nested-level-2                       F2 middle frame (inside level 1) → #level2-*
+    #nested-level-3                     F2 inner frame (inside level 2) → #level3-*
+data-testid="late-frame-slot"           F3 wrapper (data-state, data-delay-ms)
+#late-iframe                            F3 frame → #late-input, #late-btn, #late-result
+#btn-reload-frame                       F3 reload button
+#late-frame-status                      F3 output line
+iframe[name="orders-frame"]             F4 frame 1 → #frame-input, #frame-btn, #frame-result
+iframe[title="Payments frame"]          F4 frame 2 → same inner ids
+#sec-frames-multiple iframe >> nth=2    F4 frame 3 (index only) → same inner ids
+#button-only-iframe                     F5 frame → #button-only-input, #button-only-btn, #button-only-result
 ```
 
 ### Inside the Shadow DOM (`[data-testid="shadow-host"]`)
@@ -588,7 +628,7 @@ test-playground/
 │       └── pets.js          Pet CRUD, scoped to the authenticated user
 └── src/
     ├── main.jsx            React root — BrowserRouter + AuthProvider + <App />
-    ├── App.jsx             24 section components, sidebar nav, route shell
+    ├── App.jsx             23 section components, sidebar nav, route shell
     ├── App.css             All styles — layout, components, utilities
     ├── i18n.jsx            English/Arabic translations + LanguageProvider
     ├── api/
@@ -610,6 +650,8 @@ test-playground/
     │   └── api.js            listPets / createPet / updatePet / deletePet
     ├── media/
     │   └── MediaPage.jsx     Media page — image, video and banner widgets (M1–M9)
+    ├── frames/
+    │   └── FramesPage.jsx    Frames page — basic, nested, late-loading, multiple and button-only iframes (F1–F5)
     ├── testresources/
     │   ├── testimage.jpg     Image used by the Media page
     │   └── testvideo.mp4     Video used by the Media page
@@ -620,16 +662,67 @@ test-playground/
 
 ## Automation Tester Notes
 
-### iFrame (Section 18)
+### Frames page
 
 Switch to the frame context before interacting with elements inside it.
 
 ```js
 // Playwright
+await page.locator('[data-testid="nav-frames"]').click()
+
+// F1 — basic
 const frame = page.frameLocator('#practice-iframe')
 await frame.locator('#iframe-input').fill('hello')
 await frame.locator('#iframe-btn').click()
-await expect(frame.locator('#iframe-result')).toHaveText('Value: "hello"')
+await expect(frame.locator('#iframe-result')).toHaveText('Value: hello')
+
+// F2 — nested: chain frameLocator calls, one per level
+const level3 = page.frameLocator('#nested-level-1')
+  .frameLocator('#nested-level-2')
+  .frameLocator('#nested-level-3')
+await level3.locator('#level3-input').fill('deep')
+await level3.locator('#level3-btn').click()
+await expect(level3.locator('#level3-result')).toHaveText('Level 3: deep')
+
+// F3 — late-loading: wait for the frame to be attached first
+await page.goto('/frames?delay=1500')
+await expect(page.locator('[data-testid="late-frame-slot"]')).toHaveAttribute('data-state', 'loaded')
+await page.frameLocator('#late-iframe').locator('#late-input').fill('later')
+
+// F4 — no ids: by name, by title, by index
+await page.frameLocator('iframe[name="orders-frame"]').locator('#frame-input').fill('a')
+await page.frameLocator('iframe[title="Payments frame"]').locator('#frame-input').fill('b')
+await page.frameLocator('#sec-frames-multiple iframe').nth(2).locator('#frame-input').fill('c')
+
+// Click inside a frame → its card expands (here from the innermost nested frame)
+await level3.locator('#level3-input').click()
+await expect(page.locator('#sec-frames-nested')).toHaveAttribute('data-expanded', 'true')
+// Focus is now inside the frame, where Escape doesn't reach the page, so close with the button
+await page.locator('[data-testid="sec-frames-nested-toggle"]').click()
+
+// F5 — clicking inside does nothing; only the Expand button works
+const f5 = page.locator('#sec-frames-button-only')
+await page.frameLocator('#button-only-iframe').locator('#button-only-input').click()
+await expect(f5).toHaveAttribute('data-expanded', 'false')
+await page.locator('[data-testid="sec-frames-button-only-toggle"]').click()
+await expect(f5).toHaveAttribute('data-expanded', 'true')
+```
+
+```java
+// Selenium — nested frames: switch down one level at a time, then back up
+driver.switchTo().frame("nested-level-1");
+driver.switchTo().frame("nested-level-2");
+driver.switchTo().frame("nested-level-3");
+driver.findElement(By.id("level3-input")).sendKeys("deep");
+driver.switchTo().parentFrame();          // back to level 2
+driver.switchTo().defaultContent();       // back to the page
+
+// F4 — by name, by title, by index
+driver.switchTo().frame("orders-frame");
+driver.switchTo().defaultContent();
+driver.switchTo().frame(driver.findElement(By.cssSelector("iframe[title='Payments frame']")));
+driver.switchTo().defaultContent();
+driver.switchTo().frame(driver.findElements(By.cssSelector("#sec-frames-multiple iframe")).get(2));
 ```
 
 ### Shadow DOM (Section 19)

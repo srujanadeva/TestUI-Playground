@@ -36,7 +36,6 @@ const translations = {
     navBrowserPopups:    'Browser Popups',
     navLinksWindows:     'Links & Windows',
     navPopupAlerts:      'Popup Alerts',
-    navIFrame:           'iFrame',
     navShadowDOM:        'Shadow DOM',
     navPaginationTable:  'Pagination Table',
     navShowHide:         'Show / Hide & Tabs',
@@ -59,7 +58,6 @@ const translations = {
     sec15Title: 'Drag & Drop',
     sec16Title: 'Browser Popups',
     sec17Title: 'Links & New Windows',
-    sec18Title: 'iFrame',
     sec19Title: 'Shadow DOM',
     sec20Title: 'Pagination Table',
     sec21Title: 'Show / Hide & Tabs',
@@ -83,7 +81,6 @@ const translations = {
     sec15Desc: 'Drag items to reorder the list.',
     sec16Desc: 'Native browser alert, prompt, and confirm dialogs.',
     sec17Desc: 'Anchor links, JS-opened tabs and windows.',
-    sec18Desc: 'Embedded page in an iframe. Elements live in a separate DOM context.',
     sec19Desc: 'Elements encapsulated in a shadow root.',
     sec20Desc: '25 rows, 5 per page. Filter by name, department, or ID.',
     sec21Desc: 'Collapsible panel and tab switching for visibility assertions.',
@@ -220,13 +217,6 @@ const translations = {
     btnJsNewWindow:  'JS New Window',
     newTabOpened:    'New tab opened via JS',
     newWindowOpened: 'New window opened via JS',
-
-    // ── 18 iFrame ──
-    iframeBadge:       'Inside iFrame',
-    iframeTitle:       'Iframe Content Area',
-    iframePlaceholder: 'Type inside the iframe…',
-    iframeBtnRead:     'Read',
-    iframeResultInit:  'Result will appear here',
 
     // ── 19 Shadow DOM ──
     shadowBadge:       'Shadow DOM',
@@ -449,6 +439,52 @@ const translations = {
     cookieRejected:     'rejected',
     btnResetBanners:    'Reset banners',
 
+    // ── Frames page ──
+    navFrames:          'Frames',
+    framesHeroTitle:    'Frames Lab',
+    framesHeroSubtitle: 'Practise switching into iframes: a basic frame, frames inside frames, a frame that shows up late, and look-alike frames with no ids. Click inside a frame to blow its card up, except F5, which only opens with its Expand button.',
+    frameExpand:        'Expand',
+    frameCollapse:      'Close',
+
+    secF1Title: 'Basic iFrame',
+    secF1Desc:  'Embedded page in an iframe. Elements live in a separate DOM context.',
+    iframeBadge:       'Inside iFrame',
+    iframeTitle:       'Iframe Content Area',
+    iframePlaceholder: 'Type inside the iframe…',
+    iframeBtnRead:     'Read',
+    iframeResultInit:  'Result will appear here',
+
+    secF2Title: 'Nested iFrames',
+    secF2Desc:  'Three frames, each inside the last. Switch down level by level, then back up to the parent.',
+    nestedBadge:       'Level {n}',
+    nestedTitle1:      'Outer frame',
+    nestedTitle2:      'Middle frame',
+    nestedTitle3:      'Inner frame',
+    nestedFrameTitle:  'Nested frame level {n}',
+    nestedPlaceholder: 'Type in level {n}…',
+    nestedResult:      'Level {n}: ',
+
+    secF3Title: 'Late-loading iFrame',
+    secF3Desc:  'The iframe is added 1–6 s after the page loads. Wait for it before switching in. Add ?delay=<ms> to the URL to fix the delay.',
+    lateBadge:      'Loaded late',
+    lateTitle:      'Late frame',
+    lateLoading:    'Loading frame…',
+    lateLoadedIn:   'Frame attached after {seconds}s',
+    btnReloadFrame: 'Reload frame',
+
+    secF4Title: 'Multiple iFrames without ids',
+    secF4Desc:  'Three frames with identical inner ids and no id on the frame itself. Find the first by name, the second by title, and the third by index only.',
+    multiBadge:     'Frame {n}',
+    multi_orders:   'Orders',
+    multi_payments: 'Payments',
+    multi_reviews:  'Reviews',
+    multiIndexOnly: 'no id / name / title → index {i}',
+
+    secF5Title: 'Expand-button only',
+    secF5Desc:  'Clicking inside this frame or on the card does nothing. Only the Expand button blows it up.',
+    buttonOnlyBadge: 'Button-only',
+    buttonOnlyTitle: 'Button-only frame',
+
     // ── Footer ──
     footerRights: 'All rights reserved · Not for commercial use',
     footerWit:    'findElement(By.Copyright, "violator") → NoSuchElementException',
@@ -489,7 +525,6 @@ const translations = {
     navBrowserPopups:    'النوافذ المنبثقة',
     navLinksWindows:     'الروابط والنوافذ',
     navPopupAlerts:      'تنبيهات منبثقة',
-    navIFrame:           'الإطار المضمن',
     navShadowDOM:        'نموذج DOM الظلي',
     navPaginationTable:  'جدول مع ترقيم الصفحات',
     navShowHide:         'إظهار / إخفاء والتبويبات',
@@ -512,7 +547,6 @@ const translations = {
     sec15Title: 'السحب والإفلات',
     sec16Title: 'النوافذ المنبثقة',
     sec17Title: 'الروابط والنوافذ الجديدة',
-    sec18Title: 'الإطار المضمن',
     sec19Title: 'نموذج DOM الظلي',
     sec20Title: 'جدول مع ترقيم الصفحات',
     sec21Title: 'إظهار / إخفاء والتبويبات',
@@ -536,7 +570,6 @@ const translations = {
     sec15Desc: 'اسحب العناصر لإعادة ترتيب القائمة.',
     sec16Desc: 'مربعات حوار التنبيه والمطالبة والتأكيد الأصلية للمتصفح.',
     sec17Desc: 'روابط مرساة، تبويبات ونوافذ تُفتح عبر JavaScript.',
-    sec18Desc: 'صفحة مضمّنة في إطار. العناصر تعيش في سياق DOM منفصل.',
     sec19Desc: 'عناصر محاطة في جذر ظل.',
     sec20Desc: '25 صفًا، 5 في كل صفحة. الفلترة بالاسم أو القسم أو المعرف.',
     sec21Desc: 'لوحة قابلة للطي وتبديل التبويبات لتأكيدات الظهور.',
@@ -673,13 +706,6 @@ const translations = {
     btnJsNewWindow:  'نافذة جديدة بـ JS',
     newTabOpened:    'تم فتح تبويب جديد عبر JS',
     newWindowOpened: 'تم فتح نافذة جديدة عبر JS',
-
-    // ── 18 iFrame ──
-    iframeBadge:       'داخل الإطار',
-    iframeTitle:       'منطقة محتوى الإطار',
-    iframePlaceholder: 'اكتب داخل الإطار…',
-    iframeBtnRead:     'قراءة',
-    iframeResultInit:  'ستظهر النتيجة هنا',
 
     // ── 19 Shadow DOM ──
     shadowBadge:       'نموذج DOM الظلي',
@@ -901,6 +927,52 @@ const translations = {
     cookieAccepted:     'مقبولة',
     cookieRejected:     'مرفوضة',
     btnResetBanners:    'إعادة ضبط اللافتات',
+
+    // ── Frames page ──
+    navFrames:          'الإطارات',
+    framesHeroTitle:    'مختبر الإطارات',
+    framesHeroSubtitle: 'تدرّب على الانتقال إلى الإطارات المضمنة: إطار أساسي، وإطارات داخل إطارات، وإطار يظهر متأخراً، وإطارات متشابهة بلا معرّفات. انقر داخل أي إطار لتكبير بطاقته، باستثناء F5 الذي لا يُفتح إلا بزر التكبير.',
+    frameExpand:        'تكبير',
+    frameCollapse:      'إغلاق',
+
+    secF1Title: 'إطار مضمن أساسي',
+    secF1Desc:  'صفحة مضمّنة في إطار. العناصر تعيش في سياق DOM منفصل.',
+    iframeBadge:       'داخل الإطار',
+    iframeTitle:       'منطقة محتوى الإطار',
+    iframePlaceholder: 'اكتب داخل الإطار…',
+    iframeBtnRead:     'قراءة',
+    iframeResultInit:  'ستظهر النتيجة هنا',
+
+    secF2Title: 'إطارات متداخلة',
+    secF2Desc:  'ثلاثة إطارات، كل واحد داخل الذي قبله. انتقل إلى الأسفل مستوى تلو الآخر، ثم عُد إلى الإطار الأب.',
+    nestedBadge:       'المستوى {n}',
+    nestedTitle1:      'الإطار الخارجي',
+    nestedTitle2:      'الإطار الأوسط',
+    nestedTitle3:      'الإطار الداخلي',
+    nestedFrameTitle:  'إطار متداخل المستوى {n}',
+    nestedPlaceholder: 'اكتب في المستوى {n}…',
+    nestedResult:      'المستوى {n}: ',
+
+    secF3Title: 'إطار يُحمَّل متأخراً',
+    secF3Desc:  'يُضاف الإطار بعد 1–6 ثوانٍ من تحميل الصفحة. انتظره قبل الانتقال إليه. أضف ?delay=<ms> إلى الرابط لتثبيت التأخير.',
+    lateBadge:      'حُمِّل متأخراً',
+    lateTitle:      'الإطار المتأخر',
+    lateLoading:    'جارٍ تحميل الإطار…',
+    lateLoadedIn:   'أُضيف الإطار بعد {seconds} ث',
+    btnReloadFrame: 'إعادة تحميل الإطار',
+
+    secF4Title: 'إطارات متعددة بلا معرّفات',
+    secF4Desc:  'ثلاثة إطارات بمعرّفات داخلية متطابقة ولا معرّف للإطار نفسه. ابحث عن الأول بالاسم، والثاني بالعنوان، والثالث بالترتيب فقط.',
+    multiBadge:     'الإطار {n}',
+    multi_orders:   'الطلبات',
+    multi_payments: 'المدفوعات',
+    multi_reviews:  'المراجعات',
+    multiIndexOnly: 'no id / name / title → index {i}',
+
+    secF5Title: 'التكبير بالزر فقط',
+    secF5Desc:  'النقر داخل هذا الإطار أو على البطاقة لا يفعل شيئاً. زر التكبير وحده يكبّرها.',
+    buttonOnlyBadge: 'بالزر فقط',
+    buttonOnlyTitle: 'إطار التكبير بالزر',
 
     // ── Footer ──
     footerRights: 'جميع الحقوق محفوظة · غير مخصص للاستخدام التجاري',

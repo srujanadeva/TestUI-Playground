@@ -9,6 +9,7 @@ import AccountPage from './auth/AccountPage.jsx'
 import ProtectedRoute from './auth/ProtectedRoute.jsx'
 import PetstorePage from './petstore/PetstorePage.jsx'
 import MediaPage from './media/MediaPage.jsx'
+import FramesPage from './frames/FramesPage.jsx'
 import { SectionHeader, Output } from './ui.jsx'
 
 // ─── 01. Text Input ──────────────────────────────────────────────────────────
@@ -593,42 +594,6 @@ function LinksWindowsSection() {
   )
 }
 
-// ─── 18. iFrame ──────────────────────────────────────────────────────────────
-function getIframeHtml(t) {
-  return `<!DOCTYPE html><html><head><style>
-  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,sans-serif}
-  body{padding:20px;background:linear-gradient(135deg,#ede9fe,#dbeafe);height:100%}
-  .badge{display:inline-block;background:#4f46e5;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em}
-  h3{color:#4f46e5;margin-bottom:12px;font-size:14px}
-  .row{display:flex;gap:8px;margin-bottom:10px}
-  input{flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:6px;font-size:14px;background:#fff;outline:none}
-  input:focus{border-color:#4f46e5}
-  button{padding:8px 16px;background:#4f46e5;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px}
-  button:hover{background:#4338ca}
-  #iframe-result{margin-top:10px;padding:10px 12px;background:#fff;border-radius:6px;color:#4f46e5;font-size:14px;border:1px solid #c4b5fd;min-height:38px}
-</style></head><body>
-  <span class="badge">${t('iframeBadge')}</span>
-  <h3>${t('iframeTitle')}</h3>
-  <div class="row">
-    <input id="iframe-input" type="text" placeholder="${t('iframePlaceholder')}"/>
-    <button id="iframe-btn" onclick="document.getElementById('iframe-result').textContent='Value: '+document.getElementById('iframe-input').value">${t('iframeBtnRead')}</button>
-  </div>
-  <div id="iframe-result">${t('iframeResultInit')}</div>
-</body></html>`
-}
-
-function IFrameSection() {
-  const { t } = useLang()
-  return (
-    <section id="sec-iframe" className="card">
-      <SectionHeader num="18" title={t('sec18Title')} locator="id (within frame)" />
-      <p className="desc">{t('sec18Desc')}</p>
-      <iframe id="practice-iframe" title="Practice iFrame"
-        srcDoc={getIframeHtml(t)} className="practice-iframe" />
-    </section>
-  )
-}
-
 // ─── 19. Shadow DOM ──────────────────────────────────────────────────────────
 function ShadowDOMSection() {
   const { t, lang } = useLang()
@@ -1026,7 +991,6 @@ const NAV = [
   { id: 'sec-popups',      labelKey: 'navBrowserPopups',    groupKey: 'navWindows' },
   { id: 'sec-windows',     labelKey: 'navLinksWindows',     groupKey: 'navWindows' },
   { id: 'sec-popup-alerts',labelKey: 'navPopupAlerts',      groupKey: 'navWindows' },
-  { id: 'sec-iframe',      labelKey: 'navIFrame',           groupKey: 'navAdvanced' },
   { id: 'sec-shadow',      labelKey: 'navShadowDOM',        groupKey: 'navAdvanced' },
   { id: 'sec-table',       labelKey: 'navPaginationTable',  groupKey: 'navAdvanced', subGroupKey: 'navDataTables' },
   { id: 'sec-toggle',      labelKey: 'navShowHide',         groupKey: 'navAdvanced' },
@@ -1079,6 +1043,15 @@ function Sidebar({ active, onPlaygroundItem }) {
       >
         <span className="nav-petstore-icon" aria-hidden>🎬</span>
         <span className="nav-petstore-label">{t('navMedia')}</span>
+      </NavLink>
+
+      <NavLink
+        to="/frames"
+        className={({ isActive }) => `nav-petstore-cta nav-frames-cta ${isActive ? 'is-active' : ''}`}
+        data-testid="nav-frames"
+      >
+        <span className="nav-petstore-icon" aria-hidden>🪟</span>
+        <span className="nav-petstore-label">{t('navFrames')}</span>
       </NavLink>
 
       {GROUP_KEYS.map(gKey => {
@@ -1211,7 +1184,6 @@ function Playground({ contentRef, setActive }) {
         <DragDropSection />
         <PopupsSection />
         <LinksWindowsSection />
-        <IFrameSection />
         <ShadowDOMSection />
         <PaginationTableSection />
         <ShowHideSection />
@@ -1270,6 +1242,14 @@ function Shell() {
             element={
               <ProtectedRoute>
                 <MediaPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="frames"
+            element={
+              <ProtectedRoute>
+                <FramesPage />
               </ProtectedRoute>
             }
           />

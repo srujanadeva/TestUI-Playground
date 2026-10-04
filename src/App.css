@@ -1022,6 +1022,12 @@ tr:hover td      { background: #f8fafc; }
   box-shadow: 0 4px 14px rgba(14, 165, 233, .3);
 }
 .nav-media-cta:hover { box-shadow: 0 6px 18px rgba(14, 165, 233, .42); }
+.nav-frames-cta {
+  margin-top: 0;
+  background: linear-gradient(135deg, #10b981 0%, #0284c7 55%, #4f46e5 100%);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, .3);
+}
+.nav-frames-cta:hover { box-shadow: 0 6px 18px rgba(2, 132, 199, .42); }
 .nav-petstore-icon { font-size: 1.2rem; }
 .nav-petstore-label { letter-spacing: .2px; }
 
@@ -1832,4 +1838,81 @@ tr:hover td      { background: #f8fafc; }
   .hero-slide { padding: 20px 56px; }
   .announcement-bar { margin: 0 0 16px; top: 0; border-radius: 8px; }
   .promo-banner { flex-wrap: wrap; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Frames page (basic, nested, late-loading, multiple iframes)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.frames-hero {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,255,255,.18), transparent 40%),
+    linear-gradient(135deg, #10b981 0%, #0284c7 55%, #4f46e5 100%);
+  box-shadow: 0 12px 30px rgba(2, 132, 199, .22);
+}
+
+.frame-card { cursor: zoom-in; }
+.frame-card-button-only { cursor: default; }
+.frame-card-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+}
+.frame-toggle { flex-shrink: 0; padding: 6px 12px; font-size: .8rem; }
+
+/* The stage soaks up spare card height, so a frame fills its card in a tall grid row. */
+.frame-stage { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.frame-stage > * { flex: 1; }
+.frame-stage > .frame-fill { min-height: 200px; }
+.frame-fill  { display: block; }
+.frame-tall  { min-height: 600px !important; }
+
+/* Blown-out state: same element, lifted over the page. */
+.frame-backdrop {
+  position: fixed; inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, .55);
+  animation: frameFade .2s ease;
+}
+.frame-card-expanded {
+  position: fixed;
+  inset: 4vh 4vw;
+  z-index: 1001;
+  cursor: default;
+  overflow: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .4);
+  animation: frameBlowOut .22s ease;
+}
+.frame-card-expanded:hover { box-shadow: 0 24px 60px rgba(15, 23, 42, .4); }
+.frame-card-expanded .frame-stage > * { min-height: 320px; }
+.frame-card-expanded .frame-tile .frame-fill { flex: 1; height: auto; }
+@keyframes frameFade    { from { opacity: 0; } }
+@keyframes frameBlowOut { from { opacity: .4; transform: scale(.9); } }
+
+/* F3 — late slot */
+.frame-slot { display: flex; flex-direction: column; min-height: 200px; }
+.frame-slot .frame-fill { flex: 1; height: auto; }
+.frame-placeholder {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: .85rem;
+}
+
+/* F4 — multiple frames */
+.frame-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.frame-tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.frame-tile .frame-fill { height: 230px; }
+.frame-hint code {
+  font-size: .75rem;
+  color: var(--text-muted);
+  background: #f1f5f9;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+@media (max-width: 900px) {
+  .frame-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .frame-card-expanded { inset: 8px; }
 }
