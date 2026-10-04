@@ -4,6 +4,8 @@ A React frontend built specifically for practising web automation. It covers 24 
 
 The app also includes a login-gated **Test Pet Store** page backed by a real Express + MongoDB API, so you can practise authentication flows (signup, login, remember-me, forgot-password) and full CRUD against a persisted backend — not just client-side state.
 
+A login-gated **Media** page adds image, video and banner widgets: images and videos that load, fail, or only load when scrolled into view, plus a carousel, a promo banner, an announcement bar and a cookie-consent banner.
+
 Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework. Fully bilingual (English / Arabic, with RTL layout).
 
 ---
@@ -17,6 +19,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 - [What the App Does](#what-the-app-does)
 - [Section Reference](#section-reference)
 - [Auth & Test Pet Store Reference](#auth--test-pet-store-reference)
+- [Media Page Reference](#media-page-reference)
 - [Locator Quick Reference](#locator-quick-reference)
 - [Project Structure](#project-structure)
 - [Automation Tester Notes](#automation-tester-notes)
@@ -192,7 +195,7 @@ The playground is a React Router app with two kinds of practice targets:
   - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
   - No external API calls from within these 24 sections — they work entirely offline once installed
 
-**2. Auth + Test Pet Store (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`)**
+**2. Auth + Test Pet Store + Media (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`)**
 
 - The whole app is login-gated: opening any URL while logged out redirects to `/login`.
 - **Login** (`/login`) — email + password, show/hide password toggle, "Remember me" (persists the session in `localStorage`; unchecked uses `sessionStorage`), and a "Forgot password?" link.
@@ -200,6 +203,7 @@ The playground is a React Router app with two kinds of practice targets:
 - **Forgot password** (`/forgot-password`) — a UI-only stub: the backend endpoint always responds `{ ok: true }` and no email is actually sent.
 - **Account** (`/account`) — shows the logged-in user's name, email, and member-since date, with a logout button and a shortcut into the Test Pet Store.
 - **Test Pet Store** (`/petstore`) — reached from the gradient "🐾 Test Pet Store" entry at the top of the sidebar. Full pet CRUD (add / edit / delete), status filtering (available / pending / sold), live stat tiles, and toast notifications on every mutation. Pets are persisted in MongoDB and scoped per-user — each account only ever sees its own pets.
+- **Media** (`/media`) — reached from the blue "🎬 Media" entry under the Test Pet Store one in the sidebar. Nine widgets (M1–M9) for images, videos and banners; see [Media Page Reference](#media-page-reference). Works offline: the test image and video are bundled from `src/testresources/`.
 
 ---
 
@@ -246,6 +250,7 @@ The playground is a React Router app with two kinds of practice targets:
 | `/` | Protected | The 24-section playground |
 | `/account` | Protected | Logged-in user's profile + logout |
 | `/petstore` | Protected | Test Pet Store — pet CRUD |
+| `/media` | Protected | Media page — images, videos, banners |
 
 ### Backend API (Express + MongoDB, `http://localhost:4000`)
 
@@ -263,6 +268,30 @@ The playground is a React Router app with two kinds of practice targets:
 | `DELETE /api/pets/:id` | Bearer token | Delete a pet (`404` if not owned) |
 
 Passwords are hashed with bcrypt before storage; access tokens are JWTs valid for 24 hours.
+
+---
+
+## Media Page Reference
+
+Every widget exposes its state as a `data-state` attribute, so wait on the attribute instead of sleeping. Each one also shows its state as text in an output line below it. There are no URL settings — each widget always behaves the same way.
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| M1 | Image — Loads | Wait for an image to load, check its natural size | `data-testid="image-loaded"`, `data-state`: `loading` → `loaded` |
+| M2 | Image — Broken | Detect an image whose file doesn't exist; a fallback replaces it | `data-testid="image-broken"`, `data-state`: `loading` → `broken` |
+| M3 | Image — Lazy Load | Scroll inside a box to bring the image into view; it has no `src` until then | `data-testid="image-lazy"`, `data-state`: `idle` → `loading` → `loaded` |
+| M4 | Video — Plays | Play, pause, mute/unmute with custom buttons; read the time | `data-testid="video-playing"`, `data-state`, `data-muted` |
+| M5 | Video — Broken | Detect a video whose file doesn't exist; buttons are disabled | `data-testid="video-broken"`, `data-state="error"` |
+| M6 | Video — Lazy Load | Scroll inside a box to load the video, then play it | `data-testid="video-lazy"`, `data-state`: `idle` → `loading` → `ready` → … |
+| M7 | Hero Carousel | Move between 3 slides with previous/next/dots; wraps around; no autoplay | `data-testid="hero-carousel"`, `data-active-slide` (1–3) |
+| M8 | Promo Banner | Claim the offer to reveal a code; close it; show it again. Closing is not remembered across reloads | `data-testid="promo-banner"` |
+| M9 | Announcement & Cookie Banners | Close the announcement bar; accept/reject the cookie banner, which blocks the whole page until you choose. Both choices survive a reload; **Reset banners** clears them | `data-testid="announcement-bar"`, `data-testid="cookie-banner"` |
+
+**Video `data-state` values:** `idle` (lazy video not revealed yet) · `loading` · `ready` (loaded, not started) · `playing` · `paused` · `ended` · `error`. `data-muted` is `true` or `false`.
+
+**Banner storage:** the announcement bar and cookie banner store their state in `localStorage` under `tp-media-announcement-dismissed` (`"true"`) and `tp-media-cookie-consent` (`"accepted"` / `"rejected"`). A fresh browser context always shows both banners. To skip the cookie banner in a test, set the key before the page loads (see the [Media page notes](#media-page)).
+
+**Media files:** `src/testresources/testimage.jpg` and `src/testresources/testvideo.mp4`. Vite adds a content hash to their file names, so check `data-state`, not the `src` path. The broken widgets point to `/testresources/missing-image.jpg` and `/testresources/missing-video.mp4`, which don't exist.
 
 ---
 
@@ -449,6 +478,54 @@ data-testid="pet-form-save"             Save button (modal)
 data-testid="pet-form-close"            Modal close (✕) button
 ```
 
+### Media (`/media`)
+
+```
+data-testid="nav-media"                 Sidebar entry for the Media page
+data-testid="media-welcome"             Hero welcome chip
+
+data-testid="image-loaded"              M1 image (data-state)
+data-testid="image-broken"              M2 image (data-state)
+data-testid="image-broken-fallback"     M2 fallback shown in place of the image
+data-testid="image-lazy-scroll"         M3 scroll box
+data-testid="image-lazy"                M3 image (data-state)
+#image-loaded-status / #image-broken-status / #image-lazy-status   Image output lines
+
+data-testid="video-playing"             M4 player wrapper (data-state, data-muted)
+data-testid="video-broken"              M5 player wrapper
+data-testid="video-lazy"                M6 player wrapper
+data-testid="video-lazy-scroll"         M6 scroll box
+data-testid="{player}-element"          The <video> element, e.g. video-playing-element
+data-testid="{player}-play"             Play / Pause button
+data-testid="{player}-mute"             Mute / Unmute button
+data-testid="{player}-time"             "0:03 / 0:10" readout
+data-testid="{player}-fallback"         Shown when the video fails to load
+#{player}-status                        Output line, e.g. #video-playing-status
+
+data-testid="hero-carousel"             M7 carousel (data-active-slide)
+data-slide="1" … "3"                    Slides (only the active one is visible)
+data-testid="hero-prev"                 Previous slide
+data-testid="hero-next"                 Next slide
+data-testid="hero-dot-1" … "hero-dot-3" Slide dots
+#hero-status                            "Slide n of 3"
+
+data-testid="promo-banner"              M8 promo banner
+data-testid="promo-cta"                 "Claim offer" button
+data-testid="promo-close"               Close (✕)
+data-testid="promo-show"                "Show again" (after closing)
+#promo-status                           Output line (shows the promo code)
+
+data-testid="announcement-bar"          Announcement bar (top of the page)
+data-testid="announcement-close"        Close (✕)
+data-testid="cookie-backdrop"           Full-screen backdrop that blocks clicks
+data-testid="cookie-banner"             Cookie banner (role="dialog")
+data-testid="cookie-accept"             Accept
+data-testid="cookie-reject"             Reject
+data-testid="announcement-status"       M9 "Announcement bar: shown/dismissed"
+data-testid="cookie-status"             M9 "Cookie consent: …"
+data-testid="reset-banners"             Reset banners (also #btn-reset-banners)
+```
+
 ### By `data-*` attributes
 
 ```
@@ -525,12 +602,18 @@ test-playground/
     │   ├── SignupPage.jsx
     │   ├── ForgotPasswordPage.jsx
     │   └── AccountPage.jsx
-    └── petstore/
-        ├── PetstorePage.jsx  Hero, stats, filters, grid, FAB, toasts
-        ├── PetCard.jsx
-        ├── PetFormModal.jsx
-        ├── petAvatars.js     Emoji avatar mapping
-        └── api.js            listPets / createPet / updatePet / deletePet
+    ├── petstore/
+    │   ├── PetstorePage.jsx  Hero, stats, filters, grid, FAB, toasts
+    │   ├── PetCard.jsx
+    │   ├── PetFormModal.jsx
+    │   ├── petAvatars.js     Emoji avatar mapping
+    │   └── api.js            listPets / createPet / updatePet / deletePet
+    ├── media/
+    │   └── MediaPage.jsx     Media page — image, video and banner widgets (M1–M9)
+    ├── testresources/
+    │   ├── testimage.jpg     Image used by the Media page
+    │   └── testvideo.mp4     Video used by the Media page
+    └── ui.jsx              Shared SectionHeader / Output components
 ```
 
 ---
@@ -659,6 +742,58 @@ await page.locator('#toggle-panel-btn').click()
 await expect(page.locator('#collapsible-content')).toBeVisible()
 await page.locator('#toggle-panel-btn').click()
 await expect(page.locator('#collapsible-content')).not.toBeVisible()
+```
+
+### Media page
+
+```js
+// Playwright — get past the cookie banner, which blocks the page until answered
+await page.locator('[data-testid="nav-media"]').click()
+await page.locator('[data-testid="cookie-accept"]').click()
+await expect(page.locator('[data-testid="cookie-banner"]')).toBeHidden()
+
+// Or skip it entirely: store the choice before the page loads
+await page.addInitScript(() => localStorage.setItem('tp-media-cookie-consent', 'accepted'))
+
+// Images: assert loaded vs broken
+await expect(page.locator('[data-testid="image-loaded"]')).toHaveAttribute('data-state', 'loaded')
+await expect(page.locator('[data-testid="image-broken"]')).toHaveAttribute('data-state', 'broken')
+const width = await page.locator('[data-testid="image-loaded"]').evaluate(img => img.naturalWidth)
+expect(width).toBeGreaterThan(0)
+
+// Lazy image: no src until scrolled into view inside its box
+const lazy = page.locator('[data-testid="image-lazy"]')
+await expect(lazy).toHaveAttribute('data-state', 'idle')
+await expect(lazy).not.toHaveAttribute('src', /.+/)
+await lazy.scrollIntoViewIfNeeded()
+await expect(lazy).toHaveAttribute('data-state', 'loaded')
+
+// Video: play, mute, pause
+const video = page.locator('[data-testid="video-playing"]')
+await expect(video).toHaveAttribute('data-state', 'ready')
+await page.locator('[data-testid="video-playing-play"]').click()
+await expect(video).toHaveAttribute('data-state', 'playing')
+await page.locator('[data-testid="video-playing-mute"]').click()
+await expect(video).toHaveAttribute('data-muted', 'true')
+await page.locator('[data-testid="video-playing-play"]').click()
+await expect(video).toHaveAttribute('data-state', 'paused')
+
+// Broken video
+await expect(page.locator('[data-testid="video-broken"]')).toHaveAttribute('data-state', 'error')
+await expect(page.locator('[data-testid="video-broken-play"]')).toBeDisabled()
+
+// Carousel: wraps from slide 1 back to slide 3
+const carousel = page.locator('[data-testid="hero-carousel"]')
+await page.locator('[data-testid="hero-prev"]').click()
+await expect(carousel).toHaveAttribute('data-active-slide', '3')
+await expect(page.locator('[data-slide="3"]')).toBeVisible()
+
+// Announcement bar stays closed after a reload
+await page.locator('[data-testid="announcement-close"]').click()
+await page.reload()
+await expect(page.locator('[data-testid="announcement-bar"]')).toBeHidden()
+await page.locator('[data-testid="reset-banners"]').click()
+await expect(page.locator('[data-testid="announcement-bar"]')).toBeVisible()
 ```
 
 ### Login flow
