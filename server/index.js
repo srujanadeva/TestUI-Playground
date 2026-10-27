@@ -8,6 +8,7 @@ import cors from 'cors'
 import { connectDB } from './db.js'
 import authRoutes from './routes/auth.js'
 import petsRoutes from './routes/pets.js'
+import spreadsheetsRoutes from './routes/spreadsheets.js'
 
 const app = express()
 
@@ -17,6 +18,7 @@ app.use(express.json({ limit: '1mb' }))
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api/pets', petsRoutes)
+app.use('/api/spreadsheets', spreadsheetsRoutes)
 
 app.use((err, _req, res, _next) => {
   console.error('[server] error:', err)

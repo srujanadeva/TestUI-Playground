@@ -485,6 +485,27 @@ const translations = {
     buttonOnlyBadge: 'Button-only',
     buttonOnlyTitle: 'Button-only frame',
 
+    // ── Spreadsheet page ──
+    navSpreadsheet:          'Spreadsheet',
+    spreadsheetHeroTitle:    'Spreadsheet Lab',
+    spreadsheetHeroSubtitle: 'Practise uploading files and reading data tables built from them. Upload an .xlsx, .xls or .csv file; the server reads it and the table fills with its rows.',
+
+    secS1Title:       'Excel Upload Table',
+    secS1Desc:        'Starts empty. Upload a spreadsheet to fill the table, pick a sheet when there are several, then search and page through the rows.',
+    btnUploadSheet:   'Upload spreadsheet',
+    sheetUploading:   'Uploading…',
+    btnClearSheet:    'Clear',
+    sheetSelectLabel: 'Sheet',
+    phSheetSearch:    'Search any column…',
+    sheetHint:        'Accepts: XLSX, XLS, CSV · up to 2 MB',
+    sheetEmpty:       'No data — upload a spreadsheet',
+    sheetNoRows:      'This sheet has headers but no rows',
+    sheetFileInfo:    '{sheets} sheet(s) · {rows} rows',
+    sheetPageInfo:    'Showing {shown} of {total} rows — Page {page} of {totalPages}',
+    sheetErrType:     'Only .xlsx, .xls and .csv files are accepted.',
+    sheetErrSize:     'The file is larger than 2 MB.',
+    sheetErrNetwork:  'Could not reach the server. Is the API running?',
+
     // ── Footer ──
     footerRights: 'All rights reserved · Not for commercial use',
     footerWit:    'findElement(By.Copyright, "violator") → NoSuchElementException',
@@ -973,6 +994,27 @@ const translations = {
     secF5Desc:  'النقر داخل هذا الإطار أو على البطاقة لا يفعل شيئاً. زر التكبير وحده يكبّرها.',
     buttonOnlyBadge: 'بالزر فقط',
     buttonOnlyTitle: 'إطار التكبير بالزر',
+
+    // ── Spreadsheet page ──
+    navSpreadsheet:          'جدول البيانات',
+    spreadsheetHeroTitle:    'مختبر جداول البيانات',
+    spreadsheetHeroSubtitle: 'تدرّب على رفع الملفات وقراءة الجداول المبنية منها. ارفع ملف ‎.xlsx‎ أو ‎.xls‎ أو ‎.csv‎؛ يقرأه الخادم ويمتلئ الجدول بصفوفه.',
+
+    secS1Title:       'جدول رفع ملف Excel',
+    secS1Desc:        'يبدأ فارغاً. ارفع جدول بيانات لملء الجدول، واختر ورقة عند وجود أكثر من ورقة، ثم ابحث وتنقّل بين الصفحات.',
+    btnUploadSheet:   'رفع جدول بيانات',
+    sheetUploading:   'جارٍ الرفع…',
+    btnClearSheet:    'مسح',
+    sheetSelectLabel: 'الورقة',
+    phSheetSearch:    'ابحث في أي عمود…',
+    sheetHint:        'يقبل: XLSX, XLS, CSV · حتى 2 ميغابايت',
+    sheetEmpty:       'لا توجد بيانات — ارفع جدول بيانات',
+    sheetNoRows:      'تحتوي هذه الورقة على عناوين بلا صفوف',
+    sheetFileInfo:    '{sheets} ورقة · {rows} صف',
+    sheetPageInfo:    'عرض {shown} من {total} صف — الصفحة {page} من {totalPages}',
+    sheetErrType:     'يُقبل فقط ملفات ‎.xlsx‎ و‎.xls‎ و‎.csv‎.',
+    sheetErrSize:     'حجم الملف أكبر من 2 ميغابايت.',
+    sheetErrNetwork:  'تعذّر الوصول إلى الخادم. هل واجهة البرمجة تعمل؟',
 
     // ── Footer ──
     footerRights: 'جميع الحقوق محفوظة · غير مخصص للاستخدام التجاري',

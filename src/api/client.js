@@ -7,7 +7,9 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch(path, { method = 'GET', body, token } = {}) {
-  const headers = { 'Content-Type': 'application/json' }
+  // FormData is sent as is, so the browser sets the multipart boundary itself.
+  const isForm = body instanceof FormData
+  const headers = isForm ? {} : { 'Content-Type': 'application/json' }
   if (token) headers.Authorization = `Bearer ${token}`
 
   let res
@@ -15,7 +17,7 @@ export async function apiFetch(path, { method = 'GET', body, token } = {}) {
     res = await fetch(path, {
       method,
       headers,
-      body: body == null ? undefined : JSON.stringify(body),
+      body: body == null ? undefined : isForm ? body : JSON.stringify(body),
     })
   } catch (err) {
     throw new ApiError(err.message || 'Network error', 0, null)

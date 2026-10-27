@@ -1028,6 +1028,12 @@ tr:hover td      { background: #f8fafc; }
   box-shadow: 0 4px 14px rgba(2, 132, 199, .3);
 }
 .nav-frames-cta:hover { box-shadow: 0 6px 18px rgba(2, 132, 199, .42); }
+.nav-spreadsheet-cta {
+  margin-top: 0;
+  background: linear-gradient(135deg, #16a34a 0%, #0d9488 55%, #0369a1 100%);
+  box-shadow: 0 4px 14px rgba(13, 148, 136, .3);
+}
+.nav-spreadsheet-cta:hover { box-shadow: 0 6px 18px rgba(13, 148, 136, .42); }
 .nav-petstore-icon { font-size: 1.2rem; }
 .nav-petstore-label { letter-spacing: .2px; }
 
@@ -1916,3 +1922,18 @@ tr:hover td      { background: #f8fafc; }
 @media (max-width: 640px) {
   .frame-card-expanded { inset: 8px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Spreadsheet page (Excel upload table)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.spreadsheet-hero {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255,255,255,.18), transparent 40%),
+    linear-gradient(135deg, #16a34a 0%, #0d9488 55%, #0369a1 100%);
+  box-shadow: 0 12px 30px rgba(13, 148, 136, .22);
+}
+.sheet-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.sheet-toolbar select { width: auto; min-width: 160px; }
+.sheet-toolbar .sheet-search { flex: 1; min-width: 180px; }
+.sheet-file-info { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+#sheet-table td { white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -1,4 +1,5 @@
-# Starts MongoDB (if not already running), then the Vite frontend + Express API.
+# Checks npm packages are installed, starts MongoDB (if not already running),
+# then the Vite frontend + Express API.
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less scripts as ANSI.
 $ErrorActionPreference = 'Stop'
 
@@ -15,6 +16,13 @@ function Test-Port([int]$Port) {
   } finally {
     $client.Close()
   }
+}
+
+Write-Host "==> Checking npm packages..."
+& node scripts/check-deps.js
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "ERROR: Run 'npm run setup:win' to install them (needed after pulling changes that add packages)." -ForegroundColor Red
+  exit 1
 }
 
 Write-Host "==> Checking MongoDB (127.0.0.1:27017)..."

@@ -43,13 +43,24 @@ else
 fi
 
 # ── 2. npm dependencies ───────────────────────────────────────────────────────
+# SheetJS (the spreadsheet reader) comes from its own site, not the npm registry:
+# the npm copy is outdated and has known vulnerabilities. package-lock.json pins
+# the file's hash, so a changed download fails the install.
+SHEETJS_SITE="https://cdn.sheetjs.com/"
 echo
 echo "==> npm dependencies"
 if ! node_ok; then
   echo "    Skipped: needs Node."
   note_failed "npm dependencies not installed (needs Node)"
-elif npm install; then
-  note_done "npm dependencies installed"
+elif node scripts/check-deps.js >/dev/null 2>&1; then
+  echo "    All installed at the versions in package-lock.json."
+  note_skipped "npm dependencies"
+elif npm install && node scripts/check-deps.js; then
+  note_done "npm dependencies installed (SheetJS $(node -p "require('./node_modules/xlsx/package.json').version") from cdn.sheetjs.com)"
+elif ! curl -sfI --max-time 10 "$SHEETJS_SITE" >/dev/null 2>&1; then
+  echo "    cdn.sheetjs.com can't be reached. SheetJS is installed from that site, not the"
+  echo "    npm registry. Allow it through your proxy or firewall, then re-run."
+  note_failed "npm install failed (cdn.sheetjs.com unreachable)"
 else
   note_failed "npm install failed (see output above)"
 fi

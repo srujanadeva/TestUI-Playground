@@ -10,6 +10,7 @@ import ProtectedRoute from './auth/ProtectedRoute.jsx'
 import PetstorePage from './petstore/PetstorePage.jsx'
 import MediaPage from './media/MediaPage.jsx'
 import FramesPage from './frames/FramesPage.jsx'
+import SpreadsheetPage from './spreadsheet/SpreadsheetPage.jsx'
 import { SectionHeader, Output } from './ui.jsx'
 
 // ─── 01. Text Input ──────────────────────────────────────────────────────────
@@ -1054,6 +1055,15 @@ function Sidebar({ active, onPlaygroundItem }) {
         <span className="nav-petstore-label">{t('navFrames')}</span>
       </NavLink>
 
+      <NavLink
+        to="/spreadsheet"
+        className={({ isActive }) => `nav-petstore-cta nav-spreadsheet-cta ${isActive ? 'is-active' : ''}`}
+        data-testid="nav-spreadsheet"
+      >
+        <span className="nav-petstore-icon" aria-hidden>📊</span>
+        <span className="nav-petstore-label">{t('navSpreadsheet')}</span>
+      </NavLink>
+
       {GROUP_KEYS.map(gKey => {
         const groupItems  = NAV.filter(n => n.groupKey === gKey)
         const subGroupKeys = [...new Set(groupItems.filter(n => n.subGroupKey).map(n => n.subGroupKey))]
@@ -1250,6 +1260,14 @@ function Shell() {
             element={
               <ProtectedRoute>
                 <FramesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="spreadsheet"
+            element={
+              <ProtectedRoute>
+                <SpreadsheetPage />
               </ProtectedRoute>
             }
           />

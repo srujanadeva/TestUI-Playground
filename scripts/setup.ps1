@@ -89,14 +89,43 @@ if (Node-Ok) {
 }
 
 # -- 2. npm dependencies -------------------------------------------------------
+# SheetJS (the spreadsheet reader) comes from its own site, not the npm registry:
+# the npm copy is outdated and has known vulnerabilities. package-lock.json pins
+# the file's hash, so a changed download fails the install.
+$SheetJsSite = 'https://cdn.sheetjs.com/'
+function Test-Url($url) {
+  try {
+    Invoke-WebRequest -Uri $url -Method Head -TimeoutSec 10 -UseBasicParsing | Out-Null
+    return $true
+  } catch {
+    return $false
+  }
+}
+
 Write-Host ""
 Write-Host "==> npm dependencies"
 if (-not (Node-Ok)) {
   Write-Host "    Skipped: needs Node."
   Note-Failed "npm dependencies not installed (needs Node)"
 } else {
-  & npm install
-  if ($LASTEXITCODE -eq 0) { Note-Done "npm dependencies installed" } else { Note-Failed "npm install failed (see output above)" }
+  & node scripts/check-deps.js | Out-Null
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host "    All installed at the versions in package-lock.json."
+    Note-Skipped "npm dependencies"
+  } else {
+    & npm install
+    if ($LASTEXITCODE -eq 0) { & node scripts/check-deps.js }
+    if ($LASTEXITCODE -eq 0) {
+      $sheetJsVersion = & node -p "require('./node_modules/xlsx/package.json').version"
+      Note-Done "npm dependencies installed (SheetJS $sheetJsVersion from cdn.sheetjs.com)"
+    } elseif (-not (Test-Url $SheetJsSite)) {
+      Write-Host "    cdn.sheetjs.com can't be reached. SheetJS is installed from that site, not the"
+      Write-Host "    npm registry. Allow it through your proxy or firewall, then re-run."
+      Note-Failed "npm install failed (cdn.sheetjs.com unreachable)"
+    } else {
+      Note-Failed "npm install failed (see output above)"
+    }
+  }
 }
 
 # -- 3. Dev TLS certs ----------------------------------------------------------

@@ -8,6 +8,8 @@ A login-gated **Media** page adds image, video and banner widgets: images and vi
 
 A login-gated **Frames** page covers iframes: a basic frame, three levels of nested frames, a frame that is added late, and several look-alike frames with no ids. Clicking inside a frame expands its card into a large overlay; one card (F5) expands only from its Expand button.
 
+A login-gated **Spreadsheet** page covers file uploads into data tables: upload an `.xlsx`, `.xls` or `.csv` file, the API reads it, and a table fills with its rows, with a sheet picker, search and pagination.
+
 Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework. Fully bilingual (English / Arabic, with RTL layout).
 
 ---
@@ -23,6 +25,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 - [Auth & Test Pet Store Reference](#auth--test-pet-store-reference)
 - [Media Page Reference](#media-page-reference)
 - [Frames Page Reference](#frames-page-reference)
+- [Spreadsheet Page Reference](#spreadsheet-page-reference)
 - [Locator Quick Reference](#locator-quick-reference)
 - [Project Structure](#project-structure)
 - [Automation Tester Notes](#automation-tester-notes)
@@ -61,7 +64,7 @@ npm --version     # should print 9.x.x or higher
 | UI framework | React 18 (+ React Router) |
 | Build tool | Vite 8 |
 | Styling | Plain CSS (custom properties, CSS Grid, Flexbox) |
-| Backend | Express, Mongoose (MongoDB), JWT auth, bcrypt |
+| Backend | Express, Mongoose (MongoDB), JWT auth, bcrypt, multer (uploads), SheetJS (spreadsheet reading) |
 | Language | JavaScript (ES Modules) |
 | Package manager | npm |
 
@@ -85,7 +88,7 @@ npm run setup:win    # Windows
 | Step | Already there | Missing |
 |------|---------------|---------|
 | 1. Node.js 18+ | Used as is | Installed (Homebrew on macOS, winget on Windows) |
-| 2. npm dependencies | `npm install` (no-op if up to date) | Installed |
+| 2. npm dependencies | Skipped when every package is installed at the version in `package-lock.json` | `npm install` (SheetJS is downloaded from `cdn.sheetjs.com`, see below) |
 | 3. Dev TLS certs (`certs/cert.pem`, `certs/key.pem`) | Kept | Generated (self-signed, `localhost`, 1 year) |
 | 4. `server/.env` | Kept | Created from `server/.env.example` with a random `JWT_SECRET` |
 | 5. MongoDB | **Any installed version is used as is** | MongoDB 8.0 is installed (`mongodb-community@8.0` via Homebrew on macOS; the 8.0.32 installer as the `MongoDB` service on Windows) |
@@ -93,6 +96,8 @@ npm run setup:win    # Windows
 | 7. Sample users | Left as is | Created (see [Sample login](#sample-login)) |
 
 It also installs the optional `mongosh` shell if it's missing (from npm on macOS, winget on Windows).
+
+**SheetJS comes from its own site.** The spreadsheet reader, SheetJS (`xlsx`), is installed from `https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`, not from the npm registry. The copy on npm (0.18.5) is no longer updated and has two known high-severity vulnerabilities in reading files (CVE-2023-30533, CVE-2024-22363), both fixed in the version from SheetJS's site. `package-lock.json` records the file's sha512 hash, so if the download ever changes, `npm install` fails instead of installing it. The first install needs `cdn.sheetjs.com` to be reachable; if it isn't, setup says so (see [Troubleshooting](#troubleshooting)).
 
 Each step prints whether it was skipped, done, or failed. If a step fails, the steps that don't depend on it still run, the summary at the end lists what failed and why, and the command exits with an error. It's safe to re-run at any time.
 
@@ -133,7 +138,7 @@ Only when a machine has **no** MongoDB does setup install one, and then it insta
 
 ### Start everything (MongoDB + API + frontend)
 
-The app includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script. It starts MongoDB if it isn't already running (`brew services` on macOS, the `MongoDB` Windows service on Windows), then starts the Vite frontend and the Express API together:
+The app includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script. It first checks that every npm package is installed at the version in `package-lock.json` (if not, for example after pulling changes that add a package, it stops and tells you to run setup). It then starts MongoDB if it isn't already running (`brew services` on macOS, the `MongoDB` Windows service on Windows), then starts the Vite frontend and the Express API together:
 
 ```bash
 npm run start:all        # macOS
@@ -198,7 +203,7 @@ The playground is a React Router app with two kinds of practice targets:
   - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
   - No external API calls from within these 23 sections — they work entirely offline once installed
 
-**2. Auth + Test Pet Store + Media + Frames (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`)**
+**2. Auth + Test Pet Store + Media + Frames + Spreadsheet (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`, `/spreadsheet`)**
 
 - The whole app is login-gated: opening any URL while logged out redirects to `/login`.
 - **Login** (`/login`) — email + password, show/hide password toggle, "Remember me" (persists the session in `localStorage`; unchecked uses `sessionStorage`), and a "Forgot password?" link.
@@ -208,6 +213,7 @@ The playground is a React Router app with two kinds of practice targets:
 - **Test Pet Store** (`/petstore`) — reached from the gradient "🐾 Test Pet Store" entry at the top of the sidebar. Full pet CRUD (add / edit / delete), status filtering (available / pending / sold), live stat tiles, and toast notifications on every mutation. Pets are persisted in MongoDB and scoped per-user — each account only ever sees its own pets.
 - **Media** (`/media`) — reached from the blue "🎬 Media" entry under the Test Pet Store one in the sidebar. Nine widgets (M1–M9) for images, videos and banners; see [Media Page Reference](#media-page-reference). Works offline: the test image and video are bundled from `src/testresources/`.
 - **Frames** (`/frames`) — reached from the green "🪟 Frames" entry under Media in the sidebar. Five widgets (F1–F5) for iframes; see [Frames Page Reference](#frames-page-reference).
+- **Spreadsheet** (`/spreadsheet`) — reached from the "📊 Spreadsheet" entry under Frames in the sidebar. One widget so far (S1), an upload-to-table widget backed by the API; see [Spreadsheet Page Reference](#spreadsheet-page-reference).
 
 ---
 
@@ -271,6 +277,7 @@ The playground is a React Router app with two kinds of practice targets:
 | `GET /api/pets/:id` | Bearer token | Fetch one pet (`404` if not owned) |
 | `PUT /api/pets/:id` | Bearer token | Update a pet (`404` if not owned) |
 | `DELETE /api/pets/:id` | Bearer token | Delete a pet (`404` if not owned) |
+| `POST /api/spreadsheets/parse` | Bearer token | Multipart upload, one file in the `file` field → `{ fileName, sheets: [{ name, headers, rows }] }`; see [Spreadsheet Page Reference](#spreadsheet-page-reference) for limits and errors |
 
 Passwords are hashed with bcrypt before storage; access tokens are JWTs valid for 24 hours.
 
@@ -320,6 +327,55 @@ All frames use `srcdoc`, so they are same-origin and work offline. Inside every 
 The card element stays the same when it expands, so frames don't reload and what you typed stays put. Close it with **✕ Close**, the backdrop (`data-testid="frame-backdrop"`) or `Escape` (Escape only works while focus is outside the frame).
 
 **Language switch:** switching English ↔ Arabic rebuilds each frame's content, which reloads all frames and clears what was typed in them.
+
+---
+
+## Spreadsheet Page Reference
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| S1 | Excel Upload Table | Upload a file through a hidden file input, wait for the table to fill, pick a sheet, search, page through rows, clear, and check error messages | `#sec-sheet-upload` with `data-state`, `data-sheet`, `data-row-count` |
+
+**How S1 works:** the widget starts with an empty table. Uploading a file sends it to `POST /api/spreadsheets/parse`, which reads every sheet and returns them all in one response. The first row of each sheet becomes the column headers; blank headers become `Column N` and repeated ones become `Name (2)`, `Name (3)`. Fully blank rows are dropped, and every cell comes back as the text Excel shows (dates as dates, not serial numbers). The sheet dropdown appears only when the file has more than one sheet; switching sheets needs no new request. A new upload replaces the table; **Clear** empties it.
+
+**`data-state` values:** `empty` → `uploading` → `loaded`, or `error`. A failed upload shows the message in `#sheet-error` and leaves the table that was already showing as it was.
+
+**Search and pagination:** search matches any cell (case-insensitive) and returns to page 1; 10 rows per page; up to 7 page-number buttons are shown at once. `data-row-index` is the row's position in the sheet (1 = first row under the headers) and doesn't change while a search is filtering.
+
+**Limits and errors** (checked on the server; the page also checks type and size before uploading):
+
+| Check | Status | Message |
+|---|---|---|
+| Not `.xlsx` / `.xls` / `.csv` | 400 | Only .xlsx, .xls and .csv files are accepted. |
+| File content doesn't match its extension (e.g. an image renamed `.xlsx`) | 400 | This file is not a valid .xlsx spreadsheet. |
+| CSV that isn't UTF-8 text | 400 | CSV files must be UTF-8 text. |
+| No file, more than one file, extra fields, or a field other than `file` | 400 | (specific message) |
+| File over 2 MB | 413 | The file is larger than 2 MB. |
+| `.xlsx` that would unpack to more than 50 MB (ZIP bomb) | 413 | The spreadsheet expands to more than 50 MB when unpacked. |
+| Unreadable file | 422 | The spreadsheet could not be read. |
+| More than 10 sheets / 5,000 rows in a sheet / 100 columns | 422 | (names the limit) |
+| No data in any sheet | 422 | The spreadsheet has no data. |
+| Not logged in | 401 | Missing or invalid Authorization header |
+
+**Upload security:** the file stays in memory and is never written to disk, and its name is only echoed back as text. SheetJS reads values only (no formulas, HTML, styles or macros). Rows are returned as arrays of strings rather than objects keyed by header, so a header like `__proto__` is just text, and React shows every cell as plain text, so cells containing `<script>` or HTML are never run. Not included, since this is a local practice app: rate limiting, reading files in a separate worker with a timeout, and spreadsheet formula-injection escaping (only relevant once a widget exports data).
+
+**Test files** in `src/testresources/spreadsheets/`:
+
+| File | What it shows |
+|---|---|
+| `employees.xlsx` | 3 sheets: Employees (42 rows), Departments (6), Projects (12) — dropdown, search, pagination |
+| `inventory.xls` | Older Excel format, one sheet (15 rows) |
+| `products.csv` | CSV with quoted commas, quotes and non-ASCII text (18 rows) |
+| `messy-headers.xlsx` | Blank and repeated headers, blank rows, dates, a short row |
+| `headers-only.csv` | Headers but no rows — table shows the headers and "This sheet has headers but no rows" |
+| `script-cells.xlsx` | `<script>`/HTML cells, formulas, `__proto__` header — all shown as plain text |
+| `empty.xlsx` | 422, no data |
+| `corrupt.xlsx` | 422, starts like an `.xlsx` but isn't one |
+| `renamed-image.xlsx` | 400, a PNG with an `.xlsx` extension |
+| `too-many-rows.csv` | 422, 5,001 rows |
+| `too-large.csv` | Over 2 MB — the page rejects it before uploading; sent straight to the API it gets 413 |
+
+There's no ZIP-bomb test file on purpose, since one can upset editors and virus scanners.
 
 ---
 
@@ -410,6 +466,7 @@ data-testid="conditional-radio-{value}"  Conditional radio options (section 23)
 data-testid="nav-test-pet-store"    Gradient "Test Pet Store" nav entry
 data-testid="nav-media"             Media nav entry
 data-testid="nav-frames"            Frames nav entry
+data-testid="nav-spreadsheet"       Spreadsheet nav entry
 data-testid="sidebar-account"       Bottom account block container
 data-testid="sidebar-account-link"  Link to /account (when logged in)
 data-testid="sidebar-logout"        Logout button (when logged in)
@@ -588,6 +645,28 @@ iframe[title="Payments frame"]          F4 frame 2 → same inner ids
 #button-only-iframe                     F5 frame → #button-only-input, #button-only-btn, #button-only-result
 ```
 
+### Spreadsheet (`/spreadsheet`)
+
+```
+data-testid="spreadsheet-welcome"   Hero welcome chip
+#sec-sheet-upload                   S1 card (data-state, data-sheet, data-row-count)
+#sheet-upload-btn                   Upload button (opens the file picker; disabled while uploading)
+#sheet-file-input                   Hidden <input type="file"> — set files on this directly
+#sheet-select                       Sheet dropdown (only when the file has 2+ sheets)
+#sheet-search                       Search box (disabled until a file is loaded)
+#sheet-clear-btn                    Clear button
+#sheet-file-info                    "<file> · N sheet(s) · N rows"
+#sheet-error                        Error message (role="alert")
+#sheet-table                        The table
+#sheet-table th[data-col-index]     Header cells (0-based)
+tr[data-row-index]                  Data rows (1-based position in the sheet)
+td[data-col="<header>"]             Cells by column header (also data-col-index)
+#sheet-no-results                   Empty / no rows / no matches row
+#sheet-page-first / -prev / -next / -last   Pagination buttons
+#sec-sheet-upload [data-page]       Page-number buttons
+#sheet-page-info                    "Showing X of Y rows — Page N of M"
+```
+
 ### Inside the Shadow DOM (`[data-testid="shadow-host"]`)
 
 Access these only after piercing the shadow root:
@@ -611,7 +690,8 @@ test-playground/
 ├── scripts/
 │   ├── mongo.sh             Shared MongoDB start/stop helpers used by the macOS scripts
 │   ├── setup.sh / .ps1      One-time bootstrap (Node, Mongo, certs, .env, seed) — npm run setup / setup:win
-│   ├── start.sh / .ps1      Starts MongoDB (if needed) + frontend + API — npm run start:all / start:all:win
+│   ├── start.sh / .ps1      Checks npm packages, starts MongoDB (if needed) + frontend + API — npm run start:all / start:all:win
+│   ├── check-deps.js        Checks npm packages match package-lock.json — used by setup and start
 │   └── stop.sh / .ps1       Stops frontend + API + MongoDB — npm run stop:all / stop:all:win
 ├── server/                 Express + MongoDB API (port 4000)
 │   ├── index.js             App bootstrap, middleware, route mounting
@@ -625,7 +705,8 @@ test-playground/
 │   │   └── auth.js          JWT verification (requireAuth)
 │   └── routes/
 │       ├── auth.js          signup / login / forgot-password / me / logout
-│       └── pets.js          Pet CRUD, scoped to the authenticated user
+│       ├── pets.js          Pet CRUD, scoped to the authenticated user
+│       └── spreadsheets.js  Spreadsheet upload: checks the file and returns its sheets as JSON
 └── src/
     ├── main.jsx            React root — BrowserRouter + AuthProvider + <App />
     ├── App.jsx             23 section components, sidebar nav, route shell
@@ -652,15 +733,41 @@ test-playground/
     │   └── MediaPage.jsx     Media page — image, video and banner widgets (M1–M9)
     ├── frames/
     │   └── FramesPage.jsx    Frames page — basic, nested, late-loading, multiple and button-only iframes (F1–F5)
+    ├── spreadsheet/
+    │   └── SpreadsheetPage.jsx  Spreadsheet page — Excel upload table (S1)
     ├── testresources/
     │   ├── testimage.jpg     Image used by the Media page
-    │   └── testvideo.mp4     Video used by the Media page
+    │   ├── testvideo.mp4     Video used by the Media page
+    │   └── spreadsheets/     Files for the Spreadsheet page (see its reference)
     └── ui.jsx              Shared SectionHeader / Output components
 ```
 
 ---
 
 ## Automation Tester Notes
+
+### Spreadsheet page
+
+The upload button only opens the browser's file picker, which automation can't control. Set the file on the hidden input instead, then wait on `data-state`:
+
+```js
+// Playwright
+await page.setInputFiles('#sheet-file-input', 'src/testresources/spreadsheets/employees.xlsx')
+await expect(page.locator('#sec-sheet-upload')).toHaveAttribute('data-state', 'loaded')
+await expect(page.locator('#sheet-table tbody tr')).toHaveCount(10)
+await page.selectOption('#sheet-select', { label: 'Projects' })
+await expect(page.locator('td[data-col="Project"]').first()).toHaveText('Project A')
+```
+
+```js
+// Cypress (the input is hidden, so force it)
+cy.get('#sheet-file-input').selectFile('src/testresources/spreadsheets/employees.xlsx', { force: true })
+cy.get('#sec-sheet-upload').should('have.attr', 'data-state', 'loaded')
+```
+
+In Selenium, call `sendKeys` with the file's absolute path on `#sheet-file-input`. If your driver refuses because the input is hidden, show it first with `executeScript("arguments[0].style.display='block'", input)`.
+
+Uploading the same file twice in a row works: the input is reset after every upload.
 
 ### Frames page
 
@@ -1058,6 +1165,18 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 **Windows: "Could not start (or stop) the MongoDB service"**
 
 Controlling a Windows service usually needs admin rights. Open PowerShell with **Run as administrator** and run `Start-Service MongoDB` (or `Stop-Service MongoDB`), then run the npm command again.
+
+**Setup fails with "cdn.sheetjs.com unreachable"**
+
+SheetJS is installed from `cdn.sheetjs.com`, not the npm registry (see [Installation](#installation)), and your network blocked it. Allow `https://cdn.sheetjs.com` through your proxy or firewall, or set npm's proxy (`npm config set https-proxy http://your-proxy:port`), then re-run setup. Once it's installed, later installs reuse it.
+
+**Start says "Missing or out-of-date npm packages"**
+
+The code needs packages that aren't installed yet, usually after pulling changes that add one. Run `npm run setup` (or `npm run setup:win`), then start again.
+
+**Keeping SheetJS up to date**
+
+Because SheetJS isn't installed from the npm registry, `npm audit`, `npm outdated` and Dependabot don't check it, and `npm audit` will always show it as clean. Check the [SheetJS advisories](https://cdn.sheetjs.com/advisories/) or the [release list](https://cdn.sheetjs.com/) now and then. To upgrade, run `npm install https://cdn.sheetjs.com/xlsx-<version>/xlsx-<version>.tgz` and commit `package.json` and `package-lock.json`.
 
 **Logged in but every page redirects back to `/login`**
 
