@@ -45,7 +45,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
+/* position: relative contains absolutely positioned descendants (e.g. .visually-hidden),
+   which would otherwise escape the overflow and stretch the document past the viewport. */
 .content {
+  position: relative;
   flex: 1;
   height: 100vh;
   overflow-y: auto;
@@ -913,7 +916,7 @@ tr:hover td      { background: #f8fafc; }
 .rating-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .rating-row .output { flex: 1; margin: 0; }
 .rating-stars { display: inline-flex; gap: 4px; font-size: 1.75rem; line-height: 1; align-self: flex-start; }
-.rating-stars label { cursor: pointer; }
+.rating-stars label { position: relative; cursor: pointer; }
 .star {
   position: relative;
   display: inline-block;
