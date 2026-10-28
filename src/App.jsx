@@ -11,6 +11,7 @@ import PetstorePage from './petstore/PetstorePage.jsx'
 import MediaPage from './media/MediaPage.jsx'
 import FramesPage from './frames/FramesPage.jsx'
 import SpreadsheetPage from './spreadsheet/SpreadsheetPage.jsx'
+import VerificationPage from './verification/VerificationPage.jsx'
 import { SectionHeader, Output } from './ui.jsx'
 
 // ─── 01. Text Input ──────────────────────────────────────────────────────────
@@ -972,6 +973,552 @@ function DelayedWidgetSection() {
   )
 }
 
+// ─── 25. Ratings ─────────────────────────────────────────────────────────────
+// Three builds of a star rating: native radio inputs, a custom role="slider"
+// with half stars (hover previews, click commits, arrow keys step by 0.5), and
+// a read-only display.
+const STAR_VALUES = [1, 2, 3, 4, 5]
+const READONLY_RATING = 3.5
+
+function starFill(value, star) {
+  if (value >= star) return 'full'
+  if (value >= star - 0.5) return 'half'
+  return 'empty'
+}
+
+function RatingsSection() {
+  const { t, lang } = useLang()
+  const [product, setProduct] = useState(0)
+  const [half, setHalf]       = useState(0)
+  const [hover, setHover]     = useState(null)
+  const rtl = lang === 'ar'
+
+  // The first half of a star (left in LTR, right in RTL) is worth n - 0.5.
+  function valueFromPointer(e, star) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const fromStart = rtl ? rect.right - e.clientX : e.clientX - rect.left
+    return fromStart < rect.width / 2 ? star - 0.5 : star
+  }
+
+  function handleKey(e) {
+    const inc = rtl ? 'ArrowLeft' : 'ArrowRight'
+    const dec = rtl ? 'ArrowRight' : 'ArrowLeft'
+    let next = null
+    if (e.key === inc || e.key === 'ArrowUp')        next = Math.min(5, half + 0.5)
+    else if (e.key === dec || e.key === 'ArrowDown') next = Math.max(0, half - 0.5)
+    else if (e.key === 'Home')                       next = 0
+    else if (e.key === 'End')                        next = 5
+    if (next === null) return
+    e.preventDefault()
+    setHalf(next)
+  }
+
+  const shown = hover ?? half
+
+  return (
+    <section id="sec-ratings" className="card">
+      <SectionHeader num="25" title={t('sec25Title')} locator="name / role=slider / data-value" />
+      <p className="desc">{t('sec25Desc')}</p>
+
+      <fieldset className="rating-group">
+        <legend className="field-label">{t('ratingProductLabel')}</legend>
+        <div className="rating-stars">
+          {STAR_VALUES.map(n => (
+            <label key={n} htmlFor={`rating-star-${n}`} title={t('ratingStarN', { n })}>
+              <input type="radio" className="visually-hidden" name="rating-product"
+                id={`rating-star-${n}`} value={n} checked={product === n}
+                onChange={() => setProduct(n)} />
+              <span className="star" data-fill={starFill(product, n)} aria-hidden="true">★</span>
+              <span className="visually-hidden">{t('ratingStarN', { n })}</span>
+            </label>
+          ))}
+        </div>
+        <div className="rating-row">
+          <Output id="rating-product-output">
+            {product ? t('ratingYouRated', { n: product }) : t('ratingNone')}
+          </Output>
+          <button id="rating-product-clear" className="btn-secondary" disabled={!product}
+            onClick={() => setProduct(0)}>{t('ratingClear')}</button>
+        </div>
+      </fieldset>
+
+      <div className="rating-group">
+        <span className="field-label" id="rating-half-label">{t('ratingHalfLabel')}</span>
+        <div className="rating-stars rating-half" role="slider" tabIndex={0}
+          data-testid="rating-half" aria-labelledby="rating-half-label"
+          aria-valuemin={0} aria-valuemax={5} aria-valuenow={half}
+          aria-valuetext={t('ratingValueText', { n: half })}
+          data-value={half} data-hover-value={hover ?? undefined}
+          onKeyDown={handleKey} onMouseLeave={() => setHover(null)}>
+          {STAR_VALUES.map(n => (
+            <span key={n} className="star" data-star={n} data-fill={starFill(shown, n)}
+              onMouseMove={e => setHover(valueFromPointer(e, n))}
+              onClick={e => setHalf(valueFromPointer(e, n))}>★</span>
+          ))}
+        </div>
+        <div className="rating-row">
+          <Output id="rating-half-output">
+            {hover !== null
+              ? t('ratingPreview', { n: hover })
+              : half ? t('ratingYouRated', { n: half }) : t('ratingNone')}
+          </Output>
+          <button id="rating-half-clear" className="btn-secondary" disabled={!half}
+            onClick={() => setHalf(0)}>{t('ratingClear')}</button>
+        </div>
+      </div>
+
+      <div className="rating-group">
+        <span className="field-label">{t('ratingReadonlyLabel')}</span>
+        <div className="rating-row">
+          <div className="rating-stars rating-readonly" role="img" data-testid="rating-readonly"
+            data-value={READONLY_RATING} aria-label={t('ratingValueText', { n: READONLY_RATING })}>
+            {STAR_VALUES.map(n => (
+              <span key={n} className="star" data-fill={starFill(READONLY_RATING, n)} aria-hidden="true">★</span>
+            ))}
+          </div>
+          <span className="rating-count">{t('ratingReviews', { n: READONLY_RATING, count: 128 })}</span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── 26. Progress Bar ────────────────────────────────────────────────────────
+// A determinate bar that fills in random steps (it can be set to stall at 60%
+// and then fail), and an indeterminate bar with no aria-valuenow while it runs.
+// Wait on aria-valuenow / data-state, never on a fixed sleep.
+const PROGRESS_STATUS_KEYS = {
+  idle:      'progressIdle',
+  running:   'progressRunning',
+  complete:  'progressComplete',
+  failed:    'progressFailed',
+  cancelled: 'progressCancelled',
+}
+
+function ProgressSection() {
+  const { t } = useLang()
+  const [pct, setPct]           = useState(0)
+  const [state, setState]       = useState('idle')
+  const [failAt60, setFailAt60] = useState(false)
+  const [task, setTask]         = useState('idle')
+  const timer     = useRef(null)
+  const taskTimer = useRef(null)
+
+  useEffect(() => () => { clearTimeout(timer.current); clearTimeout(taskTimer.current) }, [])
+
+  function step(value, fail) {
+    if (value >= 100) { setState('complete'); return }
+    if (fail && value >= 60) {
+      timer.current = setTimeout(() => setState('failed'), 2000)
+      return
+    }
+    timer.current = setTimeout(() => {
+      let next = Math.min(100, value + 3 + Math.floor(Math.random() * 10))
+      if (fail) next = Math.min(next, 60)
+      setPct(next)
+      step(next, fail)
+    }, 150 + Math.floor(Math.random() * 150))
+  }
+
+  function start() {
+    clearTimeout(timer.current)
+    setPct(0)
+    setState('running')
+    step(0, failAt60)
+  }
+
+  function cancel() {
+    clearTimeout(timer.current)
+    setState('cancelled')
+  }
+
+  function startTask() {
+    setTask('running')
+    taskTimer.current = setTimeout(() => setTask('done'), 2000 + Math.floor(Math.random() * 2001))
+  }
+
+  const running = state === 'running'
+
+  return (
+    <section id="sec-progress" className="card">
+      <SectionHeader num="26" title={t('sec26Title')} locator="role=progressbar / aria-valuenow" />
+      <p className="desc">{t('sec26Desc')}</p>
+
+      <div className="progress-block">
+        <div className="progress-head">
+          <span className="field-label" id="progress-upload-label">{t('progressUploadLabel')}</span>
+          <span id="progress-upload-pct" className="progress-pct">{pct}%</span>
+        </div>
+        <div id="progress-upload" className="progress-track" role="progressbar"
+          aria-labelledby="progress-upload-label" aria-valuemin={0} aria-valuemax={100}
+          aria-valuenow={pct} data-state={state}>
+          <div className="progress-fill" style={{ inlineSize: `${pct}%` }} />
+        </div>
+        <p id="progress-upload-status" className="progress-status" data-state={state} role="status">
+          {t(PROGRESS_STATUS_KEYS[state])}
+        </p>
+      </div>
+
+      <label className="checkbox-label" htmlFor="progress-fail-toggle">
+        <input type="checkbox" id="progress-fail-toggle" checked={failAt60} disabled={running}
+          onChange={e => setFailAt60(e.target.checked)} />
+        {t('progressFailToggle')}
+      </label>
+
+      <div className="button-row">
+        <button id="progress-start" className="btn-primary" disabled={running} onClick={start}>
+          {state === 'idle' ? t('progressStart') : t('progressRestart')}
+        </button>
+        <button id="progress-cancel" className="btn-secondary" disabled={!running} onClick={cancel}>
+          {t('progressCancel')}
+        </button>
+      </div>
+
+      <div className="progress-block">
+        <span className="field-label" id="progress-task-label">{t('progressTaskLabel')}</span>
+        <div id="progress-indeterminate" className="progress-track progress-indeterminate"
+          role="progressbar" aria-labelledby="progress-task-label"
+          aria-valuemin={task === 'done' ? 0 : undefined}
+          aria-valuemax={task === 'done' ? 100 : undefined}
+          aria-valuenow={task === 'done' ? 100 : undefined}
+          aria-busy={task === 'running'} data-state={task}>
+          {task !== 'idle' && <div className="progress-fill" />}
+        </div>
+        <p id="progress-task-status" className="progress-status" data-state={task} role="status">
+          {t(task === 'done' ? 'progressTaskDone' : task === 'running' ? 'progressTaskRunning' : 'progressIdle')}
+        </p>
+      </div>
+
+      <div className="button-row">
+        <button id="progress-task-start" className="btn-secondary" disabled={task === 'running'}
+          onClick={startTask}>{t('progressTaskStart')}</button>
+      </div>
+    </section>
+  )
+}
+
+// ─── 27. Stepper ─────────────────────────────────────────────────────────────
+// A 4-step wizard. Next checks the current step before moving on; earlier steps
+// stay clickable to go back, later ones are disabled. Values are kept when
+// moving back and forth.
+const STEPS = [
+  { key: 'account', labelKey: 'stepAccount' },
+  { key: 'address', labelKey: 'stepAddress' },
+  { key: 'prefs',   labelKey: 'stepPrefs' },
+  { key: 'review',  labelKey: 'stepReview' },
+]
+const STEPPER_COUNTRIES = ['in', 'ae', 'gb', 'us']
+const STEPPER_EMPTY = { name: '', email: '', city: '', country: '', contact: '', newsletter: false }
+
+function validateStep(step, v) {
+  const errors = {}
+  if (step === 0) {
+    if (!v.name.trim()) errors.name = 'stepErrName'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) errors.email = 'stepErrEmail'
+  } else if (step === 1) {
+    if (!v.city.trim()) errors.city = 'stepErrCity'
+    if (!v.country)     errors.country = 'stepErrCountry'
+  } else if (step === 2) {
+    if (!v.contact) errors.contact = 'stepErrContact'
+  }
+  return errors
+}
+
+function StepperSection() {
+  const { t } = useLang()
+  const [step, setStep]           = useState(0)
+  const [values, setValues]       = useState(STEPPER_EMPTY)
+  const [errors, setErrors]       = useState({})
+  const [submitted, setSubmitted] = useState(false)
+
+  const set = (key, value) => setValues(v => ({ ...v, [key]: value }))
+
+  function goTo(i) { setErrors({}); setStep(i) }
+
+  function next() {
+    const errs = validateStep(step, values)
+    setErrors(errs)
+    if (Object.keys(errs).length === 0) setStep(step + 1)
+  }
+
+  function reset() {
+    setValues(STEPPER_EMPTY)
+    setErrors({})
+    setSubmitted(false)
+    setStep(0)
+  }
+
+  const err = key => errors[key] && (
+    <span id={`stepper-error-${key}`} className="error-msg">{t(errors[key])}</span>
+  )
+
+  const review = [
+    { key: 'name',       value: values.name },
+    { key: 'email',      value: values.email },
+    { key: 'city',       value: values.city },
+    { key: 'country',    value: values.country && t(`country_${values.country}`) },
+    { key: 'contact',    value: values.contact && t(`stepContact_${values.contact}`) },
+    { key: 'newsletter', value: t(values.newsletter ? 'stepYes' : 'stepNo') },
+  ]
+
+  return (
+    <section id="sec-stepper" className="card">
+      <SectionHeader num="27" title={t('sec27Title')} locator="data-step / aria-current" />
+      <p className="desc">{t('sec27Desc')}</p>
+
+      <ol className="stepper" aria-label={t('stepperAria')}>
+        {STEPS.map((s, i) => {
+          const state = submitted || i < step ? 'complete' : i === step ? 'active' : 'upcoming'
+          return (
+            <li key={s.key} className="stepper-item" data-step={i + 1} data-state={state}>
+              <button type="button" className="stepper-btn" data-testid={`stepper-step-${i + 1}`}
+                aria-current={state === 'active' ? 'step' : undefined}
+                disabled={submitted || i >= step} onClick={() => goTo(i)}>
+                <span className="stepper-dot">{state === 'complete' ? '✓' : i + 1}</span>
+                <span className="stepper-label">{t(s.labelKey)}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+
+      {submitted ? (
+        <div className="stepper-panel">
+          <p id="stepper-result" className="success-msg">{t('stepSubmitted', { name: values.name })}</p>
+          <div className="button-row">
+            <button id="stepper-reset" className="btn-secondary" onClick={reset}>{t('stepStartOver')}</button>
+          </div>
+        </div>
+      ) : (
+        <div className="stepper-panel" data-testid="stepper-panel" data-step={step + 1}>
+          {step === 0 && (
+            <>
+              <div className="form-field">
+                <label className="field-label" htmlFor="stepper-name">{t('stepName')}</label>
+                <input id="stepper-name" type="text" value={values.name}
+                  className={errors.name ? 'input-error' : ''}
+                  onChange={e => set('name', e.target.value)} />
+                {err('name')}
+              </div>
+              <div className="form-field">
+                <label className="field-label" htmlFor="stepper-email">{t('stepEmail')}</label>
+                <input id="stepper-email" type="text" value={values.email}
+                  className={errors.email ? 'input-error' : ''}
+                  onChange={e => set('email', e.target.value)} />
+                {err('email')}
+              </div>
+            </>
+          )}
+
+          {step === 1 && (
+            <>
+              <div className="form-field">
+                <label className="field-label" htmlFor="stepper-city">{t('stepCity')}</label>
+                <input id="stepper-city" type="text" value={values.city}
+                  className={errors.city ? 'input-error' : ''}
+                  onChange={e => set('city', e.target.value)} />
+                {err('city')}
+              </div>
+              <div className="form-field">
+                <label className="field-label" htmlFor="stepper-country">{t('stepCountry')}</label>
+                <select id="stepper-country" value={values.country}
+                  onChange={e => set('country', e.target.value)}>
+                  <option value="">{t('stepCountryPh')}</option>
+                  {STEPPER_COUNTRIES.map(c => <option key={c} value={c}>{t(`country_${c}`)}</option>)}
+                </select>
+                {err('country')}
+              </div>
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <div className="form-field">
+                <span className="field-label">{t('stepContact')}</span>
+                <div className="cond-radio-group">
+                  {['email', 'sms'].map(c => (
+                    <label key={c} className="cond-radio-label" htmlFor={`stepper-contact-${c}`}>
+                      <input type="radio" name="stepper-contact" id={`stepper-contact-${c}`}
+                        value={c} checked={values.contact === c}
+                        onChange={() => set('contact', c)} />
+                      {t(`stepContact_${c}`)}
+                    </label>
+                  ))}
+                </div>
+                {err('contact')}
+              </div>
+              <label className="checkbox-label" htmlFor="stepper-newsletter">
+                <input type="checkbox" id="stepper-newsletter" checked={values.newsletter}
+                  onChange={e => set('newsletter', e.target.checked)} />
+                {t('stepNewsletter')}
+              </label>
+            </>
+          )}
+
+          {step === 3 && (
+            <dl id="stepper-review" className="stepper-review">
+              {review.map(r => (
+                <div key={r.key} className="stepper-review-row">
+                  <dt>{t(`stepReview_${r.key}`)}</dt>
+                  <dd data-field={r.key}>{r.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <div className="button-row">
+            <button id="stepper-back" className="btn-secondary" disabled={step === 0}
+              onClick={() => goTo(step - 1)}>{t('stepBack')}</button>
+            {step < STEPS.length - 1
+              ? <button id="stepper-next" className="btn-primary" onClick={next}>{t('stepNext')}</button>
+              : <button id="stepper-submit" className="btn-success" onClick={() => setSubmitted(true)}>{t('stepSubmit')}</button>}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ─── 28. Signature Pad ───────────────────────────────────────────────────────
+// A canvas has no DOM content to assert on, so the pad exposes data-empty and
+// data-strokes. Draws with pointer events (mouse, touch or pen). Save rejects
+// ink shorter than SIGNATURE_MIN_LENGTH canvas px, so a single click is not a
+// signature.
+const SIGNATURE_MIN_LENGTH = 60
+
+function drawStroke(ctx, points) {
+  ctx.beginPath()
+  if (points.length === 1) {
+    ctx.arc(points[0][0], points[0][1], 1.5, 0, Math.PI * 2)
+    ctx.fill()
+    return
+  }
+  ctx.moveTo(points[0][0], points[0][1])
+  points.slice(1).forEach(([x, y]) => ctx.lineTo(x, y))
+  ctx.stroke()
+}
+
+function inkLength(strokes) {
+  let total = 0
+  strokes.forEach(s => {
+    for (let i = 1; i < s.length; i++) total += Math.hypot(s[i][0] - s[i - 1][0], s[i][1] - s[i - 1][1])
+  })
+  return total
+}
+
+function SignatureSection() {
+  const { t } = useLang()
+  const canvasRef = useRef(null)
+  const current   = useRef(null)
+  const [strokes, setStrokes] = useState([])
+  const [saved, setSaved]     = useState(null)
+  const [error, setError]     = useState('')
+
+  function context() {
+    const ctx = canvasRef.current.getContext('2d')
+    ctx.lineWidth = 2.5
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = ctx.fillStyle = '#1e293b'
+    return ctx
+  }
+
+  // Redraw from state whenever strokes change (covers undo and clear).
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx = context()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    strokes.forEach(s => drawStroke(ctx, s))
+  }, [strokes])
+
+  function point(e) {
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    return [
+      (e.clientX - rect.left) * canvas.width / rect.width,
+      (e.clientY - rect.top) * canvas.height / rect.height,
+    ]
+  }
+
+  function onPointerDown(e) {
+    if (e.button !== 0) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    current.current = [point(e)]
+    setError('')
+    setSaved(null)
+    drawStroke(context(), current.current)
+  }
+
+  function onPointerMove(e) {
+    if (!current.current) return
+    const p = point(e)
+    const last = current.current[current.current.length - 1]
+    current.current.push(p)
+    drawStroke(context(), [last, p])
+  }
+
+  function onPointerUp() {
+    if (!current.current) return
+    const stroke = current.current
+    current.current = null
+    setStrokes(s => [...s, stroke])
+  }
+
+  function save() {
+    if (inkLength(strokes) < SIGNATURE_MIN_LENGTH) {
+      setError(t('signatureTooShort'))
+      return
+    }
+    const url = canvasRef.current.toDataURL('image/png')
+    setSaved({ url, kb: (url.length * 0.75 / 1024).toFixed(1) })
+  }
+
+  function clear() {
+    setStrokes([])
+    setSaved(null)
+    setError('')
+  }
+
+  function undo() {
+    setStrokes(s => s.slice(0, -1))
+    setSaved(null)
+    setError('')
+  }
+
+  const empty = strokes.length === 0
+
+  return (
+    <section id="sec-signature" className="card">
+      <SectionHeader num="28" title={t('sec28Title')} locator="canvas / data-empty" />
+      <p className="desc">{t('sec28Desc')}</p>
+
+      <div className="signature-wrap">
+        <canvas ref={canvasRef} id="signature-pad" data-testid="signature-pad"
+          className="signature-pad" width={600} height={200}
+          role="img" aria-label={t('signatureAria')}
+          data-empty={empty} data-strokes={strokes.length}
+          onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp} onPointerCancel={onPointerUp} />
+        {empty && <span className="signature-placeholder">{t('signaturePlaceholder')}</span>}
+      </div>
+
+      <div className="button-row">
+        <button id="signature-undo" className="btn-secondary" disabled={empty} onClick={undo}>{t('signatureUndo')}</button>
+        <button id="signature-clear" className="btn-secondary" disabled={empty} onClick={clear}>{t('signatureClear')}</button>
+        <button id="signature-save" className="btn-primary" disabled={empty} onClick={save}>{t('signatureSave')}</button>
+      </div>
+
+      {error && <span id="signature-error" className="error-msg">{error}</span>}
+      {saved && (
+        <>
+          <Output id="signature-output">{t('signatureSaved', { n: strokes.length, kb: saved.kb })}</Output>
+          <img id="signature-preview" className="signature-preview" src={saved.url} alt={t('signatureAria')} />
+        </>
+      )}
+    </section>
+  )
+}
+
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 const NAV = [
   { id: 'sec-text',        labelKey: 'navTextInput',        groupKey: 'navInputs' },
@@ -983,12 +1530,14 @@ const NAV = [
   { id: 'sec-checkbox',    labelKey: 'navCheckboxes',       groupKey: 'navSelection' },
   { id: 'sec-radio',       labelKey: 'navRadioGroup',       groupKey: 'navSelection' },
   { id: 'sec-dropdown',    labelKey: 'navDropdownTags',     groupKey: 'navSelection' },
+  { id: 'sec-ratings',     labelKey: 'navRatings',          groupKey: 'navSelection' },
   { id: 'sec-counter',     labelKey: 'navClickCounter',     groupKey: 'navButtons' },
   { id: 'sec-dblclick',    labelKey: 'navDoubleClick',      groupKey: 'navButtons' },
   { id: 'sec-dynamic',     labelKey: 'navDynamicButtons',   groupKey: 'navButtons' },
   { id: 'sec-hover',       labelKey: 'navMouseHover',       groupKey: 'navEvents' },
   { id: 'sec-focus',       labelKey: 'navFocusBlur',        groupKey: 'navEvents' },
   { id: 'sec-dragdrop',    labelKey: 'navDragDrop',         groupKey: 'navEvents' },
+  { id: 'sec-signature',   labelKey: 'navSignature',        groupKey: 'navEvents' },
   { id: 'sec-popups',      labelKey: 'navBrowserPopups',    groupKey: 'navWindows' },
   { id: 'sec-windows',     labelKey: 'navLinksWindows',     groupKey: 'navWindows' },
   { id: 'sec-popup-alerts',labelKey: 'navPopupAlerts',      groupKey: 'navWindows' },
@@ -997,6 +1546,8 @@ const NAV = [
   { id: 'sec-toggle',      labelKey: 'navShowHide',         groupKey: 'navAdvanced' },
   { id: 'sec-conditional', labelKey: 'navConditionalFields', groupKey: 'navAdvanced' },
   { id: 'sec-delayed',     labelKey: 'navDelayedWidget',     groupKey: 'navAdvanced' },
+  { id: 'sec-progress',    labelKey: 'navProgressBar',       groupKey: 'navAdvanced' },
+  { id: 'sec-stepper',     labelKey: 'navStepper',           groupKey: 'navAdvanced' },
 ]
 
 const GROUP_KEYS = ['navInputs', 'navSelection', 'navButtons', 'navEvents', 'navWindows', 'navAdvanced']
@@ -1062,6 +1613,15 @@ function Sidebar({ active, onPlaygroundItem }) {
       >
         <span className="nav-petstore-icon" aria-hidden>📊</span>
         <span className="nav-petstore-label">{t('navSpreadsheet')}</span>
+      </NavLink>
+
+      <NavLink
+        to="/verification"
+        className={({ isActive }) => `nav-petstore-cta nav-verification-cta ${isActive ? 'is-active' : ''}`}
+        data-testid="nav-verification"
+      >
+        <span className="nav-petstore-icon" aria-hidden>🛡️</span>
+        <span className="nav-petstore-label">{t('navVerification')}</span>
       </NavLink>
 
       {GROUP_KEYS.map(gKey => {
@@ -1200,6 +1760,10 @@ function Playground({ contentRef, setActive }) {
         <PopupAlertsSection />
         <ConditionalFieldsSection />
         <DelayedWidgetSection />
+        <RatingsSection />
+        <ProgressSection />
+        <StepperSection />
+        <SignatureSection />
       </div>
       <footer className="site-footer">
         <span className="footer-copy">© 2026 Srujana Deva · {t('footerRights')}</span>
@@ -1268,6 +1832,14 @@ function Shell() {
             element={
               <ProtectedRoute>
                 <SpreadsheetPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="verification"
+            element={
+              <ProtectedRoute>
+                <VerificationPage />
               </ProtectedRoute>
             }
           />

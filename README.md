@@ -1,6 +1,6 @@
 # Test Automation Playground
 
-A React frontend built specifically for practising web automation. It covers 23 interaction types on the main page — from basic inputs to Shadow DOM — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
+A React frontend built specifically for practising web automation. It covers 27 interaction types on the main page — from basic inputs to Shadow DOM — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
 
 The app also includes a login-gated **Test Pet Store** page backed by a real Express + MongoDB API, so you can practise authentication flows (signup, login, remember-me, forgot-password) and full CRUD against a persisted backend — not just client-side state.
 
@@ -9,6 +9,8 @@ A login-gated **Media** page adds image, video and banner widgets: images and vi
 A login-gated **Frames** page covers iframes: a basic frame, three levels of nested frames, a frame that is added late, and several look-alike frames with no ids. Clicking inside a frame expands its card into a large overlay; one card (F5) expands only from its Expand button.
 
 A login-gated **Spreadsheet** page covers file uploads into data tables: upload an `.xlsx`, `.xls` or `.csv` file, the API reads it, and a table fills with its rows, with a sheet picker, search and pagination.
+
+A login-gated **Verification** page covers the checks found in sign-up and KYC flows: an image CAPTCHA with test-mode bypasses, an "I'm not a robot" checkbox inside an iframe, a one-time code (OTP) with a dev inbox to read the code from, a camera selfie, and a simulated ID-card OCR.
 
 Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework. Fully bilingual (English / Arabic, with RTL layout).
 
@@ -26,6 +28,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 - [Media Page Reference](#media-page-reference)
 - [Frames Page Reference](#frames-page-reference)
 - [Spreadsheet Page Reference](#spreadsheet-page-reference)
+- [Verification Page Reference](#verification-page-reference)
 - [Locator Quick Reference](#locator-quick-reference)
 - [Project Structure](#project-structure)
 - [Automation Tester Notes](#automation-tester-notes)
@@ -68,7 +71,7 @@ npm --version     # should print 9.x.x or higher
 | Language | JavaScript (ES Modules) |
 | Package manager | npm |
 
-No external UI libraries, no CSS frameworks. The 23 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
+No external UI libraries, no CSS frameworks. The 27 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
 
 ---
 
@@ -193,17 +196,17 @@ npm run preview    # Serves the built output on a local static server
 
 The playground is a React Router app with two kinds of practice targets:
 
-**1. The 23-section playground (`/`, login required)**
+**1. The 27-section playground (`/`, login required)**
 
 - A **fixed sidebar** on the left with collapsible grouped navigation. Click a group header to expand or collapse it. The **Advanced → Data & Tables** sub-group demonstrates nested menu navigation to the Pagination Table. The active section is highlighted as you scroll.
-- A **scrollable content area** on the right with 23 independent sections, each covering one interaction type.
+- A **scrollable content area** on the right with 27 independent sections, each covering one interaction type.
 - Each section is self-contained and designed around a single testing concern:
   - One interaction type per section — no mixed responsibilities
   - Deliberate, stable locator attributes (`id`, `data-testid`, `data-row-id`, etc.) on every interactive element
   - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
-  - No external API calls from within these 23 sections — they work entirely offline once installed
+  - No external API calls from within these 27 sections — they work entirely offline once installed
 
-**2. Auth + Test Pet Store + Media + Frames + Spreadsheet (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`, `/spreadsheet`)**
+**2. Auth + Test Pet Store + Media + Frames + Spreadsheet + Verification (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`, `/spreadsheet`, `/verification`)**
 
 - The whole app is login-gated: opening any URL while logged out redirects to `/login`.
 - **Login** (`/login`) — email + password, show/hide password toggle, "Remember me" (persists the session in `localStorage`; unchecked uses `sessionStorage`), and a "Forgot password?" link.
@@ -214,6 +217,7 @@ The playground is a React Router app with two kinds of practice targets:
 - **Media** (`/media`) — reached from the blue "🎬 Media" entry under the Test Pet Store one in the sidebar. Nine widgets (M1–M9) for images, videos and banners; see [Media Page Reference](#media-page-reference). Works offline: the test image and video are bundled from `src/testresources/`.
 - **Frames** (`/frames`) — reached from the green "🪟 Frames" entry under Media in the sidebar. Five widgets (F1–F5) for iframes; see [Frames Page Reference](#frames-page-reference).
 - **Spreadsheet** (`/spreadsheet`) — reached from the "📊 Spreadsheet" entry under Frames in the sidebar. One widget so far (S1), an upload-to-table widget backed by the API; see [Spreadsheet Page Reference](#spreadsheet-page-reference).
+- **Verification** (`/verification`) — reached from the "🛡️ Verification" entry under Spreadsheet in the sidebar. Five widgets (V1–V5): CAPTCHA, checkbox CAPTCHA, OTP, selfie and ID-card OCR, backed by the API; see [Verification Page Reference](#verification-page-reference).
 
 ---
 
@@ -245,6 +249,10 @@ The playground is a React Router app with two kinds of practice targets:
 | 22 | Popup Alerts | Trigger warning, error, and exception modals, assert visibility and dismiss | `id`, `role` |
 | 23 | Conditional Fields | Reveal hidden fields with a checkbox, then fill and assert them | `id`, `data-testid` |
 | 24 | Delayed Widget | Wait for a widget that loads 1–6 s (random) after the page. Wait for `data-state="loaded"` on `[data-testid="delayed-widget"]`; `data-delay-ms` gives the delay picked. Add `?delay=<ms>` to the URL for a fixed delay. **Reload** repeats with a new delay. | `data-testid`, `data-state` |
+| 25 | Ratings | Rate with radio-input stars, a half-star slider (hover previews, click commits, arrow keys / Home / End) and read a read-only rating. Assert `aria-valuenow` / `data-value`, not colours | `name`, `role="slider"`, `data-value` |
+| 26 | Progress Bar | Start an upload bar that fills in random steps and wait for `aria-valuenow="100"`; tick **Stall at 60% and fail** to wait for `data-state="failed"`; cancel; run an indeterminate task that has no `aria-valuenow` until done | `role="progressbar"`, `aria-valuenow`, `data-state` |
+| 27 | Stepper | 4-step wizard: per-step validation errors, Back, jump back via the step indicator, review page, submit, start over | `id`, `data-step`, `data-state`, `aria-current` |
+| 28 | Signature Pad | Draw on a canvas with mouse down/move/up (touch and pen work too), undo, clear, save as PNG. A single click is rejected as too short | `data-empty`, `data-strokes` |
 
 ---
 
@@ -257,11 +265,12 @@ The playground is a React Router app with two kinds of practice targets:
 | `/login` | Public | Email + password, remember-me, forgot-password link |
 | `/signup` | Public | Name, email, password, confirm, terms |
 | `/forgot-password` | Public | Stub — always confirms, no email sent |
-| `/` | Protected | The 23-section playground |
+| `/` | Protected | The 27-section playground |
 | `/account` | Protected | Logged-in user's profile + logout |
 | `/petstore` | Protected | Test Pet Store — pet CRUD |
 | `/media` | Protected | Media page — images, videos, banners |
 | `/frames` | Protected | Frames page — basic, nested, late-loading and multiple iframes |
+| `/verification` | Protected | Verification page — CAPTCHA, checkbox CAPTCHA, OTP, selfie, ID-card OCR |
 
 ### Backend API (Express + MongoDB, `http://localhost:4000`)
 
@@ -278,6 +287,14 @@ The playground is a React Router app with two kinds of practice targets:
 | `PUT /api/pets/:id` | Bearer token | Update a pet (`404` if not owned) |
 | `DELETE /api/pets/:id` | Bearer token | Delete a pet (`404` if not owned) |
 | `POST /api/spreadsheets/parse` | Bearer token | Multipart upload, one file in the `file` field → `{ fileName, sheets: [{ name, headers, rows }] }`; see [Spreadsheet Page Reference](#spreadsheet-page-reference) for limits and errors |
+| `GET /api/verification/captcha?mode=test&ttl=` | Bearer token | New CAPTCHA → `{ id, image, expiresIn, testMode }`; `image` is an SVG data URL. `mode=test` makes the answer `TEST42`; `ttl` is seconds (5–600, default 120) |
+| `POST /api/verification/captcha/verify` | Bearer token | `{ id, answer }` → `{ ok, bypassed }`; header `X-Captcha-Test-Key: playground-test-key` always passes. Each CAPTCHA can be answered once; `400` wrong/unknown, `410` expired |
+| `POST /api/verification/otp/send?ttl=&cooldown=` | Bearer token | `{ phone }` (8–15 digits) → `{ sentTo, expiresIn, resendIn }`; `429` with `retryAfter` during the resend cooldown. Defaults: 300 s expiry, 30 s cooldown |
+| `POST /api/verification/otp/verify` | Bearer token | `{ code }` → `{ verified, phone }`; `400` wrong (with `attemptsLeft`), `410` expired, `429` after 3 wrong codes |
+| `GET /api/verification/dev-inbox` | Bearer token | `{ messages: [{ id, to, text, code, sentAt }] }`, newest first, last 20 — the current user's "sent" OTP messages |
+| `DELETE /api/verification/dev-inbox` | Bearer token | Empties the current user's dev inbox (`204`) |
+| `POST /api/verification/selfie` | Bearer token | Multipart, PNG or JPEG in the `file` field (2 MB max) → `{ received, type, bytes }`; nothing is stored |
+| `POST /api/verification/ocr?delay=` | Bearer token | Multipart, PNG or JPEG in the `file` field → `{ sample, documentType, fields: [{ key, value, confidence }] }` for the sample cards; `422` for any other image. `delay` in ms (default 1500) |
 
 Passwords are hashed with bcrypt before storage; access tokens are JWTs valid for 24 hours.
 
@@ -379,6 +396,43 @@ There's no ZIP-bomb test file on purpose, since one can upset editors and virus 
 
 ---
 
+## Verification Page Reference
+
+Each widget has its own `data-state` on its card and works on its own. All state lives in the API's memory, so restarting the API clears CAPTCHAs, codes and the dev inbox. None of this is real security; each widget gives tests a documented way through, the way real teams test these flows.
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| V1 | Image CAPTCHA | A form guarded by a CAPTCHA drawn as an image. Get through it with the test mode or the test key (below), not by reading the image. A wrong answer loads a new CAPTCHA; it expires after 2 min | `#sec-verify-captcha` `data-state`: `loading` → `ready` → `verifying` → `passed` (or `expired`, `error`) |
+| V2 | Checkbox CAPTCHA | An "I'm not a robot" checkbox inside an iframe. Switch into the frame, click it, wait ~1.2 s for `aria-checked="true"`, switch back; the frame posts a token to the page, which enables **Submit** | `#robot-frame` → `#robot-checkbox` (`role="checkbox"`, `data-state`: `unchecked` → `checking` → `checked`); card `data-state`: `unchecked` → `verified` → `sent` |
+| V3 | One-Time Code | Send a code to a phone number, read it from the dev inbox, type it into six boxes. Practise auto-advance, Backspace, paste, wrong codes (3 locks it), expiry and the resend cooldown | `#sec-verify-otp` `data-state`: `idle` → `sent` → `verifying` → `verified` (or `locked`, `expired`); `[data-testid="otp-input"]` `data-value`; inbox `li[data-code]` |
+| V4 | Selfie | Start the camera, take a photo, retake, submit. Grant or deny camera permission, feed a fake camera, or upload a photo when there is no camera | `#sec-verify-selfie` `data-state`: `idle` → `requesting` → `live` → `captured` → `uploading` → `uploaded` (or `denied`, `unavailable`) |
+| V5 | ID Card OCR (simulated) | Upload an ID card; fields fill in. Fields under 80% confidence are flagged; fix them and confirm. Empty fields block **Confirm** | `#sec-verify-ocr` `data-state`: `idle` → `reading` → `done` → `confirmed` (or `error`); each field has `data-confidence`, `data-low-confidence`, `data-edited` |
+
+**URL settings** (add to `/verification`, combine with `&`):
+
+| Setting | Effect |
+|---|---|
+| `?captcha=test` | V1 shows a **Test mode** badge and every CAPTCHA's answer is `TEST42` |
+| `?captchaTtl=<s>` | V1 CAPTCHAs expire after `<s>` seconds (5–600) |
+| `?otpTtl=<s>` | V3 codes expire after `<s>` seconds (5–3600) |
+| `?otpCooldown=<s>` | V3 resend waits `<s>` seconds (0–600) |
+| `?ocrDelay=<ms>` | V5 reading takes `<ms>` milliseconds (0–10000, default 1500) |
+
+**Why CAPTCHA has bypasses:** a real CAPTCHA exists to stop automation, so tests should never try to solve one. Real providers give test keys that always pass, and teams turn CAPTCHA off in test environments. V1 copies both: `?captcha=test` (works from any tool, including Selenium) and the `X-Captcha-Test-Key: playground-test-key` header (set it with request interception). The key can be changed with `CAPTCHA_TEST_KEY` in `server/.env`. The image is an SVG data URL, so the letters are not in the page's DOM.
+
+**Why OCR is simulated:** real OCR gives slightly different text from run to run, which makes assertions flaky. The server instead recognises the three sample cards in `src/testresources/ocr/` by their content (sha256), so renaming them is fine but editing them breaks the match. Their answers are in `server/fixtures/ocr.js`:
+
+| File | What it shows |
+|---|---|
+| `id-clean.png` | Every field read with 96–99% confidence |
+| `id-blurry.png` | Low confidence on most fields, and the ID number misread as `PG-5O93-1182` (letter O instead of zero). Correct it to `PG-5093-1182` |
+| `id-partial.png` | A sticky note covers the expiry date, so it comes back empty with "Not found on the card" |
+| any other PNG/JPEG | `422`: "No document could be read from this image" |
+
+The sample cards say "SAMPLE – NOT A REAL DOCUMENT" and use made-up names. The page links to all three for download.
+
+---
+
 ## Locator Quick Reference
 
 A quick cheat sheet of the key element identifiers used across sections.
@@ -441,6 +495,41 @@ A quick cheat sheet of the key element identifiers used across sections.
 #popup-dismiss-btn      Modal dismiss button (section 22)
 #delayed-load-time      "Loaded in X.X s" text, shown once loaded (section 24)
 #btn-reload-widget      Reloads the widget with a new random delay (section 24)
+#rating-star-{1..5}     Radio inputs of the product rating (section 25)
+#rating-product-output  Product rating text (section 25)
+#rating-product-clear   Clears the product rating (section 25)
+#rating-half-output     Half-star rating text, or the hover preview (section 25)
+#rating-half-clear      Clears the half-star rating (section 25)
+#progress-upload        Upload progress bar, role="progressbar" (section 26)
+#progress-upload-pct    "NN%" label (section 26)
+#progress-upload-status Status text: not started / uploading / complete / failed / cancelled (section 26)
+#progress-fail-toggle   Makes the next upload stall at 60% and fail (section 26)
+#progress-start         Start / restart the upload (section 26)
+#progress-cancel        Cancel a running upload (section 26)
+#progress-indeterminate Indeterminate task bar (section 26)
+#progress-task-start    Runs the 2–4 s background task (section 26)
+#progress-task-status   Task status text (section 26)
+#stepper-name           Step 1 name (section 27)
+#stepper-email          Step 1 email (section 27)
+#stepper-city           Step 2 city (section 27)
+#stepper-country        Step 2 country <select>, values in / ae / gb / us (section 27)
+#stepper-contact-email  Step 3 contact radio (section 27)
+#stepper-contact-sms    Step 3 contact radio (section 27)
+#stepper-newsletter     Step 3 newsletter checkbox (section 27)
+#stepper-error-{field}  Validation error for name / email / city / country / contact (section 27)
+#stepper-review         Step 4 summary <dl>; each <dd> has data-field (section 27)
+#stepper-back           Back button (section 27)
+#stepper-next           Next button, steps 1–3 (section 27)
+#stepper-submit         Submit button, step 4 (section 27)
+#stepper-result         Success message after submit (section 27)
+#stepper-reset          Start over (section 27)
+#signature-pad          Signature <canvas> (section 28)
+#signature-undo         Removes the last stroke (section 28)
+#signature-clear        Clears the pad (section 28)
+#signature-save         Saves the pad as a PNG (section 28)
+#signature-error        "Signature is too short" error (section 28)
+#signature-output       Saved size and stroke count (section 28)
+#signature-preview      <img> of the saved PNG (section 28)
 ```
 
 ### By `data-testid`
@@ -458,6 +547,11 @@ data-testid="conditional-toggle"    Enables the conditional fields (section 23)
 data-testid="conditional-text"      Conditional text field (section 23)
 data-testid="conditional-dropdown"  Conditional dropdown (section 23)
 data-testid="conditional-radio-{value}"  Conditional radio options (section 23)
+data-testid="rating-half"           Half-star rating, role="slider" (section 25)
+data-testid="rating-readonly"       Read-only rating, data-value="3.5" (section 25)
+data-testid="stepper-step-{1..4}"   Step indicator buttons (section 27)
+data-testid="stepper-panel"         Current step's form, data-step="1" … "4" (section 27)
+data-testid="signature-pad"         Signature canvas (section 28)
 ```
 
 ### Sidebar
@@ -619,6 +713,15 @@ data-page="1" … "5"                 Pagination page buttons (section 20)
 data-dynamic-id="{timestamp}"       Dynamically added buttons (section 12)
 data-tag="{tag-name}"               Tag selector buttons (section 09)
 data-stat="primary|success|danger|total"  Counter stat boxes (section 10)
+data-value / data-hover-value       Committed and hovered value of the half-star rating (section 25)
+data-star="1" … "5"                 Each star of the half-star rating (section 25)
+data-fill="full|half|empty"         Fill of each star (section 25)
+data-state="idle|running|complete|failed|cancelled"  Upload progress bar (section 26)
+data-state="idle|running|done"      Indeterminate task bar (section 26)
+data-step="1" … "4"                 Stepper items and panel (section 27)
+data-state="complete|active|upcoming"  Stepper items (section 27)
+data-empty="true|false"             Whether the signature pad has ink (section 28)
+data-strokes="N"                    Number of strokes on the signature pad (section 28)
 ```
 
 ### Frames (`/frames`)
@@ -667,6 +770,77 @@ td[data-col="<header>"]             Cells by column header (also data-col-index)
 #sheet-page-info                    "Showing X of Y rows — Page N of M"
 ```
 
+### Verification (`/verification`)
+
+```
+data-testid="verification-welcome"  Hero welcome chip
+data-testid="nav-verification"      Sidebar entry
+
+#sec-verify-captcha                 V1 card (data-state)
+#captcha-message                    Message textarea
+#captcha-image                      CAPTCHA <img> (SVG data URL)
+#captcha-refresh                    Load a new CAPTCHA (↻)
+#captcha-test-badge                 "Test mode" badge (only with ?captcha=test)
+#captcha-timer                      "Expires in m:ss"
+#captcha-answer                     Answer input (disabled unless data-state="ready")
+#captcha-submit                     Send message
+#captcha-error                      Error (role="alert")
+#captcha-result                     Success message
+#captcha-reset                      Send another
+
+#sec-verify-robot                   V2 card (data-state)
+#robot-frame                        The iframe
+  #robot-checkbox                   role="checkbox", aria-checked, data-state (inside the frame)
+  #robot-status                     "Checking…" / "Verified" (inside the frame)
+#robot-submit                       Enabled once the frame posts its token
+#robot-reset                        Reloads the frame
+#robot-result                       "Submitted with token …"
+
+#sec-verify-otp                     V3 card (data-state)
+#otp-phone                          Mobile number
+#otp-send                           Send code
+#otp-sent-to                        "Code sent to ••••4567"
+data-testid="otp-input"             The six boxes (data-value = digits entered)
+#otp-digit-1 … #otp-digit-6         Each box
+#otp-expiry                         "Code expires in m:ss" / expired message
+#otp-verify                         Verify (enabled when all 6 boxes are filled)
+#otp-resend                         Resend code (disabled during the cooldown)
+#otp-resend-timer                   "You can resend in N s"
+#otp-change-phone                   Back to the phone number
+#otp-error                          Error (role="alert")
+#otp-result                         Success message
+#otp-reset                          Start over
+#dev-inbox                          Dev inbox list
+data-testid="inbox-message"         One message (data-message-id, data-code, data-to), newest first
+#inbox-refresh / #inbox-clear       Inbox buttons
+
+#sec-verify-selfie                  V4 card (data-state)
+#selfie-start                       Start camera
+#selfie-video                       Live camera <video> (only while data-state="live")
+#selfie-capture                     Take photo
+#selfie-preview                     Captured / chosen photo
+#selfie-retake                      Retake
+#selfie-submit                      Submit selfie
+#selfie-file                        Photo upload fallback (<input type="file">)
+#selfie-error                       Error (role="alert")
+#selfie-result                      "Selfie received: N KB, type"
+
+#sec-verify-ocr                     V5 card (data-state)
+#ocr-sample-clean / -blurry / -partial   Download links for the sample cards
+#ocr-upload-btn                     Upload button (opens the file picker)
+#ocr-file                           Hidden <input type="file"> — set files on this directly
+#ocr-clear                          Clear
+#ocr-status                         "Reading document…"
+#ocr-preview                        The uploaded image
+#ocr-field-{key}                    fullName / idNumber / dateOfBirth / city / expiryDate
+                                    (data-confidence, data-low-confidence, data-edited)
+#ocr-hint-{key}                     Low-confidence / not-found hint
+#ocr-error-{key}                    "This field is required" after Confirm
+#ocr-confirm                        Confirm details
+#ocr-error                          Upload error (role="alert")
+#ocr-result                         Success message
+```
+
 ### Inside the Shadow DOM (`[data-testid="shadow-host"]`)
 
 Access these only after piercing the shadow root:
@@ -697,19 +871,22 @@ test-playground/
 │   ├── index.js             App bootstrap, middleware, route mounting
 │   ├── db.js                Mongoose connection
 │   ├── seed.js              Creates the sample users and pets — npm run seed
-│   ├── .env / .env.example  MONGO_URI, JWT_SECRET, PORT
+│   ├── .env / .env.example  MONGO_URI, JWT_SECRET, PORT (optional: CAPTCHA_TEST_KEY)
 │   ├── models/
 │   │   ├── User.js
 │   │   └── Pet.js
 │   ├── middleware/
 │   │   └── auth.js          JWT verification (requireAuth)
-│   └── routes/
-│       ├── auth.js          signup / login / forgot-password / me / logout
-│       ├── pets.js          Pet CRUD, scoped to the authenticated user
-│       └── spreadsheets.js  Spreadsheet upload: checks the file and returns its sheets as JSON
+│   ├── routes/
+│   │   ├── auth.js          signup / login / forgot-password / me / logout
+│   │   ├── pets.js          Pet CRUD, scoped to the authenticated user
+│   │   ├── spreadsheets.js  Spreadsheet upload: checks the file and returns its sheets as JSON
+│   │   └── verification.js  CAPTCHA, OTP + dev inbox, selfie upload, simulated OCR (in memory)
+│   └── fixtures/
+│       └── ocr.js           What the simulated OCR returns for each sample ID card
 └── src/
     ├── main.jsx            React root — BrowserRouter + AuthProvider + <App />
-    ├── App.jsx             23 section components, sidebar nav, route shell
+    ├── App.jsx             27 section components, sidebar nav, route shell
     ├── App.css             All styles — layout, components, utilities
     ├── i18n.jsx            English/Arabic translations + LanguageProvider
     ├── api/
@@ -735,10 +912,13 @@ test-playground/
     │   └── FramesPage.jsx    Frames page — basic, nested, late-loading, multiple and button-only iframes (F1–F5)
     ├── spreadsheet/
     │   └── SpreadsheetPage.jsx  Spreadsheet page — Excel upload table (S1)
+    ├── verification/
+    │   └── VerificationPage.jsx  Verification page — CAPTCHA, checkbox CAPTCHA, OTP, selfie, OCR (V1–V5)
     ├── testresources/
     │   ├── testimage.jpg     Image used by the Media page
     │   ├── testvideo.mp4     Video used by the Media page
-    │   └── spreadsheets/     Files for the Spreadsheet page (see its reference)
+    │   ├── spreadsheets/     Files for the Spreadsheet page (see its reference)
+    │   └── ocr/              Sample ID cards for the Verification page's OCR widget
     └── ui.jsx              Shared SectionHeader / Output components
 ```
 
@@ -768,6 +948,87 @@ cy.get('#sec-sheet-upload').should('have.attr', 'data-state', 'loaded')
 In Selenium, call `sendKeys` with the file's absolute path on `#sheet-file-input`. If your driver refuses because the input is hidden, show it first with `executeScript("arguments[0].style.display='block'", input)`.
 
 Uploading the same file twice in a row works: the input is reset after every upload.
+
+### Verification page
+
+**CAPTCHA (V1).** Pick one of the two bypasses:
+
+```js
+// Test mode: works from any tool
+await page.goto('/verification?captcha=test')
+await page.locator('#captcha-message').fill('Hello')
+await page.locator('#captcha-answer').fill('TEST42')
+await page.locator('#captcha-submit').click()
+await expect(page.locator('#sec-verify-captcha')).toHaveAttribute('data-state', 'passed')
+
+// Test key: add the header to the verify call
+await page.route('**/api/verification/captcha/verify', route =>
+  route.continue({ headers: { ...route.request().headers(), 'x-captcha-test-key': 'playground-test-key' } }))
+```
+
+**Checkbox CAPTCHA (V2).**
+
+```js
+const frame = page.frameLocator('#robot-frame')
+await frame.locator('#robot-checkbox').click()
+await expect(frame.locator('#robot-checkbox')).toHaveAttribute('aria-checked', 'true')
+await page.locator('#robot-submit').click()
+```
+
+Selenium: `driver.switchTo().frame("robot-frame")`, click, wait, then `driver.switchTo().defaultContent()`.
+
+**OTP (V3).** Read the code from the inbox on the page, or from the API with the token the app stores under `tp-auth-token`:
+
+```js
+await page.goto('/verification?otpCooldown=0')
+await page.locator('#otp-phone').fill('+971 50 123 4567')
+await page.locator('#otp-send').click()
+const code = await page.getByTestId('inbox-message').first().getAttribute('data-code')
+
+// or from the API
+const token = await page.evaluate(() => localStorage.getItem('tp-auth-token') || sessionStorage.getItem('tp-auth-token'))
+const res = await page.request.get('/api/verification/dev-inbox', { headers: { Authorization: `Bearer ${token}` } })
+const apiCode = (await res.json()).messages[0].code
+
+// Type it: focus moves on by itself
+await page.locator('#otp-digit-1').click()
+await page.keyboard.type(code)
+await page.locator('#otp-verify').click()
+await expect(page.locator('#sec-verify-otp')).toHaveAttribute('data-state', 'verified')
+```
+
+The inbox keeps earlier messages (the last 20), so after a resend wait for a **new** first message before reading the code, for example by comparing its `data-message-id` with the one before. Otherwise a test can read the previous, now-invalid code.
+
+`fill()` on one box also works: the digits are spread across the boxes from that one onwards. A paste does the same.
+
+**Selfie (V4).** Browsers can stand in a fake camera:
+
+| Browser | Fake camera | Deny the permission |
+|---|---|---|
+| Chromium (Playwright) | `args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream']` and `permissions: ['camera']` | `args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream=deny']` |
+| Chrome (Selenium) | `options.add_argument('--use-fake-device-for-media-stream')` and `--use-fake-ui-for-media-stream` | `--use-fake-ui-for-media-stream=deny` |
+| Firefox | prefs `media.navigator.streams.fake: true` and `media.navigator.permission.disabled: true` | leave `permission.disabled` off and dismiss the prompt |
+| WebKit / Safari | Limited fake-camera support; use the `#selfie-file` fallback | — |
+
+Chrome's fake camera shows a green test pattern. To use your own video, add `--use-file-for-fake-video-capture=<path>.y4m` (or `.mjpeg`). Headless Chromium with no camera permission set answers `NotSupportedError`, which the card shows as `unavailable`. With no camera at all, set a file on `#selfie-file`:
+
+```js
+await page.locator('#selfie-file').setInputFiles('src/testresources/testimage.jpg')
+await page.locator('#selfie-submit').click()
+await expect(page.locator('#sec-verify-selfie')).toHaveAttribute('data-state', 'uploaded')
+```
+
+**OCR (V5).**
+
+```js
+await page.goto('/verification?ocrDelay=0')
+await page.locator('#ocr-file').setInputFiles('src/testresources/ocr/id-blurry.png')
+await expect(page.locator('#sec-verify-ocr')).toHaveAttribute('data-state', 'done')
+await expect(page.locator('#ocr-field-idNumber')).toHaveAttribute('data-low-confidence', 'true')
+await page.locator('#ocr-field-idNumber').fill('PG-5093-1182')
+await page.locator('#ocr-confirm').click()
+await expect(page.locator('#sec-verify-ocr')).toHaveAttribute('data-state', 'confirmed')
+```
 
 ### Frames page
 
@@ -943,6 +1204,91 @@ await expect(page.locator('#collapsible-content')).toBeVisible()
 await page.locator('#toggle-panel-btn').click()
 await expect(page.locator('#collapsible-content')).not.toBeVisible()
 ```
+
+### Ratings (Section 25)
+
+The product rating's radio inputs are hidden on screen; their labels are the stars. Click the label, or use `check()` on the input.
+
+```js
+await page.locator('label[for="rating-star-4"]').click()
+await expect(page.locator('#rating-star-4')).toBeChecked()
+
+// Half stars: the first half of a star (left in English, right in Arabic) is worth n - 0.5
+const rating = page.getByTestId('rating-half')
+const star = await rating.locator('[data-star="3"]').boundingBox()
+await page.mouse.move(star.x + star.width * 0.25, star.y + star.height / 2)
+await expect(rating).toHaveAttribute('data-hover-value', '2.5')  // preview only
+await expect(rating).toHaveAttribute('aria-valuenow', '0')       // nothing committed yet
+await page.mouse.click(star.x + star.width * 0.25, star.y + star.height / 2)
+await expect(rating).toHaveAttribute('aria-valuenow', '2.5')
+
+// Keyboard: Right/Up +0.5, Left/Down -0.5 (Left/Right swap in Arabic), Home = 0, End = 5
+await rating.focus()
+await page.keyboard.press('End')
+await expect(rating).toHaveAttribute('aria-valuenow', '5')
+```
+
+### Progress Bar (Section 26)
+
+The upload takes a different time on every run. Wait on the bar's attributes, never on a fixed sleep.
+
+```js
+await page.locator('#progress-start').click()
+await expect(page.locator('#progress-upload')).toHaveAttribute('aria-valuenow', '100', { timeout: 15000 })
+await expect(page.locator('#progress-upload')).toHaveAttribute('data-state', 'complete')
+
+// Failure path: stalls at 60% for 2 s, then fails
+await page.locator('#progress-fail-toggle').check()
+await page.locator('#progress-start').click()
+await expect(page.locator('#progress-upload')).toHaveAttribute('data-state', 'failed', { timeout: 15000 })
+
+// Indeterminate: no aria-valuenow while running
+await page.locator('#progress-task-start').click()
+await expect(page.locator('#progress-indeterminate')).not.toHaveAttribute('aria-valuenow')
+await expect(page.locator('#progress-indeterminate')).toHaveAttribute('data-state', 'done', { timeout: 6000 })
+```
+
+### Stepper (Section 27)
+
+Only earlier steps are clickable in the indicator. To move forward, use **Next**, which checks the current step first.
+
+```js
+await page.locator('#stepper-next').click()
+await expect(page.locator('#stepper-error-name')).toBeVisible()
+
+await page.locator('#stepper-name').fill('Alice')
+await page.locator('#stepper-email').fill('alice@example.com')
+await page.locator('#stepper-next').click()
+await expect(page.getByTestId('stepper-panel')).toHaveAttribute('data-step', '2')
+await expect(page.getByTestId('stepper-step-2')).toHaveAttribute('aria-current', 'step')
+await expect(page.getByTestId('stepper-step-3')).toBeDisabled()
+
+// Values are kept when going back
+await page.getByTestId('stepper-step-1').click()
+await expect(page.locator('#stepper-name')).toHaveValue('Alice')
+```
+
+### Signature Pad (Section 28)
+
+A canvas has no DOM content, so draw with low-level mouse actions and assert the pad's data attributes. Save needs at least 60 px of ink, so a single click is rejected.
+
+```js
+const pad = page.getByTestId('signature-pad')
+const box = await pad.boundingBox()
+await page.mouse.move(box.x + 40, box.y + box.height / 2)
+await page.mouse.down()
+for (let i = 1; i <= 20; i++) {
+  await page.mouse.move(box.x + 40 + i * 12, box.y + box.height / 2 + Math.sin(i) * 20)
+}
+await page.mouse.up()
+await expect(pad).toHaveAttribute('data-empty', 'false')
+await expect(pad).toHaveAttribute('data-strokes', '1')
+
+await page.locator('#signature-save').click()
+await expect(page.locator('#signature-preview')).toHaveAttribute('src', /^data:image\/png/)
+```
+
+Selenium: use `ActionChains(driver).move_to_element_with_offset(pad, -100, 0).click_and_hold().move_by_offset(...)...release().perform()`. Cypress: trigger `pointerdown`, `pointermove` and `pointerup` with `clientX`/`clientY`.
 
 ### Media page
 
