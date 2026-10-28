@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "concurrently -k -n web,api -c blue,green \"npm:dev:web\" \"npm:server\"",
     "dev:web": "vite",
@@ -27,7 +30,7 @@
     "multer": "^2.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.0",
+    "react-router-dom": "^7.18.4",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {

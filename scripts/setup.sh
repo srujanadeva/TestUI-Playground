@@ -8,7 +8,8 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
 source "$PROJECT_DIR/scripts/mongo.sh"
 
-NODE_MIN_MAJOR=18
+# Vite 8 and React Router 7 need Node ^20.19.0 || >=22.12.0 (package.json "engines").
+NODE_REQUIRED="20.19+ or 22.12+"
 # Installed only when the machine has no MongoDB at all.
 MONGO_INSTALL_FORMULA="mongodb-community@8.0"
 
@@ -19,22 +20,32 @@ note_skipped() { SUMMARY+=("  · $1 (already present)"); }
 note_failed()  { SUMMARY+=("  ✘ $1"); FAILED=1; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
-node_ok() { have node && [ "$(node -v | sed -E 's/^v([0-9]+).*/\1/')" -ge "$NODE_MIN_MAJOR" ]; }
+node_ok() {
+  have node || return 1
+  local major minor
+  IFS=. read -r major minor _ <<< "$(node -v | sed -E 's/^v//')"
+  [ "$major" -ge 23 ] || { [ "$major" -eq 22 ] && [ "$minor" -ge 12 ]; } || { [ "$major" -eq 20 ] && [ "$minor" -ge 19 ]; }
+}
 
 echo "==> Setting up $PROJECT_DIR"
 
 # ── 1. Node.js ────────────────────────────────────────────────────────────────
 echo
-echo "==> Node.js (need ${NODE_MIN_MAJOR}+)"
+echo "==> Node.js (need ${NODE_REQUIRED})"
 if node_ok; then
   echo "    Found Node $(node -v)."
   note_skipped "Node.js $(node -v)"
+elif have node; then
+  # Left as is: a second Node next to the old one usually isn't the one on PATH.
+  echo "    Found Node $(node -v) ($(command -v node)), which is too old. Upgrade it the way it was"
+  echo "    installed (e.g. 'brew upgrade node', 'nvm install 22', or https://nodejs.org), then re-run."
+  note_failed "Node.js $(node -v) is too old (need ${NODE_REQUIRED})"
 elif ! have brew; then
-  echo "    Node ${NODE_MIN_MAJOR}+ is missing, and Homebrew isn't installed to install it."
+  echo "    Node isn't installed, and Homebrew isn't installed to install it."
   echo "    Install Node from https://nodejs.org (or Homebrew from https://brew.sh), then re-run."
   note_failed "Node.js missing (no Homebrew to install it)"
 else
-  echo "    Node ${NODE_MIN_MAJOR}+ missing — installing via Homebrew..."
+  echo "    Node isn't installed — installing via Homebrew..."
   if brew install node && node_ok; then
     note_done "Node.js $(node -v) installed via Homebrew"
   else

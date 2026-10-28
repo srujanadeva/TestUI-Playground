@@ -37,7 +37,7 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 
 | Tool | Minimum Version | macOS | Windows |
 |------|----------------|-------|---------|
-| [Node.js](https://nodejs.org/) | 18.x or higher | `brew install node` | `winget install OpenJS.NodeJS.LTS` |
+| [Node.js](https://nodejs.org/) | 20.19+ or 22.12+ (needed by Vite 8 and React Router 7) | `brew install node` | `winget install OpenJS.NodeJS.LTS` |
 | npm | 9.x or higher | Bundled with Node.js | Bundled with Node.js |
 | [MongoDB Community](https://www.mongodb.com/try/download/community) | Any installed version is used; new installs get 8.0 | `brew tap mongodb/brew && brew install mongodb/brew/mongodb-community@8.0 --without-mongosh` | the 8.0.32 `.msi` from mongodb.com, installed as the `MongoDB` service |
 | mongosh (optional shell) | any | `npm install -g mongosh` | `winget install MongoDB.Shell` |
@@ -51,7 +51,7 @@ You don't need to install Node or MongoDB by hand — the setup script does it f
 Verify your environment before proceeding:
 
 ```bash
-node --version    # should print v18.x.x or higher
+node --version    # should print v20.19.x or higher (on the 22 line, v22.12.0 or higher)
 npm --version     # should print 9.x.x or higher
 ```
 
@@ -61,7 +61,7 @@ npm --version     # should print 9.x.x or higher
 
 | Layer | Technology |
 |-------|-----------|
-| UI framework | React 18 (+ React Router) |
+| UI framework | React 18 (+ React Router 7) |
 | Build tool | Vite 8 |
 | Styling | Plain CSS (custom properties, CSS Grid, Flexbox) |
 | Backend | Express, Mongoose (MongoDB), JWT auth, bcrypt, multer (uploads), SheetJS (spreadsheet reading) |
@@ -87,7 +87,7 @@ npm run setup:win    # Windows
 
 | Step | Already there | Missing |
 |------|---------------|---------|
-| 1. Node.js 18+ | Used as is | Installed (Homebrew on macOS, winget on Windows) |
+| 1. Node.js 20.19+ or 22.12+ | Used as is. An older Node is left alone and setup tells you to upgrade it | Installed (Homebrew on macOS, winget on Windows) |
 | 2. npm dependencies | Skipped when every package is installed at the version in `package-lock.json` | `npm install` (SheetJS is downloaded from `cdn.sheetjs.com`, see below) |
 | 3. Dev TLS certs (`certs/cert.pem`, `certs/key.pem`) | Kept | Generated (self-signed, `localhost`, 1 year) |
 | 4. `server/.env` | Kept | Created from `server/.env.example` with a random `JWT_SECRET` |
@@ -138,7 +138,7 @@ Only when a machine has **no** MongoDB does setup install one, and then it insta
 
 ### Start everything (MongoDB + API + frontend)
 
-The app includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script. It first checks that every npm package is installed at the version in `package-lock.json` (if not, for example after pulling changes that add a package, it stops and tells you to run setup). It then starts MongoDB if it isn't already running (`brew services` on macOS, the `MongoDB` Windows service on Windows), then starts the Vite frontend and the Express API together:
+The app includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script. It first checks that Node matches the version `package.json` requires (`engines`) and that every npm package is installed at the version in `package-lock.json`. If either check fails, for example after pulling changes that need a newer Node or add a package, it stops and tells you what to do. It then starts MongoDB if it isn't already running (`brew services` on macOS, the `MongoDB` Windows service on Windows), then starts the Vite frontend and the Express API together:
 
 ```bash
 npm run start:all        # macOS
@@ -690,8 +690,8 @@ test-playground/
 ├── scripts/
 │   ├── mongo.sh             Shared MongoDB start/stop helpers used by the macOS scripts
 │   ├── setup.sh / .ps1      One-time bootstrap (Node, Mongo, certs, .env, seed) — npm run setup / setup:win
-│   ├── start.sh / .ps1      Checks npm packages, starts MongoDB (if needed) + frontend + API — npm run start:all / start:all:win
-│   ├── check-deps.js        Checks npm packages match package-lock.json — used by setup and start
+│   ├── start.sh / .ps1      Checks Node + npm packages, starts MongoDB (if needed) + frontend + API — npm run start:all / start:all:win
+│   ├── check-deps.js        Checks Node matches package.json "engines" and npm packages match package-lock.json — used by setup and start
 │   └── stop.sh / .ps1       Stops frontend + API + MongoDB — npm run stop:all / stop:all:win
 ├── server/                 Express + MongoDB API (port 4000)
 │   ├── index.js             App bootstrap, middleware, route mounting
@@ -1076,11 +1076,11 @@ npm run dev
 
 **`npm install` fails with Node version errors**
 
-Upgrade Node to 18 or higher. Using [nvm](https://github.com/nvm-sh/nvm):
+Upgrade Node to 20.19+ or 22.12+ (setup prints which Node it found and where). Using [nvm](https://github.com/nvm-sh/nvm):
 
 ```bash
-nvm install 18
-nvm use 18
+nvm install 22
+nvm use 22
 npm install
 ```
 
@@ -1169,6 +1169,10 @@ Controlling a Windows service usually needs admin rights. Open PowerShell with *
 **Setup fails with "cdn.sheetjs.com unreachable"**
 
 SheetJS is installed from `cdn.sheetjs.com`, not the npm registry (see [Installation](#installation)), and your network blocked it. Allow `https://cdn.sheetjs.com` through your proxy or firewall, or set npm's proxy (`npm config set https-proxy http://your-proxy:port`), then re-run setup. Once it's installed, later installs reuse it.
+
+**Start says "Node vX is too old for this project"**
+
+The project needs Node 20.19+ or 22.12+. Upgrade Node the way it was installed (`brew upgrade node`, `nvm install 22`, `winget upgrade OpenJS.NodeJS.LTS`, or the installer from [nodejs.org](https://nodejs.org)); the message shows which `node` it found. Then run `npm run setup` (or `npm run setup:win`) so the packages are rebuilt for the new Node, and start again.
 
 **Start says "Missing or out-of-date npm packages"**
 

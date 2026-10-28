@@ -7,7 +7,8 @@ $ErrorActionPreference = 'Stop'
 $ProjectDir = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectDir
 
-$NodeMinMajor = 18
+# Vite 8 and React Router 7 need Node ^20.19.0 || >=22.12.0 (package.json "engines").
+$NodeRequired = '20.19+ or 22.12+'
 # Installed only when the machine has no MongoDB at all.
 $MongoInstallVersion = '8.0.32'
 
@@ -36,12 +37,13 @@ function Winget-Install($id) {
   return $ok
 }
 
-function Get-NodeMajor {
-  if (-not (Has-Command node)) { return 0 }
-  $version = (& node -v) -replace '^v', ''
-  return [int]($version.Split('.')[0])
+function Node-Ok {
+  if (-not (Has-Command node)) { return $false }
+  $parts = ((& node -v) -replace '^v', '').Split('.')
+  $major = [int]$parts[0]
+  $minor = [int]$parts[1]
+  return ($major -ge 23) -or ($major -eq 22 -and $minor -ge 12) -or ($major -eq 20 -and $minor -ge 19)
 }
-function Node-Ok { return ((Get-NodeMajor) -ge $NodeMinMajor) }
 
 function Test-Port([int]$Port) {
   $client = New-Object System.Net.Sockets.TcpClient
@@ -75,12 +77,17 @@ Write-Host "==> Setting up $ProjectDir"
 
 # -- 1. Node.js ----------------------------------------------------------------
 Write-Host ""
-Write-Host "==> Node.js (need $NodeMinMajor+)"
+Write-Host "==> Node.js (need $NodeRequired)"
 if (Node-Ok) {
   Write-Host "    Found Node $(& node -v)."
   Note-Skipped "Node.js $(& node -v)"
+} elseif (Has-Command node) {
+  # Left as is: a second Node next to the old one usually isn't the one on PATH.
+  Write-Host "    Found Node $(& node -v) ($((Get-Command node).Source)), which is too old. Upgrade it the way it"
+  Write-Host "    was installed (e.g. 'winget upgrade OpenJS.NodeJS.LTS', 'nvm install 22', or https://nodejs.org), then re-run."
+  Note-Failed "Node.js $(& node -v) is too old (need $NodeRequired)"
 } else {
-  Write-Host "    Node $NodeMinMajor+ missing - installing Node.js LTS via winget..."
+  Write-Host "    Node isn't installed - installing Node.js LTS via winget..."
   if ((Winget-Install 'OpenJS.NodeJS.LTS') -and (Node-Ok)) {
     Note-Done "Node.js $(& node -v) installed via winget"
   } else {

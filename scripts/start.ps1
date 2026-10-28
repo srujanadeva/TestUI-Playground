@@ -1,4 +1,4 @@
-# Checks npm packages are installed, starts MongoDB (if not already running),
+# Checks the Node version and npm packages, starts MongoDB (if not already running),
 # then the Vite frontend + Express API.
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less scripts as ANSI.
 $ErrorActionPreference = 'Stop'
@@ -18,9 +18,12 @@ function Test-Port([int]$Port) {
   }
 }
 
-Write-Host "==> Checking npm packages..."
+Write-Host "==> Checking Node and npm packages..."
 & node scripts/check-deps.js
-if ($LASTEXITCODE -ne 0) {
+if ($LASTEXITCODE -eq 2) {
+  Write-Host "ERROR: Upgrade Node the way it was installed (e.g. 'winget upgrade OpenJS.NodeJS.LTS', 'nvm install 22', or https://nodejs.org), then run 'npm run setup:win'." -ForegroundColor Red
+  exit 1
+} elseif ($LASTEXITCODE -ne 0) {
   Write-Host "ERROR: Run 'npm run setup:win' to install them (needed after pulling changes that add packages)." -ForegroundColor Red
   exit 1
 }
