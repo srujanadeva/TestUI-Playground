@@ -120,11 +120,24 @@ if (-not (Node-Ok)) {
     Write-Host "    All installed at the versions in package-lock.json."
     Note-Skipped "npm dependencies"
   } else {
-    & npm install
+    # npm's output is kept so a failure caused by a TLS-inspecting proxy can be
+    # recognised. cmd merges stderr itself: with ErrorActionPreference 'Stop', a
+    # PowerShell 2>&1 would turn npm's warnings into terminating errors.
+    & cmd /c "npm install 2>&1" | Tee-Object -Variable npmOutput
     if ($LASTEXITCODE -eq 0) { & node scripts/check-deps.js }
     if ($LASTEXITCODE -eq 0) {
       $sheetJsVersion = & node -p "require('./node_modules/xlsx/package.json').version"
       Note-Done "npm dependencies installed (SheetJS $sheetJsVersion from cdn.sheetjs.com)"
+    } elseif (($npmOutput -join "`n") -match 'SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_GET_ISSUER_CERT_LOCALLY|UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+      Write-Host ""
+      Write-Host "    Your network re-signs HTTPS traffic with its own certificate (a corporate proxy"
+      Write-Host "    such as Zscaler), and Node doesn't trust it. Make Node trust it, then re-run:"
+      Write-Host '      $env:NODE_USE_SYSTEM_CA = 1; npm run setup:win   (Node 22.15+: uses the Windows certificate store)'
+      Write-Host "    If that still fails, export your company's root certificate as a Base-64 .cer/.pem"
+      Write-Host "    file (certmgr.msc, or ask IT), then set it for your user, open a new terminal and re-run:"
+      Write-Host '      setx NODE_EXTRA_CA_CERTS C:\path\to\company-root.pem'
+      Write-Host "    Don't turn off npm's SSL checks (strict-ssl false) to get past this."
+      Note-Failed "npm install failed (network proxy certificate not trusted by Node)"
     } elseif (-not (Test-Url $SheetJsSite)) {
       Write-Host "    cdn.sheetjs.com can't be reached. SheetJS is installed from that site, not the"
       Write-Host "    npm registry. Allow it through your proxy or firewall, then re-run."
@@ -270,7 +283,8 @@ Write-Host "==> Sample users (alice@example.com, bob@example.com)"
 if (-not (Test-Port 27017)) {
   Write-Host "    Skipped: MongoDB isn't running."
   Note-Failed "Sample users not seeded (MongoDB isn't running)"
-} elseif (-not (Node-Ok) -or -not (Test-Path node_modules)) {
+} elseif (-not (Node-Ok) -or -not (& { & node scripts/check-deps.js | Out-Null; $LASTEXITCODE -eq 0 })) {
+  # A failed npm install can leave a partial node_modules behind, so check the packages.
   Write-Host "    Skipped: needs Node and npm dependencies."
   Note-Failed "Sample users not seeded (needs Node and npm dependencies)"
 } else {

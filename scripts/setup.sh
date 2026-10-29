@@ -58,6 +58,10 @@ fi
 # the npm copy is outdated and has known vulnerabilities. package-lock.json pins
 # the file's hash, so a changed download fails the install.
 SHEETJS_SITE="https://cdn.sheetjs.com/"
+# npm's output is kept so a failure caused by a TLS-inspecting proxy can be recognised.
+# curl can't detect that case: it trusts the macOS Keychain, where IT installs the
+# proxy's certificate, but Node doesn't.
+NPM_LOG="$(mktemp)"
 echo
 echo "==> npm dependencies"
 if ! node_ok; then
@@ -66,8 +70,18 @@ if ! node_ok; then
 elif node scripts/check-deps.js >/dev/null 2>&1; then
   echo "    All installed at the versions in package-lock.json."
   note_skipped "npm dependencies"
-elif npm install && node scripts/check-deps.js; then
+elif npm install 2>&1 | tee "$NPM_LOG" && node scripts/check-deps.js; then
   note_done "npm dependencies installed (SheetJS $(node -p "require('./node_modules/xlsx/package.json').version") from cdn.sheetjs.com)"
+elif grep -qE 'SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_GET_ISSUER_CERT_LOCALLY|UNABLE_TO_VERIFY_LEAF_SIGNATURE' "$NPM_LOG"; then
+  echo
+  echo "    Your network re-signs HTTPS traffic with its own certificate (a corporate proxy"
+  echo "    such as Zscaler), and Node doesn't trust it. Make Node trust it, then re-run:"
+  echo "      NODE_USE_SYSTEM_CA=1 npm run setup     (Node 22.15+: uses the macOS Keychain)"
+  echo "    If that still fails, export your company's root certificate as a .pem file"
+  echo "    (Keychain Access, or ask IT), add this to ~/.zshrc, open a new terminal and re-run:"
+  echo "      export NODE_EXTRA_CA_CERTS=/path/to/company-root.pem"
+  echo "    Don't turn off npm's SSL checks (strict-ssl false) to get past this."
+  note_failed "npm install failed (network proxy certificate not trusted by Node)"
 elif ! curl -sfI --max-time 10 "$SHEETJS_SITE" >/dev/null 2>&1; then
   echo "    cdn.sheetjs.com can't be reached. SheetJS is installed from that site, not the"
   echo "    npm registry. Allow it through your proxy or firewall, then re-run."
@@ -75,6 +89,7 @@ elif ! curl -sfI --max-time 10 "$SHEETJS_SITE" >/dev/null 2>&1; then
 else
   note_failed "npm install failed (see output above)"
 fi
+rm -f "$NPM_LOG"
 
 # ── 3. Dev TLS certs ──────────────────────────────────────────────────────────
 echo
@@ -173,7 +188,8 @@ echo "==> Sample users (alice@example.com, bob@example.com)"
 if ! mongo_up; then
   echo "    Skipped: MongoDB isn't running."
   note_failed "Sample users not seeded (MongoDB isn't running)"
-elif ! node_ok || [ ! -d node_modules ]; then
+# A failed npm install can leave a partial node_modules behind, so check the packages.
+elif ! node_ok || ! node scripts/check-deps.js >/dev/null 2>&1; then
   echo "    Skipped: needs Node and npm dependencies."
   note_failed "Sample users not seeded (needs Node and npm dependencies)"
 elif node server/seed.js; then
