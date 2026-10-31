@@ -12,3 +12,10 @@ export function SectionHeader({ num, title, locator }) {
 export function Output({ id, children }) {
   return <p id={id} className="output">{children}</p>
 }
+
+// ?<name>=<n> from the URL, clamped to [min, max]; `fallback` when missing or invalid.
+// Used for fixed delays and timers so tests can run deterministically.
+export function numberParam(name, fallback, min = 0, max = 10000) {
+  const v = Number.parseInt(new URLSearchParams(window.location.search).get(name), 10)
+  return Number.isFinite(v) ? Math.min(Math.max(v, min), max) : fallback
+}

@@ -6,11 +6,23 @@ The app also includes a login-gated **Test Pet Store** page backed by a real Exp
 
 A login-gated **Media** page adds image, video and banner widgets: images and videos that load, fail, or only load when scrolled into view, plus a carousel, a promo banner, an announcement bar and a cookie-consent banner.
 
-A login-gated **Frames** page covers iframes: a basic frame, three levels of nested frames, a frame that is added late, and several look-alike frames with no ids. Clicking inside a frame expands its card into a large overlay; one card (F5) expands only from its Expand button.
+A login-gated **Frames** page covers iframes: a basic frame, three levels of nested frames, a frame that is added late, several look-alike frames with no ids, and a cross-origin frame served by the API that talks to the page through `postMessage`. Clicking inside a frame expands its card into a large overlay; two cards (F5, F6) expand only from their Expand button.
 
 A login-gated **Spreadsheet** page covers file uploads into data tables: upload an `.xlsx`, `.xls` or `.csv` file, the API reads it, and a table fills with its rows, with a sheet picker, search and pagination.
 
 A login-gated **Verification** page covers the checks found in sign-up and KYC flows: an image CAPTCHA with test-mode bypasses, an "I'm not a robot" checkbox inside an iframe, a one-time code (OTP) with a dev inbox to read the code from, a camera selfie, and a simulated ID-card OCR.
+
+A login-gated **Data** page covers data that isn't simply sitting in the page: a sortable table with inline editing and expandable rows, a tree view with half-checked folders, an SVG chart whose values only appear in tooltips, a skeleton loader, an infinite scroll list, a virtualised list of 10,000 rows, and a back-to-top button.
+
+A login-gated **Controls** page covers custom form controls: an autocomplete combobox whose options arrive late, a multi-select with chips, toggle switches, a number stepper, colour and time pickers, a rich text editor and masked inputs.
+
+A login-gated **Navigation** page covers moving around an app: an accordion, breadcrumbs that live in the URL, a right-click context menu, a menu with a submenu, a side drawer, and a guard that stops you leaving with unsaved changes.
+
+A login-gated **Interactions** page covers interactions beyond a click: resizable panels, a sortable grid (mouse or keyboard), a Ctrl+K command palette and copying to the clipboard.
+
+A login-gated **Live** page covers content that changes on its own: a live order feed, a countdown timer, a button that keeps moving, rows that are rebuilt every few seconds (stale elements), and a session-timeout warning.
+
+A login-gated **Browser** page covers things owned by the browser: nested Shadow DOM with a slot and a closed shadow root, real location and notification permission prompts, and full-screen mode.
 
 Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework. Fully bilingual (English / Arabic, with RTL layout).
 
@@ -29,6 +41,12 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 - [Frames Page Reference](#frames-page-reference)
 - [Spreadsheet Page Reference](#spreadsheet-page-reference)
 - [Verification Page Reference](#verification-page-reference)
+- [Data Page Reference](#data-page-reference)
+- [Controls Page Reference](#controls-page-reference)
+- [Navigation Page Reference](#navigation-page-reference)
+- [Interactions Page Reference](#interactions-page-reference)
+- [Live Page Reference](#live-page-reference)
+- [Browser Page Reference](#browser-page-reference)
 - [Locator Quick Reference](#locator-quick-reference)
 - [Project Structure](#project-structure)
 - [Automation Tester Notes](#automation-tester-notes)
@@ -206,7 +224,7 @@ The playground is a React Router app with two kinds of practice targets:
   - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
   - No external API calls from within these 27 sections — they work entirely offline once installed
 
-**2. Auth + Test Pet Store + Media + Frames + Spreadsheet + Verification (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`, `/spreadsheet`, `/verification`)**
+**2. Auth + Test Pet Store + feature pages (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`, `/spreadsheet`, `/verification`, `/controls`, `/navigation`, `/data`, `/interactions`, `/live`, `/browser`)**
 
 - The whole app is login-gated: opening any URL while logged out redirects to `/login`.
 - **Login** (`/login`) — email + password, show/hide password toggle, "Remember me" (persists the session in `localStorage`; unchecked uses `sessionStorage`), and a "Forgot password?" link.
@@ -214,10 +232,17 @@ The playground is a React Router app with two kinds of practice targets:
 - **Forgot password** (`/forgot-password`) — a UI-only stub: the backend endpoint always responds `{ ok: true }` and no email is actually sent.
 - **Account** (`/account`) — shows the logged-in user's name, email, and member-since date, with a logout button and a shortcut into the Test Pet Store.
 - **Test Pet Store** (`/petstore`) — reached from the gradient "🐾 Test Pet Store" entry at the top of the sidebar. Full pet CRUD (add / edit / delete), status filtering (available / pending / sold), live stat tiles, and toast notifications on every mutation. Pets are persisted in MongoDB and scoped per-user — each account only ever sees its own pets.
-- **Media** (`/media`) — reached from the blue "🎬 Media" entry under the Test Pet Store one in the sidebar. Nine widgets (M1–M9) for images, videos and banners; see [Media Page Reference](#media-page-reference). Works offline: the test image and video are bundled from `src/testresources/`.
-- **Frames** (`/frames`) — reached from the green "🪟 Frames" entry under Media in the sidebar. Five widgets (F1–F5) for iframes; see [Frames Page Reference](#frames-page-reference).
+- **Pages group** — below the Test Pet Store entry, a collapsible **Pages** group (`data-testid="nav-pages-toggle"`, open by default) holds the entries for Media, Frames, Spreadsheet, Verification, Controls, Navigation, Data, Interactions, Live and Browser, in that order.
+- **Media** (`/media`) — reached from the blue "🎬 Media" entry, the first one in the sidebar's Pages group. Nine widgets (M1–M9) for images, videos and banners; see [Media Page Reference](#media-page-reference). Works offline: the test image and video are bundled from `src/testresources/`.
+- **Frames** (`/frames`) — reached from the green "🪟 Frames" entry under Media in the sidebar. Six widgets (F1–F6) for iframes; see [Frames Page Reference](#frames-page-reference).
 - **Spreadsheet** (`/spreadsheet`) — reached from the "📊 Spreadsheet" entry under Frames in the sidebar. One widget so far (S1), an upload-to-table widget backed by the API; see [Spreadsheet Page Reference](#spreadsheet-page-reference).
 - **Verification** (`/verification`) — reached from the "🛡️ Verification" entry under Spreadsheet in the sidebar. Five widgets (V1–V5): CAPTCHA, checkbox CAPTCHA, OTP, selfie and ID-card OCR, backed by the API; see [Verification Page Reference](#verification-page-reference).
+- **Controls** (`/controls`) — "🎛️ Controls" in the Pages group. Eight widgets (C1–C8) for custom form controls; see [Controls Page Reference](#controls-page-reference).
+- **Navigation** (`/navigation`) — "🧭 Navigation" in the Pages group. Six widgets (N1–N6) for menus, breadcrumbs, a drawer and leaving the page; see [Navigation Page Reference](#navigation-page-reference).
+- **Data** (`/data`) — reached from the orange "🗂️ Data" entry under Navigation in the sidebar. Seven widgets (D1–D7) for tables, trees, charts, late-loading content and long lists; see [Data Page Reference](#data-page-reference). Works offline: all data is built into the page.
+- **Interactions** (`/interactions`) — "🖐️ Interactions" in the Pages group. Four widgets (I1–I4): resizing, a sortable grid, a command palette, the clipboard; see [Interactions Page Reference](#interactions-page-reference).
+- **Live** (`/live`) — "⏱️ Live" in the Pages group. Four widgets (L1–L4) that change on their own; see [Live Page Reference](#live-page-reference).
+- **Browser** (`/browser`) — "🌐 Browser" in the Pages group. Three widgets (B1–B3): nested and closed Shadow DOM, permission prompts, full screen; see [Browser Page Reference](#browser-page-reference).
 
 ---
 
@@ -335,15 +360,18 @@ All frames use `srcdoc`, so they are same-origin and work offline. Inside every 
 | F3 | Late-loading iFrame | Wait for a frame that is added 1–6 s after the page loads. `?delay=<ms>` fixes the delay; **Reload frame** removes it and adds it again | `[data-testid="late-frame-slot"]` (`data-state`: `loading` → `loaded`, `data-delay-ms`) → `#late-iframe` → `#late-input`, `#late-btn`, `#late-result` (`Value: …`) |
 | F4 | Multiple iFrames without ids | Pick the right frame when none has an id and all three share the same inner ids | `iframe[name="orders-frame"]`, `iframe[title="Payments frame"]`, and the third by index only (`#sec-frames-multiple iframe` → `nth(2)`) → `#frame-input`, `#frame-btn`, `#frame-result` (`Orders: …` / `Payments: …` / `Reviews: …`) |
 | F5 | Expand-button only | A card that ignores clicks inside its frame and on the card; only **⤢ Expand** opens it | `#button-only-iframe` → `#button-only-input`, `#button-only-btn`, `#button-only-result` (`Value: …`) |
+| F6 | Cross-origin iFrame | Switch into a frame from another origin (the API, port 4000); send messages both ways with `postMessage`; see that the page can't read the frame's DOM. Expands only from **⤢ Expand** | `[data-testid="xo-frame-slot"]` (`data-state`: `loading` → `ready`, or `unreachable`) → `#cross-origin-iframe` → `#xo-input`, `#xo-btn`, `#xo-result` (`Value: …`), `#xo-send`, `#xo-inbox`, `#xo-origin` |
 
 **Expanding a card:** each card has `data-expand-on` set to `click` or `button`, and `data-expanded="true|false"`.
 
 - **F1–F4 (`data-expand-on="click"`)** expand when you press anywhere inside one of their frames, click the card itself, or click **⤢ Expand** (`data-testid="{section-id}-toggle"`). Events inside a frame never reach the page, so each frame tells the page about presses with `window.top.postMessage({ type: 'tp-frame-click', card: '<section id>' }, '*')`. This works from every nesting level in F2. The press still reaches the element it landed on, so a test can click the input, let the card expand, and keep typing.
-- **F5 (`data-expand-on="button"`)** expands only from **⤢ Expand**. Its frame doesn't report presses, and clicking the card does nothing.
+- **F5 and F6 (`data-expand-on="button"`)** expand only from **⤢ Expand**. Their frames don't report presses, and clicking the card does nothing.
 
 The card element stays the same when it expands, so frames don't reload and what you typed stays put. Close it with **✕ Close**, the backdrop (`data-testid="frame-backdrop"`) or `Escape` (Escape only works while focus is outside the frame).
 
 **Language switch:** switching English ↔ Arabic rebuilds each frame's content, which reloads all frames and clears what was typed in them.
+
+**Cross-origin frame (F6):** the frame page comes from the API at `http://<same host>:4000/frames/cross-origin`, so its origin differs from the app's (`https://localhost:3000`). The page gets `contentDocument === null` for it (**Try to read the frame** shows this), but test tools can still switch into it. The frame says it's ready with `postMessage`; if that doesn't arrive within 5 s the slot shows `data-state="unreachable"` (usually the API isn't running). **Send to page** posts the frame's text to the page (`#xo-status` shows it); **Send to frame** posts `#xo-page-input` to the frame (`#xo-inbox`). Browsers allow an `http://localhost` frame inside an `https://localhost` page, but if you open the app from another machine by IP address the frame is blocked as mixed content. If the API runs on another port, add `?apiPort=<port>` to `/frames`.
 
 ---
 
@@ -430,6 +458,128 @@ Each widget has its own `data-state` on its card and works on its own. All state
 | any other PNG/JPEG | `422`: "No document could be read from this image" |
 
 The sample cards say "SAMPLE – NOT A REAL DOCUMENT" and use made-up names. The page links to all three for download.
+
+---
+
+## Data Page Reference
+
+Every widget keeps its state in attributes (`aria-sort`, `aria-checked`, `aria-busy`, `data-state`, `data-loaded`, `data-rendered`…), so wait on those instead of sleeping. Each one also shows its state as text in an output line below it. All data is built into the page; nothing calls the API.
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| D1 | Sortable table with inline edit | Sort by clicking headers (click again to reverse), double-click a salary to edit it (Enter saves, Escape cancels, blur saves or cancels if invalid), open detail rows with ▸ | `th[data-key][aria-sort]`, `tr[data-row-id]`, `td[data-col]`, `#salary-edit-{id}`, `[data-testid="row-expand-{id}"]` |
+| D2 | Tree view with checkboxes | Check a folder to check everything inside it; read the indeterminate (half-checked) state; expand/collapse folders | `[role="treeitem"][data-path]`, checkbox `aria-checked="mixed"` / `data-state` |
+| D3 | Chart with hover tooltips | Hover or focus an SVG bar to show its tooltip; read the value from attributes, not pixels | `[data-testid="bar-chart"] rect[data-month][data-value]`, `#chart-tooltip` |
+| D4 | Skeleton loader, avatar and badges | Wait for placeholders to be replaced by the real card (2 s), then read the badges | `[data-testid="profile-card"]` `aria-busy`, `data-state`: `loading` → `loaded`; `.data-badge[data-status][data-count]` |
+| D5 | Infinite scroll list | Scroll to the bottom of the box to load 20 more rows, up to 100 | `[data-testid="infinite-list"]` `data-loaded`, `data-state`: `idle` → `loading` → … → `end` |
+| D6 | Virtualised list | 10,000 rows, but only the visible ones (plus 4 spare each side) exist in the DOM. Scroll or jump to a row before locating it | `[data-testid="virtual-list"]` `data-total`, `data-rendered`, `data-first-visible`; rows `[data-index]` (1-based) |
+| D7 | Back-to-top button | Scroll the box past 150 px to show the button, click it, wait for `scrollTop` to reach 0 | `#backtotop-box[data-scroll-top]`, `#back-to-top` (only in the DOM when shown) |
+
+**URL settings** (add to `/data`, combine with `&`):
+
+| Setting | Effect |
+|---|---|
+| `?skeletonDelay=<ms>` | D4 swaps in the real card after `<ms>` milliseconds (0–10000, default 2000) |
+| `?scrollDelay=<ms>` | D5 waits `<ms>` milliseconds before each new batch of rows (0–10000, default 700) |
+
+**D1 data:** 8 employees with fixed ids 1–8. Sorting compares names and departments as text, start dates as ISO dates, and salaries as numbers. A salary must be a whole number from 1 to 1,000,000; anything else shows `#data-table-error` and keeps the cell in edit mode. **Reset** restores the original rows and clears sorting.
+
+**D2 states:** each checkbox has `data-state` set to `checked`, `unchecked` or `mixed`. `mixed` is the indeterminate state: the browser shows a dash, `aria-checked="mixed"` is set, and the DOM property `indeterminate` is `true`. There is no HTML attribute for it, so `isChecked()` alone can't tell you about it. Two tests (`login.spec.ts`, `signup.spec.ts`) start checked.
+
+**D3 data:** sign-ups for Jan–Oct 2026: 420, 380, 510, 640, 590, 720, 810, 760, 880, 950. `data-month` is always the English short month name, even in Arabic.
+
+---
+
+## Controls Page Reference
+
+Custom form controls that don't behave like plain inputs. Every widget shows its state in an output line and in attributes on its card. Nothing calls the API.
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| C1 | Autocomplete combobox | Type to search countries; options arrive after 400 ms. Pick with ↑/↓ + Enter or a click; Escape closes the list | `#combo-input[role="combobox"]` (`aria-expanded`, `aria-activedescendant`), `#combo-listbox [role="option"][data-value]`; card `data-state`: `idle` → `loading` → `open` → `selected`, `data-selected` |
+| C2 | Multi-select with chips | Add up to 5 skills (Enter or click), remove with ✕ or Backspace in the empty input; a 6th shows an error | `[data-testid="chip"][data-value]`, `[data-testid="chip-remove-{slug}"]`, `#chips-input`, `#chips-listbox`, `#chips-error`; card `data-count` |
+| C3 | Toggle switches | Flip `role="switch"` buttons (not checkboxes); one is disabled and stays on | `#switch-email / -sms / -digest / -beta` with `aria-checked`; card `data-on` |
+| C4 | Number stepper | − / + between 0 and 10 (buttons disable at the limits), ↑/↓ in the box, typed values clamped on Enter or blur | `#stepper-dec`, `#stepper-input`, `#stepper-inc`; card `data-value` |
+| C5 | Colour picker | Set the native picker's value, type a hex code, or click a swatch | `#color-input[type="color"]`, `#color-hex`, `#color-apply`, `[data-color]` swatches (`aria-pressed`), `#color-error`; card `data-color` |
+| C6 | Time and date-time pickers | Fill native pickers with ISO values; time must be 09:00–17:00, date in 2026 | `#time-input`, `#datetime-input`, `#time-error`, `#datetime-error`; card `data-time`, `data-datetime`, `data-valid` |
+| C7 | Rich text editor | Type into a `contenteditable` area, select text, format it from the toolbar, assert the HTML | `#rte[contenteditable]`, `[data-cmd="bold|italic|underline|insertUnorderedList|insertOrderedList"]` (`aria-pressed`), `#rte-clear`, `#rte-html` |
+| C8 | Masked inputs | Phone, card and amount fields that format as you type; the card field detects the brand and runs a Luhn check | `#mask-phone`, `#mask-card` (`data-brand`, `data-valid`), `#mask-amount`, each with `data-raw`; `#mask-card-error` |
+
+**URL setting:** `?comboDelay=<ms>` sets how long C1's options take to arrive (0–10000, default 400).
+
+**C8 formats:** phone `(555) 123-4567`, `data-raw="5551234567"`. Cards group as `4242 4242 4242 4242`, or `3782 822463 10005` for Amex (`34…`/`37…`). `data-brand` is `visa`, `mastercard`, `amex` or `unknown`. `data-valid` is empty until the number is complete, then `true` or `false` (Luhn). The amount fills from the right like a till: typing `123456` shows `$1,234.56`, `data-raw="1234.56"`.
+
+---
+
+## Navigation Page Reference
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| N1 | Accordion | Open one panel at a time (or several, after ticking the box); closed panels stay in the DOM with `hidden`. ↑/↓, Home and End move between headers | `#acc-btn-{shipping|returns|warranty|payments}` (`aria-expanded`, `aria-controls`), `#acc-panel-{key}[role="region"]`, `#acc-multi`; card `data-open` |
+| N2 | Breadcrumbs | Open folders, go back up by clicking a crumb, use the browser's Back button and reload; the folder lives in the URL | `?folder=Home/Projects/Website`; `[data-crumb-depth]`, `[aria-current="page"]` (current crumb), `[data-folder]` links; card `data-path` |
+| N3 | Custom context menu | Right-click the file (or Shift+F10) for the app's own menu; Paste is disabled until Copy; Escape or an outside click closes it | `[data-testid="context-zone"]`, `#context-menu[role="menu"]`, `[role="menuitem"][data-action]` (`aria-disabled`); card `data-menu-open` |
+| N4 | Menu with a submenu | Open a menu button, move with arrow keys, open Export's submenu with → or hover, pick an item; Escape returns focus to the button | `#menu-btn` (`aria-expanded`), `#menu-list`, `#menu-item-{duplicate|archive|export|share}`, `#menu-sub-export`, `#menu-item-export-{csv|pdf|json}`; card `data-open`, `data-submenu-open` |
+| N5 | Side drawer | Open a drawer that animates in for 250 ms, fill its filters, apply or close it (✕, backdrop, Escape) | `#drawer-open`, `[data-testid="drawer"]` (`data-state`: `closed` → `opening` → `open` → `closing` → `closed`), `#drawer-close`, `[data-testid="drawer-backdrop"]`, `#drawer-active`, `#drawer-archived`, `#drawer-owner`, `#drawer-apply` |
+| N6 | Unsaved-changes guard | Edit the note, then leave by the card's link or the sidebar: an in-page dialog asks first. Closing or reloading the tab raises the browser's `beforeunload` dialog | `#guard-title`, `#guard-notes`, `#guard-save`, `#guard-leave-link`; card `data-dirty`; `[data-testid="leave-dialog"]` (`data-target`), `#leave-stay`, `#leave-save`, `#leave-discard` |
+
+**N2 folders:** `Home` › `Projects` › `Website` › (`Design`, `Copy`) and `Mobile app` › `Release 2.4`; `Home` › `Reports` › (`Q3 2026`, `Q4 2026`); `Home` › `Settings`. An unknown `?folder=` falls back to `Home`. The sidebar's active link also has `aria-current="page"`, so scope that locator to `#sec-nav-breadcrumbs`.
+
+**N6 scope:** the guard stops clicks on in-app links (`<a href>`) that leave the page, which covers the card's link and the sidebar's page entries. The sidebar's playground items are buttons, and the browser's own Back button isn't intercepted; both leave without asking. Links that stay on `/navigation` (the breadcrumbs) aren't blocked.
+
+---
+
+## Interactions Page Reference
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| I1 | Resizable panels | Drag the divider (mouse down → move → up) between 20% and 80%; or ←/→ in 5% steps, Home, End; double-click resets to 35% | `#split-handle[role="separator"]` (`aria-valuenow`), `[data-testid="split"]`, `#pane-first`, `#pane-second`; card `data-size`, `data-dragging` |
+| I2 | Sortable grid | Put tiles 1–9 in order. Drag a tile onto another to swap them (HTML5 drag and drop), or Space to pick up, arrows to move, Space to drop, Escape to cancel | `[data-tile="{n}"][data-pos="{1-9}"]` (`aria-pressed` while picked up), `#grid-reset`, `#grid-live`; card `data-order`, `data-sorted` |
+| I3 | Command palette | Ctrl+K / ⌘+K opens it anywhere on this page; type to filter, ↑/↓, Enter runs, Escape closes and returns focus. Three commands do real things | `[data-testid="command-palette"]`, `#palette-input[role="combobox"]`, `[role="option"][data-command]`, `#palette-empty`, `#palette-open`; card `data-open`, `data-last-command`, `data-compact` |
+| I4 | Copy to clipboard | Copy a command (button shows "Copied" for 2 s), then paste into the box to check it | `#copy-btn` (`data-state`: `idle` → `copied`/`failed` → `idle`), `#copy-source`, `#paste-target` |
+
+**I2 start order:** `3 1 2 / 6 4 5 / 9 7 8`. A tile in its right place turns green. `data-order` is the full order, comma-separated; `data-sorted="true"` once it reads `1,2,…,9`.
+
+**I3 commands:** `new-test`, `run-all`, `export-report` only record themselves. `toggle-compact` toggles `data-compact`, `switch-language` switches English ↔ Arabic, and `go-data` navigates to `/data`. The filter matches the visible (translated) labels.
+
+---
+
+## Live Page Reference
+
+Everything on this page changes on its own. The timers use `Date.now()` with `setInterval`, so Playwright's `page.clock` can fast-forward them.
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| L1 | Live order feed | A new order every 2 s at the top; only the newest 20 stay. Pause, resume, clear | `[data-testid="live-feed"] li[data-order-id][data-amount]`, `#feed-toggle` (`aria-pressed`), `#feed-clear`; card `data-state` (`live`/`paused`), `data-count` |
+| L2 | Countdown timer | Start, pause, resume and reset a 30 s countdown; wait for it to finish | `[data-testid="countdown"][role="timer"]`, `#countdown-start`, `#countdown-pause`, `#countdown-reset`, `#countdown-done[role="alert"]`; card `data-state` (`idle`/`running`/`paused`/`done`), `data-remaining` |
+| L3 | Moving target and rebuilt rows | Click a button that jumps every 1.5 s; click Buy on rows whose DOM nodes are replaced every 3 s | `[data-testid="moving-button"][data-clicks]`, `#mover-toggle`; `[data-testid="rerender-list"][data-version]`, `[data-testid="buy-{keyboard|mouse|monitor}"]` |
+| L4 | Session-timeout warning | Start a 12 s session; at 6 s left a dialog asks to stay; ignore it to be signed out | `#session-start`, `[data-testid="session-modal"][role="alertdialog"]`, `#session-remaining`, `#session-stay`, `#session-signout`; card `data-session-state` (`idle`/`active`/`warning`/`expired`/`signed-out`), `data-remaining` |
+
+**URL settings** (add to `/live`, combine with `&`):
+
+| Setting | Effect |
+|---|---|
+| `?feedInterval=<ms>` | L1 adds an order every `<ms>` (200–60000, default 2000) |
+| `?countdown=<s>` | L2 counts down from `<s>` seconds (1–3600, default 30) |
+| `?moveInterval=<ms>` | L3's button moves every `<ms>` (200–10000, default 1500) |
+| `?rerenderInterval=<ms>` | L3's rows are rebuilt every `<ms>` (200–60000, default 3000) |
+| `?sessionLength=<s>` | L4's session lasts `<s>` seconds (3–600, default 12) |
+| `?sessionWarn=<s>` | L4 warns when `<s>` seconds are left (1–600, default 6; always less than the length) |
+
+**L1 data:** order *n* is `ORD-{5000+n}`, so the first three on load are `ORD-5001`–`ORD-5003`. Customers and amounts follow a fixed pattern, so the same id always has the same amount.
+
+---
+
+## Browser Page Reference
+
+| # | Widget | What to Practise | Key attributes |
+|---|--------|-----------------|----------------|
+| B1 | Nested Shadow DOM with a slot | Reach an input two open shadow roots deep; read slotted light-DOM content; meet a closed shadow root you can't look into | `[data-testid="outer-host"]` ▸ shadow ▸ `[data-testid="inner-host"]` ▸ shadow ▸ `#deep-input`, `#deep-btn`, `#deep-output`; `[data-testid="slotted-title"]`; `[data-testid="closed-host"]` (closed); card `data-deep-value`, `data-closed-clicks` |
+| B2 | Permission prompts | Ask for location and notification permission for real; grant or deny them from the test before the page asks | `#geo-btn`, `#geo-permission`, `#geo-result` (`data-lat`, `data-lng`), `#notify-permission`, `#notify-request`, `#notify-send`, `[data-permission][data-state]`; card `data-geo-state`, `data-notify-permission` |
+| B3 | Full-screen mode | Enter full screen from a click, leave with Exit or Escape, and assert the state | `#fs-enter`, `#fs-box` (`data-fullscreen`), `#fs-exit` (only while full screen), `#fs-error`; card `data-fullscreen`, `data-changes` |
+
+**B2 states:** `data-geo-state` is `idle` → `requesting` → `granted` / `denied` / `error` (or `unavailable`). `#geo-permission` and `#notify-permission` show the browser's own values: `prompt` / `granted` / `denied` for location, `default` / `granted` / `denied` for notifications. Headless Chromium always reports `Notification.permission` as `denied`, even after `grantPermissions(['notifications'])`, so run notification tests headed.
+
+**B1 and the language switch:** switching English ↔ Arabic rebuilds both shadow roots, which clears what was typed inside them.
 
 ---
 
@@ -558,9 +708,18 @@ data-testid="signature-pad"         Signature canvas (section 28)
 
 ```
 data-testid="nav-test-pet-store"    Gradient "Test Pet Store" nav entry
+data-testid="nav-pages-toggle"      "Pages" group header (aria-expanded; open by default)
+#nav-pages                          Container of the page entries below (only while open)
 data-testid="nav-media"             Media nav entry
 data-testid="nav-frames"            Frames nav entry
 data-testid="nav-spreadsheet"       Spreadsheet nav entry
+data-testid="nav-verification"      Verification nav entry
+data-testid="nav-controls"          Controls nav entry
+data-testid="nav-navigation"        Navigation nav entry
+data-testid="nav-data"              Data nav entry
+data-testid="nav-interactions"      Interactions nav entry
+data-testid="nav-live"              Live nav entry
+data-testid="nav-browser"           Browser nav entry
 data-testid="sidebar-account"       Bottom account block container
 data-testid="sidebar-account-link"  Link to /account (when logged in)
 data-testid="sidebar-logout"        Logout button (when logged in)
@@ -746,6 +905,12 @@ iframe[name="orders-frame"]             F4 frame 1 → #frame-input, #frame-btn,
 iframe[title="Payments frame"]          F4 frame 2 → same inner ids
 #sec-frames-multiple iframe >> nth=2    F4 frame 3 (index only) → same inner ids
 #button-only-iframe                     F5 frame → #button-only-input, #button-only-btn, #button-only-result
+[data-testid="xo-frame-slot"]           F6 slot (data-state: loading / ready / unreachable, data-frame-origin)
+#cross-origin-iframe                    F6 frame → #xo-input, #xo-btn, #xo-result, #xo-send, #xo-inbox, #xo-origin
+#xo-page-input / #xo-page-send          F6 page → frame message
+#xo-peek                                F6 "Try to read the frame"
+#xo-unreachable                         F6 error when the frame doesn't load
+#xo-status                              F6 output line
 ```
 
 ### Spreadsheet (`/spreadsheet`)
@@ -841,6 +1006,236 @@ data-testid="inbox-message"         One message (data-message-id, data-code, dat
 #ocr-result                         Success message
 ```
 
+### Data (`/data`)
+
+```
+data-testid="data-welcome"          Hero welcome chip
+
+#sec-data-table                     D1 card (data-sort-key, data-sort-dir)
+#data-table                         The table
+#sort-name / -dept / -start / -salary   Sort buttons inside the headers
+th[data-key="<col>"]                Header cells (aria-sort: none / ascending / descending)
+tr[data-row-id="<1-8>"]             Data rows
+td[data-col="name|dept|start|salary"]   Cells (salary cell also has data-value)
+#salary-edit-{id}                   Salary input while editing (after a double-click)
+#data-table-error                   Invalid salary message (role="alert")
+[data-testid="row-expand-{id}"]     ▸ / ▾ detail toggle (aria-expanded)
+tr[data-detail-for="{id}"]          Detail row
+#data-table-reset                   Reset
+#data-table-status                  "Sorted by: …" / "Saved: …" / "Edit cancelled"
+
+#sec-data-tree                      D2 card (data-checked-count)
+[role="treeitem"][data-path="test-suite/auth/login.spec.ts"]   Tree items by path
+#tree-test-suite-auth               Checkbox ids: "tree-" + path with non-alphanumerics → "-"
+[data-testid="tree-test-suite-auth-toggle"]   Folder expand/collapse buttons
+#tree-expand-all / #tree-collapse-all
+#tree-status                        "Selected tests: N of 7"
+
+[data-testid="bar-chart"]           D3 chart wrapper
+rect[data-month="Mar"]              Bars (data-value; focusable)
+#chart-tooltip                      Tooltip (role="tooltip"; only while hovering/focused)
+#chart-status                       "Hovered: Mar = 510"
+
+[data-testid="profile-card"]        D4 card body (aria-busy, data-state)
+[data-testid="profile-avatar"]      Avatar (after loading)
+[data-testid="profile-name"]        Name (after loading)
+.data-badge[data-status="passing|flaky|failing"]   Badges (data-count)
+#skeleton-reload                    Reload card
+#skeleton-status                    "State: loading" / "State: loaded"
+
+[data-testid="infinite-list"]       D5 scroll box (data-loaded, data-state)
+[data-testid="infinite-list"] [data-index]   Rows (1-based)
+#infinite-status                    "Scroll down for more" / "Loading more…" / "End of list"
+#infinite-reset                     Reset to 20 rows
+#infinite-count                     "Loaded: N / 100"
+
+[data-testid="virtual-list"]        D6 scroll box (data-total, data-rendered, data-first-visible)
+[data-testid="virtual-list"] [data-index="5000"]   A row (only while it's rendered)
+#virtual-jump-input / #virtual-jump-btn   Jump to a row number
+#virtual-jump-error                 Out-of-range message (role="alert")
+#virtual-status                     "Total rows: … · rows in DOM: … · first visible: …"
+
+#backtotop-box                      D7 scroll box (data-scroll-top)
+#back-to-top                        Button (only in the DOM after scrolling past 150 px)
+#backtotop-status                   "scrollTop: N · button shown|hidden"
+```
+
+### Controls (`/controls`)
+
+```
+data-testid="controls-welcome"      Hero welcome chip
+
+#sec-controls-combobox              C1 card (data-state, data-selected)
+#combo-input                        Combobox input (role="combobox", aria-expanded, aria-activedescendant)
+#combo-clear                        Clear
+#combo-listbox [role="option"]      Options (data-value, id="combo-opt-{i}"; only after the delay)
+#combo-status                       "Selected: …"
+
+#sec-controls-chips                 C2 card (data-count)
+[data-testid="chip"][data-value]    Chips
+[data-testid="chip-remove-{slug}"]  ✕ on a chip (slug: lower-case, e.g. chip-remove-javascript)
+#chips-input / #chips-listbox       Input and suggestions
+#chips-error                        "You can pick up to 5 skills" (role="alert")
+#chips-status                       "Selected (n): …"
+
+#switch-email / -sms / -digest / -beta   Switches (role="switch", aria-checked; beta is disabled)
+#switch-status                      "On: …"
+
+#stepper-dec / #stepper-input / #stepper-inc   Stepper (card #sec-controls-stepper has data-value)
+#stepper-status                     "Quantity: n"
+
+#color-input                        <input type="color">
+#color-hex / #color-apply / #color-error   Hex code entry
+[data-color="#059669"]              Swatches (aria-pressed)
+#color-preview                      Preview block (data-color)
+#color-status                       "Colour: #059669 (Emerald)"
+
+#time-input / #datetime-input       Native pickers (ISO values)
+#time-error / #datetime-error       Out-of-range messages
+#time-status                        "Time: … · Date & time: …"
+
+#rte                                contenteditable editor
+[data-cmd="bold"]                   Toolbar buttons (aria-pressed); also italic, underline, insertUnorderedList, insertOrderedList
+#rte-clear                          Clear the editor
+#rte-html                           The editor's HTML, as text
+#rte-status                         "Characters: n"
+
+#mask-phone / #mask-card / #mask-amount   Masked fields (data-raw; card also data-brand, data-valid)
+[data-testid="card-brand"]          Brand label next to "Card number"
+#mask-card-error                    "This card number isn't valid."
+#mask-status                        "Raw: phone=… · card=… · amount=…"
+```
+
+### Navigation (`/navigation`)
+
+```
+data-testid="navigation-welcome"    Hero welcome chip
+
+#sec-nav-accordion                  N1 card (data-open: comma-separated open keys)
+#acc-multi                          "Allow several panels open"
+#acc-btn-{shipping|returns|warranty|payments}   Headers (aria-expanded, aria-controls)
+#acc-panel-{key}                    Panels (role="region"; hidden attribute when closed)
+#acc-status                         "Open: …"
+
+#sec-nav-breadcrumbs                N2 card (data-path)
+#sec-nav-breadcrumbs [data-crumb-depth="0"]   Crumbs (0 = Home); current one has aria-current="page"
+[data-folder="Projects"]            Folder links
+#crumbs-empty                       "No subfolders"
+#crumbs-status                      "Path: /Home/…"
+
+[data-testid="context-zone"]        N3 right-click target (focusable; Shift+F10 opens the menu)
+#context-menu                       The menu (role="menu")
+#context-menu [data-action="open|copy|paste|rename|delete"]   Items (role="menuitem", aria-disabled)
+#context-status                     "Last action: …"
+
+#menu-btn                           N4 menu button (aria-expanded)
+#menu-list                          Menu
+#menu-item-{duplicate|archive|export|share}   Items
+#menu-sub-export                    Submenu (only while open)
+#menu-item-export-{csv|pdf|json}    Submenu items
+#menu-status                        "Chosen: …"
+
+#drawer-open                        N5 opener
+[data-testid="drawer"]              Drawer (data-state; inert + aria-hidden while closed)
+[data-testid="drawer-backdrop"]     Backdrop (click to close)
+#drawer-close / #drawer-apply       Close / Apply
+#drawer-active / #drawer-archived / #drawer-owner   Filter fields
+#drawer-status                      "Drawer: … · Filters: …"
+
+#sec-nav-guard                      N6 card (data-dirty)
+#guard-title / #guard-notes         Fields
+#guard-save                         Save (disabled while clean)
+#guard-leave-link                   Link to /data
+[data-testid="leave-dialog"]        "Leave without saving?" (role="alertdialog", data-target = where you were going)
+#leave-stay / #leave-save / #leave-discard   Dialog buttons
+#guard-status                       "Saved · no changes" / "Unsaved changes" / "Saved"
+```
+
+### Interactions (`/interactions`)
+
+```
+data-testid="interactions-welcome"  Hero welcome chip
+
+[data-testid="split"]               I1 split container
+#split-handle                       Divider (role="separator", aria-valuenow, aria-valuemin=20, aria-valuemax=80)
+#pane-first / #pane-second          Panes
+#split-status                       "First pane: n%"
+
+#sec-int-grid                       I2 card (data-order, data-sorted)
+[data-tile="5"]                     Tile by number (data-pos = 1-9 position; aria-pressed while picked up)
+#grid-reset                         Reset to 3 1 2 / 6 4 5 / 9 7 8
+#grid-live                          Live announcement ("Picked up tile 3…")
+#grid-status                        "Order: …" / "Sorted! 1 2 3 4 5 6 7 8 9"
+
+#palette-open                       I3 opener (Ctrl+K / ⌘+K also works anywhere on the page)
+[data-testid="command-palette"]     Palette dialog
+#palette-input                      Filter input (role="combobox")
+[data-command="run-all"]            Commands: new-test, run-all, toggle-compact, export-report, switch-language, go-data
+#palette-empty                      "No commands match"
+#palette-status                     "Last command: …"
+
+#copy-source                        I4 snippet
+#copy-btn                           Copy (data-state: idle / copied / failed)
+#paste-target                       Paste box
+#copy-status                        "Clipboard: … · pasted n characters, matches the command"
+```
+
+### Live (`/live`)
+
+```
+data-testid="live-welcome"          Hero welcome chip
+
+#sec-live-feed                      L1 card (data-state, data-count)
+[data-testid="live-feed"] li[data-order-id="ORD-5001"]   Orders (data-amount), newest first
+#feed-toggle / #feed-clear          Pause-resume / Clear
+#feed-empty                         "Waiting for orders…" after Clear
+#feed-status                        "Orders received: n · newest: ORD-…"
+
+#sec-live-countdown                 L2 card (data-state, data-remaining)
+[data-testid="countdown"]           Display "mm:ss" (role="timer")
+#countdown-start / -pause / -reset  Controls
+#countdown-done                     "Time's up!" (role="alert")
+#countdown-status                   "Timer: … · n s left"
+
+[data-testid="moving-button"]       L3 moving button (data-clicks)
+#mover-toggle                       Pause / resume movement
+[data-testid="rerender-list"]       Rebuilt rows (data-version)
+[data-testid="buy-mouse"]           Buy buttons (also buy-keyboard, buy-monitor)
+#mover-status                       "Caught: n · Bought: …"
+
+#sec-live-session                   L4 card (data-session-state, data-remaining)
+#session-start                      Start / Start a new session
+[data-testid="session-modal"]       Warning dialog (role="alertdialog")
+#session-remaining                  Seconds left in the dialog (data-remaining)
+#session-stay / #session-signout    Dialog buttons
+#session-status                     "Session: … · extended n×"
+```
+
+### Browser (`/browser`)
+
+```
+data-testid="browser-welcome"       Hero welcome chip
+
+[data-testid="outer-host"]          B1 outer shadow host (open)
+[data-testid="slotted-title"]       Light-DOM title projected through <slot name="title">
+[data-testid="inner-host"]          Inner shadow host (inside the outer root, open)
+#deep-input / #deep-btn / #deep-output   Inside the inner root
+[data-testid="closed-host"]         Closed shadow root host (contents not reachable)
+#shadow-status                      "Deep input: … · closed-root clicks: n"
+
+#geo-btn                            B2 "Use my location"
+#geo-permission                     Live permission state pill (prompt / granted / denied)
+#geo-result                         Result text (data-lat, data-lng)
+#notify-permission                  Notification.permission (default / granted / denied)
+#notify-request / #notify-send      Ask permission / Send a test notification
+#permissions-status                 "Location: … · notifications: … · sent: n"
+
+#fs-box                             B3 box (data-fullscreen)
+#fs-enter / #fs-exit                Enter / Exit (exit only while full screen)
+#fs-error                           Shown if the browser refuses
+#fs-status                          "Full screen: on|off · changes: n"
+```
+
 ### Inside the Shadow DOM (`[data-testid="shadow-host"]`)
 
 Access these only after piercing the shadow root:
@@ -881,7 +1276,8 @@ test-playground/
 │   │   ├── auth.js          signup / login / forgot-password / me / logout
 │   │   ├── pets.js          Pet CRUD, scoped to the authenticated user
 │   │   ├── spreadsheets.js  Spreadsheet upload: checks the file and returns its sheets as JSON
-│   │   └── verification.js  CAPTCHA, OTP + dev inbox, selfie upload, simulated OCR (in memory)
+│   │   ├── verification.js  CAPTCHA, OTP + dev inbox, selfie upload, simulated OCR (in memory)
+│   │   └── frames.js        The cross-origin frame page for the Frames page's F6 (GET /frames/cross-origin)
 │   └── fixtures/
 │       └── ocr.js           What the simulated OCR returns for each sample ID card
 └── src/
@@ -909,17 +1305,29 @@ test-playground/
     ├── media/
     │   └── MediaPage.jsx     Media page — image, video and banner widgets (M1–M9)
     ├── frames/
-    │   └── FramesPage.jsx    Frames page — basic, nested, late-loading, multiple and button-only iframes (F1–F5)
+    │   └── FramesPage.jsx    Frames page — basic, nested, late-loading, multiple, button-only and cross-origin iframes (F1–F6)
     ├── spreadsheet/
     │   └── SpreadsheetPage.jsx  Spreadsheet page — Excel upload table (S1)
     ├── verification/
     │   └── VerificationPage.jsx  Verification page — CAPTCHA, checkbox CAPTCHA, OTP, selfie, OCR (V1–V5)
+    ├── controls/
+    │   └── ControlsPage.jsx  Controls page — combobox, chips, switches, stepper, colour/time pickers, rich text, masks (C1–C8)
+    ├── navigation/
+    │   └── NavigationPage.jsx  Navigation page — accordion, breadcrumbs, context menu, submenu, drawer, unsaved guard (N1–N6)
+    ├── data/
+    │   └── DataPage.jsx      Data page — sortable table, tree, chart, skeleton, infinite + virtual lists, back-to-top (D1–D7)
+    ├── interactions/
+    │   └── InteractionsPage.jsx  Interactions page — resizable panels, sortable grid, command palette, clipboard (I1–I4)
+    ├── live/
+    │   └── LivePage.jsx      Live page — live feed, countdown, moving target + rebuilt rows, session timeout (L1–L4)
+    ├── browser/
+    │   └── BrowserPage.jsx   Browser page — nested/closed Shadow DOM, permission prompts, full screen (B1–B3)
     ├── testresources/
     │   ├── testimage.jpg     Image used by the Media page
     │   ├── testvideo.mp4     Video used by the Media page
     │   ├── spreadsheets/     Files for the Spreadsheet page (see its reference)
     │   └── ocr/              Sample ID cards for the Verification page's OCR widget
-    └── ui.jsx              Shared SectionHeader / Output components
+    └── ui.jsx              Shared SectionHeader / Output components and the numberParam URL helper
 ```
 
 ---
@@ -1030,6 +1438,283 @@ await page.locator('#ocr-confirm').click()
 await expect(page.locator('#sec-verify-ocr')).toHaveAttribute('data-state', 'confirmed')
 ```
 
+### Data page
+
+**Sorting and inline edit (D1).** Assert `aria-sort` on the header, then read the rows in their new order. Editing needs a double-click, and the input only exists while editing:
+
+```js
+await page.locator('#sort-salary').click()
+await expect(page.locator('th[data-key="salary"]')).toHaveAttribute('aria-sort', 'ascending')
+await expect(page.locator('#data-table tbody tr[data-row-id] td[data-col="name"]').first()).toHaveText('Omar Haddad')
+
+await page.locator('tr[data-row-id="1"] td[data-col="salary"]').dblclick()
+await page.locator('#salary-edit-1').fill('120000')
+await page.locator('#salary-edit-1').press('Enter')
+await expect(page.locator('tr[data-row-id="1"] td[data-col="salary"]')).toHaveAttribute('data-value', '120000')
+```
+
+**Indeterminate checkboxes (D2).** `isChecked()` returns `false` for a half-checked folder. Check `aria-checked` or `data-state`, or read the DOM property:
+
+```js
+const auth = page.locator('#tree-test-suite-auth')
+await expect(auth).toHaveAttribute('aria-checked', 'mixed')
+expect(await auth.evaluate(el => el.indeterminate)).toBe(true)
+await auth.check()
+await expect(page.locator('#tree-status')).toHaveText('Selected tests: 3 of 7')
+```
+
+**Chart tooltips (D3).** The tooltip is added on hover and removed on mouse-out. For values, read the bar's attributes instead:
+
+```js
+await page.locator('rect[data-month="Mar"]').hover()
+await expect(page.locator('#chart-tooltip')).toHaveText('Mar 2026: 510 sign-ups')
+await expect(page.locator('rect[data-month="Mar"]')).toHaveAttribute('data-value', '510')
+```
+
+**Skeleton (D4).** Wait on `aria-busy`, or skip the wait with `?skeletonDelay=0`:
+
+```js
+await expect(page.getByTestId('profile-card')).toHaveAttribute('aria-busy', 'false')
+await expect(page.locator('.data-badge[data-status="failing"]')).toHaveAttribute('data-count', '2')
+```
+
+**Infinite scroll (D5).** Scroll the box itself (not the page) to its bottom, then wait for `data-loaded` to grow. `?scrollDelay=0` makes each batch arrive at once:
+
+```js
+const list = page.getByTestId('infinite-list')
+await list.evaluate(el => { el.scrollTop = el.scrollHeight })
+await expect(list).toHaveAttribute('data-loaded', '40')
+```
+
+In Selenium: `driver.executeScript("arguments[0].scrollTop = arguments[0].scrollHeight", list)`, then wait for the attribute.
+
+**Virtualised list (D6).** Rows outside the view aren't in the DOM, so `scrollIntoView` on a locator can't reach them: there's nothing to find yet. Scroll the box to where the row would be (`(n - 1) * 32` px), or use the jump box:
+
+```js
+const list = page.getByTestId('virtual-list')
+await expect(list.locator('[data-index="5000"]')).toHaveCount(0)
+await list.evaluate(el => { el.scrollTop = 4999 * 32 })
+await expect(list.locator('[data-index="5000"]')).toBeVisible()
+```
+
+**Back to top (D7).** The button isn't in the DOM until the box is scrolled more than 150 px, and scrolling back up is smooth, so wait for the end state:
+
+```js
+const box = page.locator('#backtotop-box')
+await box.evaluate(el => { el.scrollTop = 400 })
+await page.locator('#back-to-top').click()
+await expect(box).toHaveAttribute('data-scroll-top', '0')
+await expect(page.locator('#back-to-top')).toHaveCount(0)
+```
+
+### Controls page
+
+**Combobox (C1).** Options aren't in the DOM until the search finishes, so wait for them (Playwright's auto-waiting does this). Use `?comboDelay=0` to skip the wait:
+
+```js
+await page.locator('#combo-input').fill('uni')
+await page.locator('[role="option"][data-value="United Kingdom"]').click()
+await expect(page.locator('#sec-controls-combobox')).toHaveAttribute('data-selected', 'United Kingdom')
+
+// Keyboard: the highlighted option is the one aria-activedescendant points at
+await page.locator('#combo-input').fill('ind')
+await page.locator('#combo-input').press('ArrowDown')
+await expect(page.locator('#combo-input')).toHaveAttribute('aria-activedescendant', 'combo-opt-0')
+await page.locator('#combo-input').press('Enter')
+```
+
+**Switches (C3).** `check()` only works on checkboxes and radios. Click the switch and assert `aria-checked` (Playwright's `toBeChecked()` also reads `aria-checked` on `role="switch"`):
+
+```js
+await page.getByRole('switch', { name: 'SMS alerts' }).click()
+await expect(page.locator('#switch-sms')).toHaveAttribute('aria-checked', 'true')
+await expect(page.locator('#switch-beta')).toBeDisabled()
+```
+
+**Colour and time pickers (C5, C6).** Don't open the native pickers. Fill the input with a value in its own format:
+
+```js
+await page.locator('#color-input').fill('#ff0000')          // lower-case hex
+await page.locator('#time-input').fill('14:30')            // HH:mm
+await page.locator('#datetime-input').fill('2026-12-24T10:15')
+```
+
+In Selenium, `sendKeys` on these inputs depends on the browser's locale. Setting the value with JavaScript and firing `input` is more reliable:
+
+```java
+js.executeScript("arguments[0].value = arguments[1]; arguments[0].dispatchEvent(new Event('input', {bubbles: true}))", el, "14:30");
+```
+
+**Rich text (C7).** `fill()` replaces the content and its formatting. Type with the keyboard, select with Shift+Home, then use the toolbar:
+
+```js
+await page.locator('#rte-clear').click()
+await page.locator('#rte').click()
+await page.keyboard.type('Hello world')
+await page.keyboard.press('Shift+Home')
+await page.locator('[data-cmd="bold"]').click()
+await expect(page.locator('#rte-html')).toHaveText('<b>Hello world</b>')
+```
+
+**Masked inputs (C8).** Assert both what's shown and what's stored:
+
+```js
+await page.locator('#mask-phone').pressSequentially('5551234567')
+await expect(page.locator('#mask-phone')).toHaveValue('(555) 123-4567')
+await expect(page.locator('#mask-phone')).toHaveAttribute('data-raw', '5551234567')
+await page.locator('#mask-card').fill('4242424242424242')
+await expect(page.locator('#mask-card')).toHaveAttribute('data-valid', 'true')
+```
+
+### Navigation page
+
+**Breadcrumbs and the Back button (N2).** The folder is in the URL, so history works:
+
+```js
+await page.locator('[data-folder="Projects"]').click()
+await expect(page).toHaveURL(/folder=Home%2FProjects/)
+await page.locator('#sec-nav-breadcrumbs [data-crumb-depth="0"]').click()
+await page.goBack()
+await expect(page.locator('#crumbs-status')).toHaveText('Path: /Home/Projects')
+```
+
+**Context menu (N3).** Right-click with `click({ button: 'right' })` (Selenium: `actions.contextClick(el)`). Playwright refuses to click `aria-disabled="true"` items, which is a check in itself:
+
+```js
+await page.getByTestId('context-zone').click({ button: 'right' })
+await expect(page.locator('[data-action="paste"]')).toHaveAttribute('aria-disabled', 'true')
+await page.locator('[data-action="copy"]').click()
+```
+
+**Drawer (N5).** Wait for the end of the animation on `data-state`, not on visibility. The closed drawer is hidden, so `waitForSelector` needs `state: 'attached'`:
+
+```js
+await page.locator('#drawer-open').click()
+await expect(page.getByTestId('drawer')).toHaveAttribute('data-state', 'open')
+await page.locator('#drawer-owner').fill('Priya')
+await page.locator('#drawer-apply').click()
+await expect(page.getByTestId('drawer')).toHaveAttribute('data-state', 'closed')
+```
+
+**Leaving with unsaved changes (N6).** The in-page dialog is ordinary DOM. The browser's `beforeunload` dialog only appears when the page is closed or reloaded, and Playwright only runs it when asked:
+
+```js
+await page.locator('#guard-title').fill('changed')
+await page.getByTestId('nav-media').click()
+await expect(page.getByTestId('leave-dialog')).toHaveAttribute('data-target', '/media')
+await page.locator('#leave-stay').click()
+
+page.once('dialog', d => { expect(d.type()).toBe('beforeunload'); d.dismiss() })
+await page.close({ runBeforeUnload: true })
+```
+
+### Interactions page
+
+**Dragging the divider (I1).** A resize needs mouse down, several moves, and up. Read the result from `aria-valuenow`:
+
+```js
+const handle = page.locator('#split-handle')
+const box = await page.getByTestId('split').boundingBox()
+const h = await handle.boundingBox()
+await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2)
+await page.mouse.down()
+await page.mouse.move(box.x + box.width * 0.6, h.y + h.height / 2, { steps: 8 })
+await page.mouse.up()
+await expect(handle).toHaveAttribute('aria-valuenow', '60')
+```
+
+**Sortable grid (I2).** The mouse path uses HTML5 drag and drop. Playwright's `dragTo` fires those events; Selenium's `Actions.dragAndDrop` does not (a long-standing WebDriver limitation), so in Selenium use the keyboard path instead:
+
+```js
+await page.locator('[data-tile="1"]').dragTo(page.locator('[data-tile="3"]'))
+await expect(page.locator('#sec-int-grid')).toHaveAttribute('data-order', '1,3,2,6,4,5,9,7,8')
+```
+
+```java
+WebElement tile = driver.findElement(By.cssSelector("[data-tile='3']"));
+tile.sendKeys(Keys.SPACE, Keys.ARROW_RIGHT, Keys.SPACE);   // pick up, move right, drop
+```
+
+**Keyboard shortcut (I3).** Use `ControlOrMeta` so the same test runs on macOS and Windows:
+
+```js
+await page.keyboard.press('ControlOrMeta+K')
+await page.locator('#palette-input').fill('compact')
+await page.keyboard.press('Enter')
+await expect(page.locator('#sec-int-palette')).toHaveAttribute('data-compact', 'true')
+```
+
+**Clipboard (I4).** Reading the clipboard needs permission. Grant it on the context, then read it directly or paste into the box:
+
+```js
+const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] })
+// …
+await page.locator('#copy-btn').click()
+expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npm install -D @playwright/test')
+await page.locator('#paste-target').focus()
+await page.keyboard.press('ControlOrMeta+V')
+await expect(page.locator('#copy-status')).toContainText('matches the command')
+```
+
+### Live page
+
+**Changing lists (L1).** Find orders by id, not position: the top row changes every 2 s. Pause first if you need a stable list.
+
+**Long waits (L2, L4).** Shorten them with URL settings, or fake the clock. `page.clock` controls `Date.now()` and timers:
+
+```js
+await page.clock.install()
+await page.goto('/live')
+await page.locator('#countdown-start').click()
+await page.clock.fastForward(30000)
+await expect(page.locator('#sec-live-countdown')).toHaveAttribute('data-state', 'done')
+
+await page.goto('/live?sessionLength=4&sessionWarn=2')
+await page.locator('#session-start').click()
+await expect(page.getByTestId('session-modal')).toBeVisible()
+await page.locator('#session-stay').click()
+```
+
+**Moving target and stale elements (L3).** Playwright locators look the element up again on every action and wait until it's stable, so clicking the moving button just works. A saved element handle (or a Selenium `WebElement`) points at one DOM node; after the rows are rebuilt it's detached, and Selenium throws `StaleElementReferenceException`. Find the element again right before using it:
+
+```js
+const old = await page.getByTestId('buy-mouse').elementHandle()
+await expect(page.getByTestId('rerender-list')).not.toHaveAttribute('data-version', '1')
+expect(await old.evaluate(el => el.isConnected)).toBe(false)   // stale
+await page.getByTestId('buy-mouse').click()                     // a fresh lookup works
+```
+
+### Browser page
+
+**Shadow DOM (B1).** Playwright's CSS and text locators go through open shadow roots by themselves. Selenium needs `getShadowRoot()` at each level. Nothing reaches inside the closed root: click its host (the click lands on the button inside) or use the keyboard.
+
+```js
+await page.locator('#deep-input').fill('hello')
+await page.locator('#deep-btn').click()
+await expect(page.locator('#deep-output')).toHaveText('Deep value: hello')
+await page.getByTestId('closed-host').click()
+await expect(page.locator('#sec-browser-shadow')).toHaveAttribute('data-closed-clicks', '1')
+```
+
+```java
+SearchContext outer = driver.findElement(By.cssSelector("[data-testid='outer-host']")).getShadowRoot();
+SearchContext inner = outer.findElement(By.cssSelector("[data-testid='inner-host']")).getShadowRoot();
+inner.findElement(By.cssSelector("#deep-input")).sendKeys("hello");
+```
+
+**Permissions (B2).** Tests can't click the browser's own permission prompt. Decide the answer on the context first:
+
+```js
+await context.grantPermissions(['geolocation'], { origin: 'https://localhost:3000' })
+await context.setGeolocation({ latitude: 25.2048, longitude: 55.2708 })
+await page.locator('#geo-btn').click()
+await expect(page.locator('#geo-result')).toHaveAttribute('data-lat', '25.2048')
+```
+
+Without a grant, headless Chromium denies straight away (`data-geo-state="denied"`). Notifications only report `granted` in headed Chromium.
+
+**Full screen (B3).** `requestFullscreen()` needs a real click, which `click()` provides. Assert on `data-fullscreen`, then leave with `#fs-exit`.
+
 ### Frames page
 
 Switch to the frame context before interacting with elements inside it.
@@ -1074,6 +1759,16 @@ await page.frameLocator('#button-only-iframe').locator('#button-only-input').cli
 await expect(f5).toHaveAttribute('data-expanded', 'false')
 await page.locator('[data-testid="sec-frames-button-only-toggle"]').click()
 await expect(f5).toHaveAttribute('data-expanded', 'true')
+
+// F6 — a cross-origin frame: switching in works the same; the page and frame talk via postMessage
+await expect(page.getByTestId('xo-frame-slot')).toHaveAttribute('data-state', 'ready')
+const xo = page.frameLocator('#cross-origin-iframe')
+await xo.locator('#xo-input').fill('from test')
+await xo.locator('#xo-send').click()
+await expect(page.locator('#xo-status')).toContainText('from frame: from test')
+await page.locator('#xo-page-input').fill('hi frame')
+await page.locator('#xo-page-send').click()
+await expect(xo.locator('#xo-inbox')).toHaveText('hi frame')
 ```
 
 ```java

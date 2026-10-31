@@ -12,6 +12,12 @@ import MediaPage from './media/MediaPage.jsx'
 import FramesPage from './frames/FramesPage.jsx'
 import SpreadsheetPage from './spreadsheet/SpreadsheetPage.jsx'
 import VerificationPage from './verification/VerificationPage.jsx'
+import DataPage from './data/DataPage.jsx'
+import BrowserPage from './browser/BrowserPage.jsx'
+import LivePage from './live/LivePage.jsx'
+import InteractionsPage from './interactions/InteractionsPage.jsx'
+import NavigationPage from './navigation/NavigationPage.jsx'
+import ControlsPage from './controls/ControlsPage.jsx'
 import { SectionHeader, Output } from './ui.jsx'
 
 // ─── 01. Text Input ──────────────────────────────────────────────────────────
@@ -1552,6 +1558,20 @@ const NAV = [
 
 const GROUP_KEYS = ['navInputs', 'navSelection', 'navButtons', 'navEvents', 'navWindows', 'navAdvanced']
 
+// Feature pages, listed under the collapsible "Pages" group below the Test Pet Store entry.
+const PAGE_LINKS = [
+  { to: '/media',        icon: '🎬', labelKey: 'navMedia',        className: 'nav-media-cta',        testId: 'nav-media' },
+  { to: '/frames',       icon: '🪟', labelKey: 'navFrames',       className: 'nav-frames-cta',       testId: 'nav-frames' },
+  { to: '/spreadsheet',  icon: '📊', labelKey: 'navSpreadsheet',  className: 'nav-spreadsheet-cta',  testId: 'nav-spreadsheet' },
+  { to: '/verification', icon: '🛡️', labelKey: 'navVerification', className: 'nav-verification-cta', testId: 'nav-verification' },
+  { to: '/controls',     icon: '🎛️', labelKey: 'navControls',     className: 'nav-controls-cta',     testId: 'nav-controls' },
+  { to: '/navigation',   icon: '🧭', labelKey: 'navNavigation',   className: 'nav-navigation-cta',   testId: 'nav-navigation' },
+  { to: '/data',         icon: '🗂️', labelKey: 'navData',         className: 'nav-data-cta',         testId: 'nav-data' },
+  { to: '/interactions', icon: '🖐️', labelKey: 'navInteractions', className: 'nav-interactions-cta', testId: 'nav-interactions' },
+  { to: '/live',         icon: '⏱️', labelKey: 'navLive',         className: 'nav-live-cta',         testId: 'nav-live' },
+  { to: '/browser',      icon: '🌐', labelKey: 'navBrowser',      className: 'nav-browser-cta',      testId: 'nav-browser' },
+]
+
 function Sidebar({ active, onPlaygroundItem }) {
   const { t, lang, toggleLang } = useLang()
   const { user, logout } = useAuth()
@@ -1560,6 +1580,7 @@ function Sidebar({ active, onPlaygroundItem }) {
     Object.fromEntries(GROUP_KEYS.map(g => [g, true]))
   )
   const [openSubGroups, setOpenSubGroups] = useState({})
+  const [pagesOpen, setPagesOpen] = useState(true)
 
   const toggleGroup = g => setOpenGroups(s => ({ ...s, [g]: !s[g] }))
   const toggleSubGroup = sg => setOpenSubGroups(s => ({ ...s, [sg]: !s[sg] }))
@@ -1588,41 +1609,24 @@ function Sidebar({ active, onPlaygroundItem }) {
         <span className="nav-petstore-label">{t('navTestPetStore')}</span>
       </NavLink>
 
-      <NavLink
-        to="/media"
-        className={({ isActive }) => `nav-petstore-cta nav-media-cta ${isActive ? 'is-active' : ''}`}
-        data-testid="nav-media"
-      >
-        <span className="nav-petstore-icon" aria-hidden>🎬</span>
-        <span className="nav-petstore-label">{t('navMedia')}</span>
-      </NavLink>
-
-      <NavLink
-        to="/frames"
-        className={({ isActive }) => `nav-petstore-cta nav-frames-cta ${isActive ? 'is-active' : ''}`}
-        data-testid="nav-frames"
-      >
-        <span className="nav-petstore-icon" aria-hidden>🪟</span>
-        <span className="nav-petstore-label">{t('navFrames')}</span>
-      </NavLink>
-
-      <NavLink
-        to="/spreadsheet"
-        className={({ isActive }) => `nav-petstore-cta nav-spreadsheet-cta ${isActive ? 'is-active' : ''}`}
-        data-testid="nav-spreadsheet"
-      >
-        <span className="nav-petstore-icon" aria-hidden>📊</span>
-        <span className="nav-petstore-label">{t('navSpreadsheet')}</span>
-      </NavLink>
-
-      <NavLink
-        to="/verification"
-        className={({ isActive }) => `nav-petstore-cta nav-verification-cta ${isActive ? 'is-active' : ''}`}
-        data-testid="nav-verification"
-      >
-        <span className="nav-petstore-icon" aria-hidden>🛡️</span>
-        <span className="nav-petstore-label">{t('navVerification')}</span>
-      </NavLink>
+      <div className="nav-group nav-pages-group">
+        <button className="nav-group-label" data-testid="nav-pages-toggle"
+          aria-expanded={pagesOpen} aria-controls="nav-pages" onClick={() => setPagesOpen(o => !o)}>
+          <span>{t('navPages')}</span>
+          <span className={`nav-chevron ${pagesOpen ? 'nav-chevron-open' : ''}`}>›</span>
+        </button>
+      </div>
+      {pagesOpen && (
+        <div id="nav-pages" className="nav-pages">
+          {PAGE_LINKS.map(p => (
+            <NavLink key={p.to} to={p.to} data-testid={p.testId}
+              className={({ isActive }) => `nav-petstore-cta ${p.className} ${isActive ? 'is-active' : ''}`}>
+              <span className="nav-petstore-icon" aria-hidden>{p.icon}</span>
+              <span className="nav-petstore-label">{t(p.labelKey)}</span>
+            </NavLink>
+          ))}
+        </div>
+      )}
 
       {GROUP_KEYS.map(gKey => {
         const groupItems  = NAV.filter(n => n.groupKey === gKey)
@@ -1840,6 +1844,54 @@ function Shell() {
             element={
               <ProtectedRoute>
                 <VerificationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="data"
+            element={
+              <ProtectedRoute>
+                <DataPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="controls"
+            element={
+              <ProtectedRoute>
+                <ControlsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="navigation"
+            element={
+              <ProtectedRoute>
+                <NavigationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="interactions"
+            element={
+              <ProtectedRoute>
+                <InteractionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="live"
+            element={
+              <ProtectedRoute>
+                <LivePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="browser"
+            element={
+              <ProtectedRoute>
+                <BrowserPage />
               </ProtectedRoute>
             }
           />

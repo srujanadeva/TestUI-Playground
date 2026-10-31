@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { SectionHeader, Output } from '../ui.jsx'
+import { SectionHeader, Output, numberParam } from '../ui.jsx'
 
 // A srcdoc attribute value is HTML-decoded once, so escape each nesting level.
 function escapeAttr(html) {
@@ -289,6 +289,70 @@ function ButtonOnlyFrameSection() {
   )
 }
 
+// ─── F6. Cross-origin iframe ─────────────────────────────────────────────────
+// The frame is served by the API on port 4000, a different origin from the app,
+// so the page can't read its DOM; the two talk only through postMessage.
+function CrossOriginFrameSection() {
+  const { t, lang } = useLang()
+  const frameRef = useRef(null)
+  const [state, setState]       = useState('loading')  // loading | ready | unreachable
+  const [received, setReceived] = useState(null)
+  const [peek, setPeek]         = useState(null)
+  const [outgoing, setOutgoing] = useState('')
+  const frameOrigin = `http://${window.location.hostname}:${numberParam('apiPort', 4000, 1, 65535)}`
+  const src = `${frameOrigin}/frames/cross-origin?lang=${lang}&parent=${encodeURIComponent(window.location.origin)}`
+
+  useEffect(() => {
+    setState('loading')
+    const onMessage = e => {
+      if (e.origin !== frameOrigin || e.source !== frameRef.current?.contentWindow) return
+      if (e.data?.type === 'tp-xo-ready') setState('ready')
+      if (e.data?.type === 'tp-xo-message') setReceived(String(e.data.text))
+    }
+    window.addEventListener('message', onMessage)
+    const timer = setTimeout(() => setState(s => (s === 'loading' ? 'unreachable' : s)), 5000)
+    return () => { window.removeEventListener('message', onMessage); clearTimeout(timer) }
+  }, [src, frameOrigin])
+
+  // Shows what a test hits when it tries to reach into another origin's frame.
+  const tryRead = () => {
+    try {
+      const doc = frameRef.current.contentDocument
+      setPeek(doc ? 'xoPeekOpen' : 'xoPeekNull')
+    } catch {
+      setPeek('xoPeekError')
+    }
+  }
+  const sendToFrame = () => {
+    frameRef.current?.contentWindow?.postMessage({ type: 'tp-xo-to-frame', text: outgoing }, frameOrigin)
+  }
+
+  return (
+    <FrameCard id="sec-frames-cross-origin" num="F6" title={t('secF6Title')} locator="postMessage / data-state"
+      desc={t('secF6Desc')} expandOn="button">
+      <div className="frame-stage" data-testid="xo-frame-slot" data-state={state} data-frame-origin={frameOrigin}>
+        <iframe ref={frameRef} id="cross-origin-iframe" title={t('xoFrameTitle')} src={src}
+          className="practice-iframe frame-fill" />
+      </div>
+      {state === 'unreachable' && (
+        <p id="xo-unreachable" className="error-msg" role="alert">{t('xoUnreachable', { origin: frameOrigin })}</p>
+      )}
+      <div className="input-row">
+        <input id="xo-page-input" type="text" aria-label={t('xoSendLabel')} placeholder={t('xoSendLabel')}
+          value={outgoing} onChange={e => setOutgoing(e.target.value)} />
+        <button id="xo-page-send" className="btn-primary" disabled={state !== 'ready'} onClick={sendToFrame}>
+          {t('xoSendBtn')}
+        </button>
+        <button id="xo-peek" className="btn-secondary" onClick={tryRead}>{t('xoPeek')}</button>
+      </div>
+      <Output id="xo-status">
+        {t('xoState', { state: t(`xo_${state}`) })} · {t('xoReceived', { text: received ?? t('xoNone') })}
+        {peek && ` · ${t(peek)}`}
+      </Output>
+    </FrameCard>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function FramesPage() {
   const { t, lang } = useLang()
@@ -312,6 +376,7 @@ export default function FramesPage() {
         <LateFrameSection />
         <MultipleFramesSection />
         <ButtonOnlyFrameSection />
+        <CrossOriginFrameSection />
       </div>
     </div>
   )

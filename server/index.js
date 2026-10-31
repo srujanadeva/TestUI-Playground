@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.js'
 import petsRoutes from './routes/pets.js'
 import spreadsheetsRoutes from './routes/spreadsheets.js'
 import verificationRoutes from './routes/verification.js'
+import framesRoutes from './routes/frames.js'
 
 const app = express()
 
@@ -21,6 +22,8 @@ app.use('/api/auth', authRoutes)
 app.use('/api/pets', petsRoutes)
 app.use('/api/spreadsheets', spreadsheetsRoutes)
 app.use('/api/verification', verificationRoutes)
+// Not under /api: the Frames page loads this straight from port 4000 as a cross-origin iframe.
+app.use('/frames', framesRoutes)
 
 app.use((err, _req, res, _next) => {
   console.error('[server] error:', err)
