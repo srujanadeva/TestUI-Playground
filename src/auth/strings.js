@@ -1,0 +1,66 @@
+// Text for the login, signup, forgot-password and account pages.
+export default {
+  en: {
+    // ── Auth ──
+    authLogin:           'Log in',
+    authSignup:          'Sign up',
+    authLogout:          'Log out',
+    authAccount:         'Account',
+    authForgotPassword:  'Forgot password?',
+    authEmail:           'Email',
+    authPassword:        'Password',
+    authConfirmPassword: 'Confirm password',
+    authName:            'Full name',
+    authRememberMe:      'Remember me',
+    authTerms:           'I agree to the terms of service',
+    authShowPassword:    'Show password',
+    authHidePassword:    'Hide password',
+    authNoAccount:       'New here?',
+    authHaveAccount:     'Already have an account?',
+    authForgotPrompt:    'Enter your email and we’ll send a reset link.',
+    authForgotConfirm:   'If an account exists for that email, we’d send a reset link.',
+    authErrInvalid:      'Invalid email or password.',
+    authErrEmailTaken:   'That email is already registered.',
+    authErrMismatch:     'Passwords don’t match.',
+    authErrShort:        'Password must be at least 8 characters.',
+    authErrTerms:        'You must accept the terms.',
+    authErrNetwork:      'Network error. Please try again.',
+
+    // ── Account ──
+    accountWelcome:       'Welcome, {name}!',
+    accountMemberSince:   'Member since',
+    accountGoToPetstore:  'Go to Test Pet Store',
+  },
+
+  ar: {
+    // ── Auth ──
+    authLogin:           'تسجيل الدخول',
+    authSignup:          'إنشاء حساب',
+    authLogout:          'تسجيل الخروج',
+    authAccount:         'الحساب',
+    authForgotPassword:  'هل نسيت كلمة المرور؟',
+    authEmail:           'البريد الإلكتروني',
+    authPassword:        'كلمة المرور',
+    authConfirmPassword: 'تأكيد كلمة المرور',
+    authName:            'الاسم الكامل',
+    authRememberMe:      'تذكرني',
+    authTerms:           'أوافق على شروط الخدمة',
+    authShowPassword:    'إظهار كلمة المرور',
+    authHidePassword:    'إخفاء كلمة المرور',
+    authNoAccount:       'مستخدم جديد؟',
+    authHaveAccount:     'لديك حساب بالفعل؟',
+    authForgotPrompt:    'أدخل بريدك الإلكتروني وسنرسل رابط إعادة التعيين.',
+    authForgotConfirm:   'إذا كان هناك حساب بهذا البريد، فسنرسل رابط إعادة التعيين.',
+    authErrInvalid:      'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+    authErrEmailTaken:   'هذا البريد الإلكتروني مسجل بالفعل.',
+    authErrMismatch:     'كلمتا المرور غير متطابقتين.',
+    authErrShort:        'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+    authErrTerms:        'يجب أن توافق على الشروط.',
+    authErrNetwork:      'خطأ في الشبكة. حاول مرة أخرى.',
+
+    // ── Account ──
+    accountWelcome:       'مرحبًا، {name}!',
+    accountMemberSince:   'عضو منذ',
+    accountGoToPetstore:  'الذهاب إلى متجر الحيوانات الأليفة',
+  },
+}
