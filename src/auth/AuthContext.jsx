@@ -37,11 +37,15 @@ export function AuthProvider({ children }) {
         const data = await apiFetch('/api/auth/me', { token })
         if (!cancelled) setUser(data.user)
       } catch (err) {
-        if (!cancelled) {
+        if (cancelled) return
+        // Only a 401 means the token is bad. A network error (status 0) also covers a
+        // request the browser aborted because the page was reloading or navigating;
+        // deleting the token then would log the user out of the page they're loading.
+        if (err.status === 401) {
           clearToken()
           setToken(null)
-          setUser(null)
         }
+        setUser(null)
       } finally {
         if (!cancelled) setLoading(false)
       }

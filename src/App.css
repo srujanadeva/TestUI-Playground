@@ -2702,3 +2702,7 @@ input[aria-invalid="true"], .lab-input[aria-invalid="true"] { border-color: var(
 
 /* F6: the cross-origin frame has an extra message row, so give it more room. */
 #sec-frames-cross-origin .frame-stage > .frame-fill { min-height: 250px; }
+
+/* B4: embedded Google map */
+.lab-map { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #e2e8f0; }
+.lab-map iframe { display: block; width: 100%; height: 280px; border: 0; }

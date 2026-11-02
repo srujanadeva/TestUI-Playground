@@ -98,7 +98,7 @@ function usePermission(name) {
   return [state, setState]
 }
 
-function PermissionsSection() {
+function PermissionsSection({ onLocated }) {
   const { t } = useLang()
   const [geoPerm] = usePermission('geolocation')
   const [geo, setGeo] = useState({ state: 'idle' })  // idle | requesting | granted | denied | unavailable | error
@@ -110,7 +110,11 @@ function PermissionsSection() {
     if (!navigator.geolocation) { setGeo({ state: 'unavailable' }); return }
     setGeo({ state: 'requesting' })
     navigator.geolocation.getCurrentPosition(
-      p => setGeo({ state: 'granted', lat: p.coords.latitude.toFixed(4), lng: p.coords.longitude.toFixed(4) }),
+      p => {
+        const lat = p.coords.latitude.toFixed(4), lng = p.coords.longitude.toFixed(4)
+        setGeo({ state: 'granted', lat, lng })
+        onLocated?.({ lat, lng })
+      },
       err => setGeo({ state: err.code === err.PERMISSION_DENIED ? 'denied' : 'error' }),
       { timeout: 10000 }
     )
@@ -202,10 +206,84 @@ function FullscreenSection() {
   )
 }
 
+// ─── B4. Embedded Google map ─────────────────────────────────────────────────
+// Google's keyless embed URL (output=embed). It isn't an official API; the official
+// route is the Maps Embed API, which needs a key. The frame is cross-origin.
+// Privacy: B2's location only goes to Google when the user presses "Show my location",
+// and it is rounded to 3 decimals (about 110 m) first.
+const DEFAULT_PLACE = { lat: '51.5074', lng: '-0.1278' }  // London
+const ZOOM_MIN = 3
+const ZOOM_MAX = 20
+const roundPlace = p => ({ lat: Number(p.lat).toFixed(3), lng: Number(p.lng).toFixed(3) })
+const mapSrc = (place, zoom, lang) =>
+  `https://maps.google.com/maps?q=${place.lat},${place.lng}&z=${zoom}&hl=${lang}&output=embed`
+
+function useOnline() {
+  const [online, setOnline] = useState(navigator.onLine)
+  useEffect(() => {
+    const on = () => setOnline(true), off = () => setOnline(false)
+    window.addEventListener('online', on); window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+  return online
+}
+
+function MapSection({ located }) {
+  const { t, lang } = useLang()
+  const online = useOnline()
+  const [zoom, setZoom]   = useState(14)
+  const [state, setState] = useState('loading')  // loading | loaded
+  const [shown, setShown] = useState(null)       // the rounded location the user chose to share, or null
+  const available = located ? roundPlace(located) : null
+  const alreadyShown = !!(available && shown && available.lat === shown.lat && available.lng === shown.lng)
+  const place = shown || DEFAULT_PLACE
+  const src = mapSrc(place, zoom, lang)
+
+  useEffect(() => { setState('loading') }, [src])
+
+  return (
+    <section id="sec-browser-map" className="card" data-lat={place.lat} data-lng={place.lng} data-zoom={zoom}
+      data-source={shown ? 'geolocation' : 'default'} data-location-available={!!available}>
+      <SectionHeader num="B4" title={t('secB4Title')} locator="iframe src / data-lat" />
+      <p className="desc">{t('secB4Desc')}</p>
+      {!online && <p id="map-offline" className="error-msg" role="alert">{t('mapOffline')}</p>}
+      <div className="lab-map">
+        {/* sandbox: Google's scripts and its own links still work, but the frame can't
+            move this tab elsewhere or open dialogs. no-referrer: Google isn't told which page embeds it. */}
+        <iframe id="map-iframe" title={t('mapFrameTitle')} src={src} data-state={state}
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          referrerPolicy="no-referrer" allowFullScreen onLoad={() => setState('loaded')} />
+      </div>
+      <p className="lab-muted" id="map-share-note">
+        {available ? t('mapShareNote', { lat: available.lat, lng: available.lng }) : t('mapShareHint')}
+      </p>
+      <div className="button-row lab-row-center">
+        <button id="map-show-location" className="btn-primary" disabled={!available || alreadyShown}
+          onClick={() => setShown(available)}>{t('mapShowLocation')}</button>
+        <button id="map-zoom-out" className="btn-secondary" aria-label={t('mapZoomOut')}
+          disabled={zoom <= ZOOM_MIN} onClick={() => setZoom(z => z - 1)}>−</button>
+        <button id="map-zoom-in" className="btn-secondary" aria-label={t('mapZoomIn')}
+          disabled={zoom >= ZOOM_MAX} onClick={() => setZoom(z => z + 1)}>+</button>
+        <button id="map-reset" className="btn-secondary" disabled={!shown && zoom === 14}
+          onClick={() => { setZoom(14); setShown(null) }}>{t('mapReset')}</button>
+        <a id="map-open-link" className="lab-link" target="_blank" rel="noopener noreferrer"
+          href={`https://www.google.com/maps?q=${place.lat},${place.lng}`}>{t('mapOpen')} ↗</a>
+      </div>
+      <Output id="map-status">
+        {t('mapStatus', {
+          lat: place.lat, lng: place.lng, zoom,
+          source: t(shown ? 'mapFromLocation' : 'mapFromDefault'),
+        })}
+      </Output>
+    </section>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function BrowserPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()
+  const [located, setLocated] = useState(null)  // B2's last position; B4 shows it only when asked
   return (
     <div className="media-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <header className="pet-hero browser-hero">
@@ -221,8 +299,9 @@ export default function BrowserPage() {
 
       <div className="content-grid media-grid lab-first-grid">
         <NestedShadowSection />
-        <PermissionsSection />
+        <PermissionsSection onLocated={setLocated} />
         <FullscreenSection />
+        <MapSection located={located} />
       </div>
     </div>
   )

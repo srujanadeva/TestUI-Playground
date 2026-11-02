@@ -1096,6 +1096,21 @@ const translations = {
     fsOn:       'on',
     fsOff:      'off',
 
+    secB4Title:      'Embedded Google map',
+    secB4Desc:       'A Google Maps iframe from another origin. It starts on London. After "Use my location" in B2, press "Show my location" to move the map there: only then is your location, rounded to about 110 m, sent to Google. Assert on the iframe\'s src and the card\'s data-lat / data-lng rather than on Google\'s markup inside the frame, which changes without notice. Needs an internet connection.',
+    mapShowLocation: 'Show my location',
+    mapShareHint:    'Use "Use my location" in B2 first. Nothing is sent to Google until you press "Show my location".',
+    mapShareNote:    'Pressing "Show my location" sends {lat}, {lng} (rounded to about 110 m) to Google.',
+    mapFrameTitle:   'Google map',
+    mapZoomIn:       'Zoom in',
+    mapZoomOut:      'Zoom out',
+    mapReset:        'Back to London',
+    mapOpen:         'Open in Google Maps',
+    mapOffline:      'You\'re offline, so the map can\'t load.',
+    mapFromDefault:  'default location',
+    mapFromLocation: 'your location',
+    mapStatus:       'Map: {lat}, {lng} · zoom {zoom} · {source}',
+
     // ── Footer ──
     footerRights: 'All rights reserved · Not for commercial use',
     footerWit:    'findElement(By.Copyright, "violator") → NoSuchElementException',
@@ -2195,6 +2210,21 @@ const translations = {
     fsStatus:   'ملء الشاشة: {state} · التغييرات: {n}',
     fsOn:       'مفعّل',
     fsOff:      'غير مفعّل',
+
+    secB4Title:      'خريطة Google مضمّنة',
+    secB4Desc:       'إطار خرائط Google من أصل مختلف. تبدأ على لندن. بعد "استخدم موقعي" في B2 اضغط "اعرض موقعي" لنقل الخريطة إليه: عندها فقط يُرسل موقعك إلى Google مقرّبًا إلى نحو 110 أمتار. تحقق من src الإطار ومن data-lat / data-lng في البطاقة بدل عناصر Google داخل الإطار، فهي تتغير دون إشعار. تحتاج اتصالًا بالإنترنت.',
+    mapShowLocation: 'اعرض موقعي',
+    mapShareHint:    'استخدم "استخدم موقعي" في B2 أولًا. لا يُرسل شيء إلى Google حتى تضغط "اعرض موقعي".',
+    mapShareNote:    'الضغط على "اعرض موقعي" يرسل {lat}، {lng} (مقرّبًا إلى نحو 110 أمتار) إلى Google.',
+    mapFrameTitle:   'خريطة Google',
+    mapZoomIn:       'تكبير',
+    mapZoomOut:      'تصغير',
+    mapReset:        'العودة إلى لندن',
+    mapOpen:         'فتح في خرائط Google',
+    mapOffline:      'أنت غير متصل بالإنترنت، لذا لا يمكن تحميل الخريطة.',
+    mapFromDefault:  'الموقع الافتراضي',
+    mapFromLocation: 'موقعك',
+    mapStatus:       'الخريطة: {lat}، {lng} · التكبير {zoom} · {source}',
 
     // ── Footer ──
     footerRights: 'جميع الحقوق محفوظة · غير مخصص للاستخدام التجاري',

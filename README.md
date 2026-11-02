@@ -22,7 +22,7 @@ A login-gated **Interactions** page covers interactions beyond a click: resizabl
 
 A login-gated **Live** page covers content that changes on its own: a live order feed, a countdown timer, a button that keeps moving, rows that are rebuilt every few seconds (stale elements), and a session-timeout warning.
 
-A login-gated **Browser** page covers things owned by the browser: nested Shadow DOM with a slot and a closed shadow root, real location and notification permission prompts, and full-screen mode.
+A login-gated **Browser** page covers things owned by the browser: nested Shadow DOM with a slot and a closed shadow root, real location and notification permission prompts, full-screen mode, and an embedded Google map that can show your location when you choose to share it.
 
 Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser automation framework. Fully bilingual (English / Arabic, with RTL layout).
 
@@ -242,7 +242,7 @@ The playground is a React Router app with two kinds of practice targets:
 - **Data** (`/data`) — reached from the orange "🗂️ Data" entry under Navigation in the sidebar. Seven widgets (D1–D7) for tables, trees, charts, late-loading content and long lists; see [Data Page Reference](#data-page-reference). Works offline: all data is built into the page.
 - **Interactions** (`/interactions`) — "🖐️ Interactions" in the Pages group. Four widgets (I1–I4): resizing, a sortable grid, a command palette, the clipboard; see [Interactions Page Reference](#interactions-page-reference).
 - **Live** (`/live`) — "⏱️ Live" in the Pages group. Four widgets (L1–L4) that change on their own; see [Live Page Reference](#live-page-reference).
-- **Browser** (`/browser`) — "🌐 Browser" in the Pages group. Three widgets (B1–B3): nested and closed Shadow DOM, permission prompts, full screen; see [Browser Page Reference](#browser-page-reference).
+- **Browser** (`/browser`) — "🌐 Browser" in the Pages group. Four widgets (B1–B4): nested and closed Shadow DOM, permission prompts, full screen, an embedded Google map; see [Browser Page Reference](#browser-page-reference).
 
 ---
 
@@ -576,10 +576,21 @@ Everything on this page changes on its own. The timers use `Date.now()` with `se
 | B1 | Nested Shadow DOM with a slot | Reach an input two open shadow roots deep; read slotted light-DOM content; meet a closed shadow root you can't look into | `[data-testid="outer-host"]` ▸ shadow ▸ `[data-testid="inner-host"]` ▸ shadow ▸ `#deep-input`, `#deep-btn`, `#deep-output`; `[data-testid="slotted-title"]`; `[data-testid="closed-host"]` (closed); card `data-deep-value`, `data-closed-clicks` |
 | B2 | Permission prompts | Ask for location and notification permission for real; grant or deny them from the test before the page asks | `#geo-btn`, `#geo-permission`, `#geo-result` (`data-lat`, `data-lng`), `#notify-permission`, `#notify-request`, `#notify-send`, `[data-permission][data-state]`; card `data-geo-state`, `data-notify-permission` |
 | B3 | Full-screen mode | Enter full screen from a click, leave with Exit or Escape, and assert the state | `#fs-enter`, `#fs-box` (`data-fullscreen`), `#fs-exit` (only while full screen), `#fs-error`; card `data-fullscreen`, `data-changes` |
+| B4 | Embedded Google map | A third-party, cross-origin map iframe. It starts on London. After B2's "Use my location", **Show my location** moves the map there (opt-in, rounded to 3 decimals). Zoom with − / +, reset, or open the place in Google Maps in a new tab | `#map-iframe` (`src`, `sandbox`, `data-state`: `loading` → `loaded`), `#map-show-location`, `#map-share-note`, `#map-zoom-out`, `#map-zoom-in`, `#map-reset`, `#map-open-link` (`target="_blank"`), `#map-offline`; card `data-lat`, `data-lng`, `data-zoom`, `data-source` (`default`/`geolocation`), `data-location-available` |
 
 **B2 states:** `data-geo-state` is `idle` → `requesting` → `granted` / `denied` / `error` (or `unavailable`). `#geo-permission` and `#notify-permission` show the browser's own values: `prompt` / `granted` / `denied` for location, `default` / `granted` / `denied` for notifications. Headless Chromium always reports `Notification.permission` as `denied`, even after `grantPermissions(['notifications'])`, so run notification tests headed.
 
 **B1 and the language switch:** switching English ↔ Arabic rebuilds both shadow roots, which clears what was typed inside them.
+
+**B4 map:** the frame loads `https://maps.google.com/maps?q=<lat>,<lng>&z=<zoom>&hl=<en|ar>&output=embed`, Google's keyless embed URL. It needs no API key but isn't an official API; Google's official route is the [Maps Embed API](https://developers.google.com/maps/documentation/embed/get-started), which needs a key from a Google Cloud project. Things to know:
+
+- **Privacy: sharing is opt-in.** B2's location stays in the page until you press **Show my location** (`#map-show-location`, disabled until B2 has a location). Only then does it go to Google, rounded to 3 decimals (about 110 m), so `25.2048, 55.2708` is sent as `25.205, 55.271`. `#map-share-note` says what would be sent.
+- **Hardened frame.** The iframe has `sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"` (Google's map and its own links work, but the frame can't navigate this tab or open dialogs) and `referrerpolicy="no-referrer"` (Google isn't told which page embeds it). The "Open in Google Maps" link uses `rel="noopener noreferrer"`.
+- **Assert outside the frame.** Check the iframe's `src` and the card's `data-lat` / `data-lng` / `data-zoom`. Google's markup inside the frame is undocumented and changes without notice, so tests that click inside it break easily.
+- **`data-state="loaded"` only means the frame finished loading something.** A cross-origin frame fires `load` even when it shows an error page, so it can't prove the map itself appeared.
+- **It needs internet.** The rest of the app works offline; this card shows `#map-offline` when the browser reports being offline (Playwright: `context.setOffline(true)`).
+- **Cookie consent.** In the EU and UK, Google may show a "Before you continue" consent screen inside the frame instead of the map.
+- Every zoom or location change sets a new `src`, which reloads the frame (`data-state` goes back to `loading`).
 
 ---
 
@@ -1234,6 +1245,16 @@ data-testid="browser-welcome"       Hero welcome chip
 #fs-enter / #fs-exit                Enter / Exit (exit only while full screen)
 #fs-error                           Shown if the browser refuses
 #fs-status                          "Full screen: on|off · changes: n"
+
+#sec-browser-map                    B4 card (data-lat, data-lng, data-zoom, data-source, data-location-available)
+#map-iframe                         Google map frame (src, data-state: loading / loaded)
+#map-show-location                  "Show my location" (enabled once B2 has a location that isn't already shown)
+#map-share-note                     What would be sent to Google, or how to get a location first
+#map-zoom-out / #map-zoom-in        Zoom (3–20, starts at 14)
+#map-reset                          "Back to London" (default location, zoom 14)
+#map-open-link                      "Open in Google Maps" (target="_blank")
+#map-offline                        Shown while the browser is offline
+#map-status                         "Map: <lat>, <lng> · zoom n · default location|your location"
 ```
 
 ### Inside the Shadow DOM (`[data-testid="shadow-host"]`)
@@ -1321,7 +1342,7 @@ test-playground/
     ├── live/
     │   └── LivePage.jsx      Live page — live feed, countdown, moving target + rebuilt rows, session timeout (L1–L4)
     ├── browser/
-    │   └── BrowserPage.jsx   Browser page — nested/closed Shadow DOM, permission prompts, full screen (B1–B3)
+    │   └── BrowserPage.jsx   Browser page — nested/closed Shadow DOM, permission prompts, full screen, Google map (B1–B4)
     ├── testresources/
     │   ├── testimage.jpg     Image used by the Media page
     │   ├── testvideo.mp4     Video used by the Media page
@@ -1714,6 +1735,21 @@ await expect(page.locator('#geo-result')).toHaveAttribute('data-lat', '25.2048')
 Without a grant, headless Chromium denies straight away (`data-geo-state="denied"`). Notifications only report `granted` in headed Chromium.
 
 **Full screen (B3).** `requestFullscreen()` needs a real click, which `click()` provides. Assert on `data-fullscreen`, then leave with `#fs-exit`.
+
+**Map (B4).** Fake a location, ask for it in B2, check the map didn't move on its own, then share it. Assert on the frame's `src`, not on what Google draws inside it:
+
+```js
+await context.grantPermissions(['geolocation'], { origin: 'https://localhost:3000' })
+await context.setGeolocation({ latitude: 25.2048, longitude: 55.2708 })
+await page.locator('#geo-btn').click()
+await expect(page.locator('#sec-browser-map')).toHaveAttribute('data-source', 'default')   // not shared yet
+await page.locator('#map-show-location').click()
+await expect(page.locator('#sec-browser-map')).toHaveAttribute('data-source', 'geolocation')
+await expect(page.locator('#map-iframe')).toHaveAttribute('src', /q=25\.205,55\.271/)   // rounded
+await page.locator('#map-zoom-in').click()
+await expect(page.locator('#map-iframe')).toHaveAttribute('src', /&z=15&/)
+await expect(page.locator('#map-open-link')).toHaveAttribute('target', '_blank')
+```
 
 ### Frames page
 
