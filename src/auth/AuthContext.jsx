@@ -1,3 +1,5 @@
+// Auth state for the whole app: the JWT, the signed-in user, and the login,
+// signup and logout actions. Components read it with useAuth().
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { apiFetch, ApiError } from '../api/client.js'
 
@@ -5,10 +7,16 @@ const STORAGE_KEY = 'tp-auth-token'
 
 const AuthContext = createContext(null)
 
+/** The saved token from either storage (see writeToken), or null. */
 function readStoredToken() {
   return localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY) || null
 }
 
+/**
+ * Saves the token, replacing any older one.
+ * "Remember me" keeps it in localStorage so it survives closing the browser;
+ * otherwise sessionStorage, which is cleared when the tab closes.
+ */
 function writeToken(token, remember) {
   clearToken()
   if (!token) return
@@ -16,18 +24,26 @@ function writeToken(token, remember) {
   else sessionStorage.setItem(STORAGE_KEY, token)
 }
 
+/** Removes the token from both storages. */
 function clearToken() {
   localStorage.removeItem(STORAGE_KEY)
   sessionStorage.removeItem(STORAGE_KEY)
 }
 
+/**
+ * Provides auth state to the app. On load it restores the session from a stored
+ * token; `loading` stays true until that check finishes, so protected pages wait
+ * instead of bouncing to the login page.
+ */
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => readStoredToken())
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(Boolean(token))
 
   useEffect(() => {
+    // Ignores the answer if the token changed (or the provider unmounted) while it was in flight.
     let cancelled = false
+    /** Loads the user for the current token. */
     async function rehydrate() {
       if (!token) {
         setLoading(false)
@@ -109,6 +125,11 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+/**
+ * The auth state and actions from AuthProvider.
+ * @returns `{ user, token, loading, login, signup, logout, requestPasswordReset, ApiError }`.
+ * @throws If used outside <AuthProvider>.
+ */
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>')

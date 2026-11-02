@@ -7,20 +7,29 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+/** Reads and parses a JSON file given relative to the project root. */
 const readJson = file => JSON.parse(readFileSync(join(root, file), 'utf8'))
 
 const pkg = readJson('package.json')
 
-// Understands the forms used in "engines": "^X.Y.Z", ">=X.Y.Z", joined with "||".
-// Anything else is not checked, so an unfamiliar range never blocks a start.
+/**
+ * Whether a Node version falls inside an "engines" range.
+ * Understands the forms used in "engines": "^X.Y.Z", ">=X.Y.Z", joined with "||".
+ * Anything else is not checked, so an unfamiliar range never blocks a start.
+ * @param range The `engines.node` value from package.json.
+ * @param version A version such as `process.version` ("v22.12.0").
+ * @returns true if any part of the range is satisfied.
+ */
 function nodeSatisfies(range, version) {
   const parse = v => v.replace(/^v/, '').split('.').map(Number)
+  // Compares [major, minor, patch]: negative, zero or positive, like a sort comparator.
   const atLeast = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]
   const have = parse(version)
   return range.split('||').map(part => part.trim()).some(part => {
     const m = /^(\^|>=)\s*(\d+)\.(\d+)\.(\d+)$/.exec(part)
     if (!m) return true
     const want = [Number(m[2]), Number(m[3]), Number(m[4])]
+    // A caret range also caps the major version: ^20.19.0 does not accept 21.
     if (m[1] === '^' && have[0] !== want[0]) return false
     return atLeast(have, want) >= 0
   })

@@ -1,9 +1,14 @@
+// Forgot-password page (/forgot-password). The reset is a stub: no email is sent.
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from './AuthContext.jsx'
 import AuthLayout from './AuthLayout.jsx'
 
+/**
+ * Asks for an email and always shows the same confirmation afterwards, whatever
+ * the server says, so the page never reveals whether an account exists.
+ */
 export default function ForgotPasswordPage() {
   const { t } = useLang()
   const { requestPasswordReset } = useAuth()

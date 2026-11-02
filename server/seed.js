@@ -1,3 +1,5 @@
+// `npm run seed`: creates the sample users (password below) and their pets.
+// Safe to run repeatedly: anything that already exists is left untouched.
 import dotenv from 'dotenv'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -27,6 +29,11 @@ const USERS = [
   },
 ]
 
+/**
+ * Creates the user unless the email is already registered, then adds each of
+ * their pets that doesn't exist yet (matched by name).
+ * @param seed One entry of USERS.
+ */
 async function seedUser({ name, email, pets }) {
   let user = await User.findOne({ email })
   if (user) {
@@ -48,6 +55,7 @@ async function seedUser({ name, email, pets }) {
   }
 }
 
+/** Seeds every user in USERS, then disconnects and exits. */
 async function run() {
   await connectDB()
   console.log('==> Seeding sample users...')

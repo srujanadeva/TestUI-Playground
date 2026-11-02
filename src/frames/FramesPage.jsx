@@ -1,9 +1,16 @@
+// Frames page (/frames): iframes that tests have to switch into. A basic frame (F1),
+// three nested levels (F2), a late-loading frame (F3), look-alike frames without ids
+// (F4), a button-only card (F5) and a cross-origin frame (F6). Every card can be
+// expanded into an overlay without reloading its frames.
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SectionHeader, Output, numberParam } from '../ui.jsx'
 
-// A srcdoc attribute value is HTML-decoded once, so escape each nesting level.
+/**
+ * Escapes an HTML document for use as a srcdoc="…" attribute value.
+ * A srcdoc attribute value is HTML-decoded once, so escape each nesting level.
+ */
 function escapeAttr(html) {
   return html.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 }
@@ -11,11 +18,18 @@ function escapeAttr(html) {
 // Message a frame posts to the top page when it is pressed.
 const FRAME_CLICK = 'tp-frame-click'
 
-// One self-contained frame page: badge, title, input + button, result line,
-// and optionally a child iframe. Ids are `${prefix}-input/-btn/-result`.
-// With `card`, any press inside the frame tells the top page about it (see FrameCard).
+/**
+ * Builds one self-contained frame page: badge, title, input + button, result line,
+ * and optionally a child iframe. Ids are `${prefix}-input/-btn/-result`.
+ * @param card The FrameCard id; when set, any press inside the frame tells the top
+ *   page about it (see FrameCard).
+ * @param resultPrefix Text put before the input's value in the result line.
+ * @param child HTML for a nested <iframe>, already escaped by the caller.
+ * @returns A complete HTML document for srcdoc.
+ */
 function frameDoc({ dir, prefix, badge, title, placeholder, btn, init, card,
   resultPrefix = 'Value: ', accent = '#4f46e5', bg = 'linear-gradient(135deg,#ede9fe,#dbeafe)', child = '' }) {
+  // Escaped for a single-quoted JS string inside the button's onclick attribute.
   const label = resultPrefix.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
   const reportClicks = card
     ? `<script>document.addEventListener('pointerdown',function(){window.top.postMessage({type:'${FRAME_CLICK}',card:'${card}'},'*')})</script>`
@@ -46,7 +60,11 @@ function frameDoc({ dir, prefix, badge, title, placeholder, btn, init, card,
 </body></html>`
 }
 
-// Same idea as the Delayed Widget: 1–6 s, or ?delay=<ms> for deterministic runs.
+/**
+ * How long the late frame waits before loading.
+ * Same idea as the Delayed Widget: 1–6 s, or ?delay=<ms> for deterministic runs.
+ * @returns Milliseconds.
+ */
 function pickDelay() {
   const override = Number.parseInt(new URLSearchParams(window.location.search).get('delay'), 10)
   if (Number.isFinite(override) && override >= 0) return override
@@ -54,11 +72,16 @@ function pickDelay() {
 }
 
 // ─── Expandable card ─────────────────────────────────────────────────────────
-// expandOn="click": a press inside any of its frames (reported via postMessage,
-// since frame events never bubble to the page) or a click on the card itself
-// blows it up into an overlay. expandOn="button": only the Expand button does.
-// The section is restyled in place rather than re-rendered elsewhere, so the
-// iframes never reload and whatever was typed inside them survives.
+/**
+ * A section card that can be blown up into an overlay (Escape or the backdrop closes it).
+ * expandOn="click": a press inside any of its frames (reported via postMessage,
+ * since frame events never bubble to the page) or a click on the card itself
+ * blows it up into an overlay. expandOn="button": only the Expand button does.
+ * The section is restyled in place rather than re-rendered elsewhere, so the
+ * iframes never reload and whatever was typed inside them survives.
+ * @param id Section id; frames built with `card: id` expand this card.
+ * @param wide Spans the full grid width.
+ */
 function FrameCard({ id, num, title, locator, desc, wide, expandOn = 'click', children }) {
   const { t } = useLang()
   const cardRef = useRef(null)
@@ -66,6 +89,7 @@ function FrameCard({ id, num, title, locator, desc, wide, expandOn = 'click', ch
   const [holdHeight, setHoldHeight] = useState(0)
 
   const open = () => {
+    // Measured before expanding, for the spacer that keeps the card's place in the grid.
     setHoldHeight(cardRef.current.offsetHeight)
     setExpanded(true)
   }
@@ -89,6 +113,7 @@ function FrameCard({ id, num, title, locator, desc, wide, expandOn = 'click', ch
     return () => window.removeEventListener('message', onMessage)
   }, [clickToExpand, expanded, id])
 
+  // Clicks on the card's own controls do their own thing instead of expanding it.
   const onCardClick = e => {
     if (!clickToExpand || expanded || e.target.closest('button, a, input, select, textarea, label')) return
     open()
@@ -120,6 +145,7 @@ function FrameCard({ id, num, title, locator, desc, wide, expandOn = 'click', ch
 }
 
 // ─── F1. Basic iFrame (moved from the main page, locators unchanged) ─────────
+/** One same-origin srcdoc iframe with an input, a button and a result line. */
 function BasicFrameSection() {
   const { t, lang } = useLang()
   const doc = frameDoc({
@@ -145,6 +171,7 @@ const NESTED_LEVELS = [
   { accent: '#c2410c', bg: 'linear-gradient(135deg,#ffedd5,#fef9c3)' },
 ]
 
+/** Three iframes nested inside each other; a test must switch into each level in turn. */
 function NestedFrameSection() {
   const { t, lang } = useLang()
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
@@ -175,6 +202,10 @@ function NestedFrameSection() {
 }
 
 // ─── F3. Late-loading iFrame ─────────────────────────────────────────────────
+/**
+ * An iframe that only enters the DOM after a delay (see pickDelay); a spinner shows
+ * until then. Reload removes it and starts over with a new delay.
+ */
 function LateFrameSection() {
   const { t, lang } = useLang()
   const [run, setRun]     = useState(0)
@@ -237,6 +268,7 @@ const MULTI_FRAMES = [
     accent: '#db2777', bg: 'linear-gradient(135deg,#fce7f3,#fff1f2)' },
 ]
 
+/** Three look-alike iframes (see MULTI_FRAMES) side by side. */
 function MultipleFramesSection() {
   const { t, lang } = useLang()
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
@@ -268,8 +300,11 @@ function MultipleFramesSection() {
 }
 
 // ─── F5. Expand-button only ──────────────────────────────────────────────────
-// No `card` passed to frameDoc, so this frame never reports presses: only the
-// Expand button opens the card.
+/**
+ * A frame card that only the Expand button opens.
+ * No `card` passed to frameDoc, so this frame never reports presses: only the
+ * Expand button opens the card.
+ */
 function ButtonOnlyFrameSection() {
   const { t, lang } = useLang()
   const doc = frameDoc({
@@ -290,8 +325,12 @@ function ButtonOnlyFrameSection() {
 }
 
 // ─── F6. Cross-origin iframe ─────────────────────────────────────────────────
-// The frame is served by the API on port 4000, a different origin from the app,
-// so the page can't read its DOM; the two talk only through postMessage.
+/**
+ * An iframe from another origin, with two-way postMessage and a "try to read it" button.
+ * The frame is served by the API on port 4000 (?apiPort= to change), a different origin
+ * from the app, so the page can't read its DOM; the two talk only through postMessage.
+ * data-state: loading → ready once the frame says hello, or unreachable after 5 s.
+ */
 function CrossOriginFrameSection() {
   const { t, lang } = useLang()
   const frameRef = useRef(null)
@@ -305,6 +344,7 @@ function CrossOriginFrameSection() {
   useEffect(() => {
     setState('loading')
     const onMessage = e => {
+      // Only trust messages from this exact frame: right origin and right window.
       if (e.origin !== frameOrigin || e.source !== frameRef.current?.contentWindow) return
       if (e.data?.type === 'tp-xo-ready') setState('ready')
       if (e.data?.type === 'tp-xo-message') setReceived(String(e.data.text))
@@ -354,6 +394,7 @@ function CrossOriginFrameSection() {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Frames page: hero header and the F1–F6 frame cards. */
 export default function FramesPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

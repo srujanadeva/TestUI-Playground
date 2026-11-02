@@ -1,8 +1,11 @@
+// Add / edit pet dialog for the petstore. The form edits tags and photo URLs as
+// plain text and converts them to the API's shape when saving.
 import { useEffect, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 
 const STATUSES = ['available', 'pending', 'sold']
 
+/** "cute, fluffy" → [{ id: 1, name: 'cute' }, { id: 2, name: 'fluffy' }]; blanks are dropped. */
 function parseTags(text) {
   return text
     .split(',')
@@ -11,14 +14,17 @@ function parseTags(text) {
     .map((name, i) => ({ id: i + 1, name }))
 }
 
+/** The reverse of parseTags: tag objects → "cute, fluffy". */
 function tagsToText(tags) {
   return (tags || []).map(t => t.name).join(', ')
 }
 
+/** Photo URLs → one per line, for the textarea. */
 function urlsToText(urls) {
   return (urls || []).join('\n')
 }
 
+/** The reverse of urlsToText: one URL per line, blank lines dropped. */
 function parseUrls(text) {
   return text
     .split(/\r?\n/)
@@ -26,6 +32,13 @@ function parseUrls(text) {
     .filter(Boolean)
 }
 
+/**
+ * Modal form for adding a pet, or editing one when `pet` is given.
+ * Clicking the backdrop closes it. Save is disabled until the pet has a name.
+ * @param pet The pet to edit, or null to add a new one.
+ * @param onSave Called with the API body; if it throws, the error is shown in the form
+ *   and the modal stays open. The caller closes the modal on success.
+ */
 export default function PetFormModal({ open, pet, onClose, onSave }) {
   const { t, lang } = useLang()
   const [name, setName] = useState('')
@@ -36,6 +49,7 @@ export default function PetFormModal({ open, pet, onClose, onSave }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  // Reload the fields from `pet` each time the modal opens, so it never shows a previous pet's values.
   useEffect(() => {
     if (!open) return
     setName(pet?.name || '')

@@ -1,20 +1,32 @@
+// Navigation page (/navigation): menus and ways of leaving a view. Accordion (N1),
+// URL-driven breadcrumbs (N2), a custom context menu (N3), a dropdown with a
+// submenu (N4), a side drawer (N5) and an unsaved-changes guard (N6).
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SectionHeader, Output } from '../ui.jsx'
 
-// Moves focus between the menu items in `list` (skipping nothing; disabled items stay focusable).
+/**
+ * Moves focus to a menu item of `list`, wrapping around at both ends
+ * (-1 is the last item). Skips nothing: disabled items stay focusable, as ARIA menus expect.
+ * @param list The role="menu" element; only its own items count, not a submenu's.
+ */
 function focusItem(list, index) {
   const items = [...list.querySelectorAll(':scope > li > [role="menuitem"]')]
   if (!items.length) return
   items[(index + items.length) % items.length].focus()
 }
+/** Index of the focused item among `list`'s own menu items, or -1. */
 const focusedIndex = list => [...list.querySelectorAll(':scope > li > [role="menuitem"]')].indexOf(document.activeElement)
 
 // ─── N1. Accordion ───────────────────────────────────────────────────────────
 const FAQ = ['shipping', 'returns', 'warranty', 'payments']
 
+/**
+ * FAQ accordion. One panel open at a time, unless "allow several" is ticked;
+ * arrow keys / Home / End move between the headers.
+ */
 function AccordionSection() {
   const { t } = useLang()
   const [open, setOpen]   = useState(['shipping'])
@@ -25,6 +37,7 @@ function AccordionSection() {
     if (o.includes(key)) return o.filter(k => k !== key)
     return multi ? [...o, key] : [key]
   })
+  // Switching back to single mode keeps only the most recently opened panel.
   const changeMulti = on => { setMulti(on); if (!on) setOpen(o => o.slice(-1)) }
 
   const onKeyDown = (e, i) => {
@@ -78,7 +91,10 @@ const FOLDERS = {
     Settings: {},
   },
 }
-// "Home/Projects/Website" → ['Home', 'Projects', 'Website'], or ['Home'] if any part doesn't exist.
+/**
+ * Reads the ?folder= value into a path.
+ * "Home/Projects/Website" → ['Home', 'Projects', 'Website'], or ['Home'] if any part doesn't exist.
+ */
 function parseFolder(param) {
   const parts = (param || 'Home').split('/')
   let node = FOLDERS
@@ -88,9 +104,15 @@ function parseFolder(param) {
   }
   return parts
 }
+/** The FOLDERS node for a valid path (its keys are the subfolders). */
 const folderAt = path => path.reduce((n, p) => n[p], FOLDERS)
+/** Link to a folder on this page. */
 const folderLink = path => `?folder=${encodeURIComponent(path.join('/'))}`
 
+/**
+ * Breadcrumbs and subfolder links for a pretend folder tree. The current folder lives
+ * in the URL (?folder=), so Back/Forward and deep links work; the last crumb has aria-current.
+ */
 function BreadcrumbsSection() {
   const { t } = useLang()
   const [params] = useSearchParams()
@@ -126,6 +148,10 @@ function BreadcrumbsSection() {
 // ─── N3. Custom context menu ─────────────────────────────────────────────────
 const CTX_ITEMS = ['open', 'copy', 'paste', 'rename', 'delete']
 
+/**
+ * A right-click (or ContextMenu key / Shift+F10) menu replacing the browser's own.
+ * Paste stays disabled until Copy has been used. Clicking outside closes it.
+ */
 function ContextMenuSection() {
   const { t } = useLang()
   const wrapRef = useRef(null)
@@ -135,6 +161,8 @@ function ContextMenuSection() {
   const [copied, setCopied]   = useState(false)
   const [action, setAction]   = useState(null)
 
+  // Converts the click's viewport position to one inside the wrapper, keeping the menu
+  // inside it horizontally (190 = the menu's min-width from .lab-menu in App.css).
   const openAt = (x, y) => {
     const r = wrapRef.current.getBoundingClientRect()
     setMenu({ x: Math.min(Math.max(0, x - r.left), r.width - 190), y: y - r.top })
@@ -144,6 +172,7 @@ function ContextMenuSection() {
   useEffect(() => { if (menu) focusItem(menuRef.current, 0) }, [menu])
   useEffect(() => {
     if (!menu) return
+    // A click elsewhere closes the menu without pulling focus back to the zone.
     const onDown = e => { if (!menuRef.current?.contains(e.target)) close(false) }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
@@ -212,6 +241,11 @@ const MENU_ITEMS = [
   { key: 'share' },
 ]
 
+/**
+ * An "Actions" menu button with an Export submenu (ARIA menu pattern).
+ * ↓/↑ on the button open the menu on the first/last item; → opens the submenu and
+ * ← closes it (swapped in RTL); Escape or Tab closes everything. Hover opens the submenu too.
+ */
 function DropdownMenuSection() {
   const { t, lang } = useLang()
   const btnRef  = useRef(null)
@@ -225,6 +259,7 @@ function DropdownMenuSection() {
 
   const close = (refocus = true) => { setOpen(false); setSubOpen(false); if (refocus) btnRef.current?.focus() }
   const choose = (key, sub) => { setChosen({ key, sub }); close() }
+  // Focus is moved on the next tick, once the menu has rendered.
   const openMenu = (last = false) => { setOpen(true); setSubOpen(false); setTimeout(() => focusItem(menuRef.current, last ? -1 : 0)) }
   const openSub = () => { setSubOpen(true); setTimeout(() => focusItem(subRef.current, 0)) }
 
@@ -235,6 +270,8 @@ function DropdownMenuSection() {
     return () => document.removeEventListener('mousedown', onDown)
   }, [open])
 
+  // stopPropagation in both handlers: the submenu sits inside the menu's <ul>, so
+  // without it a key pressed in the submenu would also be handled by the menu.
   const onMenuKey = e => {
     e.stopPropagation()
     const i = focusedIndex(menuRef.current)
@@ -311,8 +348,14 @@ function DropdownMenuSection() {
 }
 
 // ─── N5. Side drawer ─────────────────────────────────────────────────────────
-const DRAWER_MS = 250
+const DRAWER_MS = 250  // must match the slide transition in App.css
 
+/**
+ * A filter drawer that slides in from the side. data-state goes
+ * closed → opening → open → closing, so tests can wait for the animation to finish.
+ * Focus moves to the close button when open and back to the opener when closed; Escape
+ * or a backdrop click closes it. While closed it is `inert`, so nothing in it can be focused.
+ */
 function DrawerSection() {
   const { t } = useLang()
   const openBtnRef  = useRef(null)
@@ -399,6 +442,11 @@ function DrawerSection() {
 // ─── N6. Unsaved-changes guard ───────────────────────────────────────────────
 const SAVED_NOTE = { title: 'Q4 roadmap', notes: 'Ship the Data and Controls pages.' }
 
+/**
+ * A note editor that warns before unsaved changes are lost: the browser's own
+ * dialog on close/reload, and an in-page Stay / Save and leave / Discard dialog for
+ * in-app links.
+ */
 function UnsavedGuardSection() {
   const { t } = useLang()
   const navigate = useNavigate()
@@ -422,6 +470,8 @@ function UnsavedGuardSection() {
     if (!dirty) return
     const onClick = e => {
       const a = e.target.closest?.('a[href]')
+      // Leave alone anything that isn't a plain left-click on a same-tab link:
+      // modifier clicks open new tabs, which don't lose the draft.
       if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
       if (a.target && a.target !== '_self') return
       const url = new URL(a.href, window.location.href)
@@ -431,6 +481,7 @@ function UnsavedGuardSection() {
       e.stopPropagation()
       setPending(url.pathname + url.search + url.hash)
     }
+    // Capture phase, so the click is stopped before React Router's <Link> handler navigates.
     document.addEventListener('click', onClick, true)
     return () => document.removeEventListener('click', onClick, true)
   }, [dirty])
@@ -484,6 +535,7 @@ function UnsavedGuardSection() {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Navigation page: hero header and the N1–N6 sections in two groups. */
 export default function NavigationPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

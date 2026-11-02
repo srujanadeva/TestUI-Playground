@@ -1,3 +1,5 @@
+// Spreadsheet page (/spreadsheet): upload an .xlsx/.xls/.csv file, which the API
+// parses (server/routes/spreadsheets.js), then browse it as a searchable, paginated table.
 import { useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -11,6 +13,11 @@ const PER_PAGE = 10
 // Page-number buttons shown at once; the rest are reached with ‹ › « ».
 const PAGE_WINDOW = 7
 
+/**
+ * The page-number buttons to show: up to PAGE_WINDOW pages centred on the current one,
+ * shifted at either end so the window never runs past page 1 or the last page.
+ * @returns e.g. [3, 4, 5, 6, 7, 8, 9] for page 6 of 20.
+ */
 function pageNumbers(page, totalPages) {
   const start = Math.max(1, Math.min(page - Math.floor(PAGE_WINDOW / 2), totalPages - PAGE_WINDOW + 1))
   const end = Math.min(totalPages, start + PAGE_WINDOW - 1)
@@ -18,6 +25,10 @@ function pageNumbers(page, totalPages) {
 }
 
 // ─── S1. Excel Upload Table ──────────────────────────────────────────────────
+/**
+ * Upload button, sheet picker, search box and a paginated table of the chosen sheet.
+ * Search matches any cell (case-insensitive) and resets to page 1.
+ */
 function SheetUploadSection() {
   const { t } = useLang()
   const { token } = useAuth()
@@ -29,6 +40,7 @@ function SheetUploadSection() {
   const [page, setPage]       = useState(1)
   const [error, setError]     = useState('')
 
+  /** Checks the file's type and size, then uploads it and shows the first sheet. */
   async function handleFile(file) {
     if (!file) return
     const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
@@ -48,6 +60,7 @@ function SheetUploadSection() {
       setStatus('loaded')
     } catch (err) {
       // A failed upload leaves the table that is already on screen as it was.
+      // Server errors are already user-facing text; status 0 means no response at all.
       setError(err.status ? err.message : t('sheetErrNetwork'))
       setStatus('error')
     }
@@ -88,6 +101,7 @@ function SheetUploadSection() {
         </button>
         <input ref={inputRef} id="sheet-file-input" type="file" accept={ACCEPT.join(',')}
           style={{ display: 'none' }}
+          // Cleared after each pick so choosing the same file again still fires onChange.
           onChange={e => { handleFile(e.target.files[0]); e.target.value = '' }} />
         {workbook?.sheets.length > 1 && (
           <select id="sheet-select" aria-label={t('sheetSelectLabel')} value={sheetIndex}
@@ -160,6 +174,7 @@ function SheetUploadSection() {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Spreadsheet page: hero header and the S1 upload table. */
 export default function SpreadsheetPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

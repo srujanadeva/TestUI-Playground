@@ -1,3 +1,4 @@
+// Login page (/login).
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
@@ -5,6 +6,10 @@ import { useAuth } from './AuthContext.jsx'
 import AuthLayout from './AuthLayout.jsx'
 import PasswordInput from './PasswordInput.jsx'
 
+/**
+ * Email/password login with "Remember me". After logging in, goes back to the
+ * page that sent the user here (see ProtectedRoute), or to /account.
+ */
 export default function LoginPage() {
   const { t } = useLang()
   const { login } = useAuth()
@@ -28,6 +33,8 @@ export default function LoginPage() {
         : '/account'
       navigate(dest, { replace: true })
     } catch (err) {
+      // Status 0 means the server couldn't be reached; anything else is reported
+      // as bad credentials, without saying whether the email exists.
       if (err.status === 0) setError(t('authErrNetwork'))
       else setError(t('authErrInvalid'))
     } finally {

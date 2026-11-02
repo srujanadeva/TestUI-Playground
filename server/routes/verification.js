@@ -1,3 +1,7 @@
+// Practice targets for verification flows (/api/verification): CAPTCHA, OTP,
+// selfie upload and simulated OCR. Everything is kept in memory and is lost when
+// the API restarts. None of this is real security; it exists so tests have
+// something realistic to drive.
 import { Router } from 'express'
 import multer from 'multer'
 import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto'
@@ -7,10 +11,6 @@ import { fileURLToPath } from 'node:url'
 import { requireAuth } from '../middleware/auth.js'
 import { OCR_FIXTURES } from '../fixtures/ocr.js'
 
-// Practice targets for verification flows: CAPTCHA, OTP, selfie upload and
-// simulated OCR. Everything is kept in memory and is lost when the API
-// restarts. None of this is real security; it exists so tests have something
-// realistic to drive.
 const router = Router()
 
 router.use(requireAuth)
@@ -35,23 +35,37 @@ const JPEG_MAGIC = Buffer.from([0xff, 0xd8, 0xff])
 const OCR_DEFAULT_DELAY = 1500
 
 const captchas = new Map() // id -> { userId, answer, expires }
-const otps = new Map()     // userId -> { code, phone, expires, attempts, sentAt }
+const otps = new Map()     // userId -> { code, phone, expires, resendAt, attempts }
 const inboxes = new Map()  // userId -> [{ id, to, text, code, sentAt }]
 
-// Reads a whole-number query value, clamped to [min, max]; falls back when missing or invalid.
+/**
+ * Reads a whole-number query value, clamped to [min, max].
+ * @param value The raw query string value (may be missing).
+ * @param fallback Returned when the value is missing or not a number.
+ * @returns The clamped number, or `fallback`.
+ */
 function intParam(value, fallback, min, max) {
   const n = Number.parseInt(value, 10)
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback
 }
 
+/**
+ * Keeps the CAPTCHA store bounded: removes expired challenges, then the oldest
+ * live ones until there is room for a new entry.
+ * @param now Current time in ms.
+ */
 function pruneCaptchas(now) {
   for (const [id, c] of captchas) if (c.expires <= now) captchas.delete(id)
   // Still too many live ones: drop the oldest (Map keeps insertion order).
   while (captchas.size >= CAPTCHA_MAX_ENTRIES) captchas.delete(captchas.keys().next().value)
 }
 
-// Draws the code as an SVG image with rotated letters and noise lines. Served
-// as an <img>, so the letters are not in the page's DOM.
+/**
+ * Draws the code as an SVG image with rotated letters, noise curves and dots.
+ * Served as an <img>, so the letters are not in the page's DOM.
+ * @param code The characters to draw.
+ * @returns A base64 `data:image/svg+xml` URL.
+ */
 function captchaSvg(code) {
   const w = 180
   const h = 60
@@ -107,6 +121,7 @@ router.post('/captcha/verify', (req, res) => {
   res.json({ ok: true, bypassed: false })
 })
 
+/** Hides every digit except the last four: "+15551234567" → "+•••••••4567". */
 function maskPhone(phone) {
   return phone.slice(0, -4).replace(/\d/g, '•') + phone.slice(-4)
 }
@@ -168,11 +183,13 @@ router.post('/otp/verify', (req, res) => {
   res.json({ verified: true, phone: maskPhone(otp.phone) })
 })
 
-// Test-only stand-in for an SMS gateway: the messages "sent" to this user.
+// GET /dev-inbox → { messages }. Test-only stand-in for an SMS gateway: the
+// messages "sent" to this user, newest first (at most INBOX_MAX).
 router.get('/dev-inbox', (req, res) => {
   res.json({ messages: inboxes.get(req.user.id) || [] })
 })
 
+// DELETE /dev-inbox: empties this user's test inbox.
 router.delete('/dev-inbox', (req, res) => {
   inboxes.delete(req.user.id)
   res.status(204).end()
@@ -191,8 +208,10 @@ const MULTER_MESSAGES = {
   LIMIT_UNEXPECTED_FILE: [400, 'The image must be sent in the "file" field.'],
 }
 
-// Runs multer and checks the upload is a PNG or JPEG by its first bytes.
-// Calls next() with req.file set, or answers with an error.
+/**
+ * Middleware: runs multer and checks the upload is a PNG or JPEG by its first bytes.
+ * Calls next() with `req.file` and `req.imageType` set, or answers with an error.
+ */
 function receiveImage(req, res, next) {
   upload(req, res, err => {
     if (err) {

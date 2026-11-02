@@ -1,3 +1,5 @@
+// Mongoose model for a petstore pet. Each pet belongs to one user (ownerId);
+// the fields follow the Swagger Petstore shape.
 import mongoose from 'mongoose'
 
 const petSchema = new mongoose.Schema(
@@ -23,6 +25,7 @@ const petSchema = new mongoose.Schema(
   {
     timestamps: true,
     toJSON: {
+      /** Shapes the API response: `_id` becomes `id`, and internal fields such as ownerId are left out. */
       transform(_doc, ret) {
         ret.id = ret._id.toString()
         delete ret._id

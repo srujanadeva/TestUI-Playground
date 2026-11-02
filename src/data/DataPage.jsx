@@ -1,8 +1,12 @@
+// Data page (/data): ways of showing data. A sortable, editable table (D1), a
+// checkbox tree (D2), an SVG chart (D3), a skeleton loader (D4), infinite scroll (D5),
+// a virtualised list (D6) and a back-to-top button (D7).
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SectionHeader, Output, numberParam } from '../ui.jsx'
 
+/** 98000 → "$98,000" (always en-US, so tests see the same text in both languages). */
 const formatSalary = n => '$' + n.toLocaleString('en-US')
 
 // ─── D1. Sortable table with inline edit and expandable rows ─────────────────
@@ -24,10 +28,19 @@ const TABLE_COLUMNS = [
 ]
 const MAX_SALARY = 1000000
 
+/**
+ * An ascending sort comparator for a column: numeric for salary, text for the rest.
+ * Start dates sort correctly as text because they are ISO strings (YYYY-MM-DD).
+ */
 function compareBy(key) {
   return (a, b) => key === 'salary' ? a.salary - b.salary : String(a[key]).localeCompare(String(b[key]))
 }
 
+/**
+ * Employee table. Clicking a header sorts by it (again to reverse; aria-sort shows
+ * the order), ▸ expands a details row, and double-clicking a salary edits it in place:
+ * Enter saves, Escape cancels.
+ */
 function SortableTableSection() {
   const { t } = useLang()
   const [rows, setRows]         = useState(EMPLOYEES)
@@ -57,6 +70,8 @@ function SortableTableSection() {
 
   const startEdit = row => { setEditing({ id: row.id, value: String(row.salary) }); setError('') }
   const cancelEdit = () => { setEditing(null); setError(''); setStatus({ key: 'dataEditCancelled' }) }
+  // Accepts whole numbers 1–MAX_SALARY. On blur (cancelIfInvalid) an invalid value
+  // is discarded instead of leaving the user stuck in a cell with an error.
   const saveEdit = ({ cancelIfInvalid } = {}) => {
     const value = Number(editing.value)
     if (!/^\d+$/.test(editing.value.trim()) || value <= 0 || value > MAX_SALARY) {
@@ -103,6 +118,7 @@ function SortableTableSection() {
             {sorted.map(row => {
               const open = expanded.has(row.id)
               const isEditing = editing?.id === row.id
+              // Each employee renders as a pair: the row and, when expanded, its details row.
               return [
                 <tr key={row.id} data-row-id={row.id}>
                   <td className="data-expand-col">
@@ -165,18 +181,26 @@ const TEST_TREE = {
   ],
 }
 
+/** Copies the tree, giving every node its full path ("test-suite/auth/login.spec.ts") as a unique id. */
 function withPaths(node, parent = '') {
   const path = parent ? `${parent}/${node.name}` : node.name
   return { ...node, path, children: node.children?.map(c => withPaths(c, path)) }
 }
 const TREE = withPaths(TEST_TREE)
+/** Paths of every file (leaf) under a node, or the node's own path if it is a file. */
 const leavesOf = node => (node.children ? node.children.flatMap(leavesOf) : [node.path])
+/** Paths of every folder at or under a node. */
 const foldersOf = node => (node.children ? [node.path, ...node.children.flatMap(foldersOf)] : [])
 const ALL_LEAVES  = leavesOf(TREE)
 const ALL_FOLDERS = foldersOf(TREE)
+/** A path turned into a valid, readable element id. */
 const pathId = path => 'tree-' + path.replace(/[^a-z0-9]+/gi, '-')
 const INITIAL_CHECKED = ['test-suite/auth/login.spec.ts', 'test-suite/auth/signup.spec.ts']
 
+/**
+ * A checkbox that can also show the "mixed" (indeterminate) state.
+ * @param state "checked" | "unchecked" | "mixed".
+ */
 function TreeCheckbox({ id, state, label, onChange }) {
   const ref = useRef(null)
   // `indeterminate` is a DOM property only — there's no HTML attribute for it.
@@ -191,6 +215,14 @@ function TreeCheckbox({ id, state, label, onChange }) {
   )
 }
 
+/**
+ * One tree item, rendered recursively for folders.
+ * Only files are stored as checked; a folder's state is worked out from its files
+ * (all → checked, some → mixed, none → unchecked), and ticking a folder ticks all of them.
+ * @param checked Set of checked file paths.
+ * @param expanded Set of open folder paths.
+ * @param onToggleCheck Called with a list of file paths and whether to check or uncheck them.
+ */
 function TreeNode({ node, checked, expanded, onToggleCheck, onToggleOpen }) {
   const leaves = leavesOf(node)
   const count = leaves.filter(l => checked.has(l)).length
@@ -224,6 +256,7 @@ function TreeNode({ node, checked, expanded, onToggleCheck, onToggleOpen }) {
   )
 }
 
+/** A test-suite tree with tri-state checkboxes and expand/collapse-all buttons (ARIA tree). */
 function TreeViewSection() {
   const { t } = useLang()
   const [checked, setChecked]   = useState(() => new Set(INITIAL_CHECKED))
@@ -266,19 +299,27 @@ const SIGNUPS = [
   ['Jan', 420], ['Feb', 380], ['Mar', 510], ['Apr', 640], ['May', 590],
   ['Jun', 720], ['Jul', 810], ['Aug', 760], ['Sep', 880], ['Oct', 950],
 ]
+// SVG viewBox size, the margins left for the axes, the y-axis maximum and the grid-line step.
 const CHART = { w: 400, h: 220, left: 40, right: 10, top: 12, bottom: 26, max: 1000, step: 250 }
 
+/**
+ * A hand-drawn SVG bar chart of monthly sign-ups. Hovering or focusing a bar
+ * (each is tabbable) shows a tooltip; the last bar shown is reported below.
+ */
 function ChartSection() {
   const { t, tArr } = useLang()
   const months = tArr('dataMonths')
   const [hover, setHover] = useState(null)  // index into SIGNUPS
   const [last, setLast]   = useState(null)
   const { w, h, left, right, top, bottom, max, step } = CHART
+  // Value → SVG y coordinate (SVG's y grows downwards, so 0 is at the bottom margin).
   const y = v => top + (h - top - bottom) * (1 - v / max)
+  // Each month gets an equal-width slot; the bar fills its middle 64%.
   const band = (w - left - right) / SIGNUPS.length
   const ticks = Array.from({ length: max / step + 1 }, (_, i) => i * step)
 
   const show = i => { setHover(i); setLast(i) }
+  // Tooltip position as a % of the chart, so it stays on its bar as the SVG scales.
   const tip = hover == null ? null : {
     x: ((left + hover * band + band / 2) / w) * 100,
     y: (y(SIGNUPS[hover][1]) / h) * 100,
@@ -327,6 +368,10 @@ function ChartSection() {
 }
 
 // ─── D4. Skeleton loader, avatar and badges ──────────────────────────────────
+/**
+ * A profile card that shows grey placeholder blocks (aria-busy) for ?skeletonDelay ms
+ * (default 2000) before the real content. Reload plays it again.
+ */
 function SkeletonSection() {
   const { t } = useLang()
   const [state, setState] = useState('loading')
@@ -384,8 +429,13 @@ function SkeletonSection() {
 const BATCH = 20
 const MAX_ROWS = 100
 const TXN_TYPES = ['Invoice', 'Refund', 'Payout', 'Transfer']
+/** Transaction number `i`, generated the same way every time. */
 const txn = i => ({ index: i, ref: `TXN-${String(i).padStart(4, '0')}`, type: TXN_TYPES[i % 4], amount: 1000 + i * 7 })
 
+/**
+ * A list that loads BATCH more rows (after ?scrollDelay ms, default 700) whenever
+ * its last line scrolls into view, until MAX_ROWS.
+ */
 function InfiniteScrollSection() {
   const { t } = useLang()
   const boxRef = useRef(null)
@@ -393,6 +443,9 @@ function InfiniteScrollSection() {
   const [count, setCount] = useState(BATCH)
   const [state, setState] = useState('idle')  // idle | loading | end
 
+  // Watches the status line at the bottom of the list. The observer is created again
+  // after every batch: a new observer reports straight away if the line is still in
+  // view, so loading carries on until the box is full.
   useEffect(() => {
     if (state !== 'idle') return
     const observer = new IntersectionObserver(entries => {
@@ -440,10 +493,15 @@ function InfiniteScrollSection() {
 
 // ─── D6. Virtualised list ────────────────────────────────────────────────────
 const V_TOTAL = 10000
-const V_ROW = 32
-const V_BUFFER = 4
+const V_ROW = 32    // fixed row height in px; the row maths depends on it
+const V_BUFFER = 4  // extra rows rendered above and below the visible ones
 const V_NAMES = ['Alice', 'Bob', 'Carol', 'David', 'Emma', 'Frank', 'Grace', 'Henry']
 
+/**
+ * A 10,000-row list that only puts the rows on screen (plus a buffer) into the DOM.
+ * Rows far off screen don't exist, so a test must scroll (or use "Go to row") before
+ * it can find them; data-rendered shows how many rows are in the DOM.
+ */
 function VirtualListSection() {
   const { t } = useLang()
   const boxRef = useRef(null)
@@ -452,8 +510,11 @@ function VirtualListSection() {
   const [jump, setJump]           = useState('5000')
   const [jumpError, setJumpError] = useState('')
 
+  // Measured before the first paint, so the first render already fills the box.
   useLayoutEffect(() => { setHeight(boxRef.current.clientHeight) }, [])
 
+  // Rows are a fixed height, so the scroll position alone gives the visible range;
+  // V_BUFFER rows are added on each side so fast scrolling doesn't show gaps.
   const firstVisible = Math.floor(scrollTop / V_ROW)
   const first = Math.max(0, firstVisible - V_BUFFER)
   const last  = Math.min(V_TOTAL - 1, Math.ceil((scrollTop + height) / V_ROW) + V_BUFFER)
@@ -486,6 +547,8 @@ function VirtualListSection() {
       <div ref={boxRef} className="data-scrollbox" data-testid="virtual-list" data-total={V_TOTAL}
         data-rendered={rendered} data-first-visible={firstVisible + 1}
         onScroll={e => setScrollTop(e.currentTarget.scrollTop)}>
+        {/* Full-height spacer so the scrollbar matches 10,000 rows; each rendered row is
+            positioned absolutely at its own offset inside it. */}
         <div style={{ position: 'relative', height: V_TOTAL * V_ROW }}>{rows}</div>
       </div>
       <div className="input-row">
@@ -505,6 +568,10 @@ function VirtualListSection() {
 // ─── D7. Back-to-top button ──────────────────────────────────────────────────
 const SHOW_AFTER = 150
 
+/**
+ * A scroll box whose "Back to top" button appears after scrolling SHOW_AFTER px.
+ * Scrolling back is smooth unless the user prefers reduced motion.
+ */
 function BackToTopSection() {
   const { t } = useLang()
   const boxRef = useRef(null)
@@ -539,6 +606,7 @@ function BackToTopSection() {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Data page: hero header and the D1–D7 sections in two groups. */
 export default function DataPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

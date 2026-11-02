@@ -1,3 +1,5 @@
+// Petstore page (/petstore): the signed-in user's pets with status stats,
+// filter chips, and add / edit / delete. Behind ProtectedRoute.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -7,6 +9,11 @@ import PetFormModal from './PetFormModal.jsx'
 
 const FILTERS = ['all', 'available', 'pending', 'sold']
 
+/**
+ * Loads every pet once and filters on the client, so the stat tiles always count
+ * all pets whichever filter is active. Saves and deletes update the list in place
+ * instead of reloading it.
+ */
 export default function PetstorePage() {
   const { t, lang } = useLang()
   const { token, user } = useAuth()
@@ -36,6 +43,7 @@ export default function PetstorePage() {
     refresh()
   }, [refresh])
 
+  /** Shows a confirmation message for 2.5 s. */
   function showToast(message) {
     setToast(message)
     setTimeout(() => setToast(null), 2500)
@@ -64,6 +72,10 @@ export default function PetstorePage() {
     setModalOpen(true)
   }
 
+  /**
+   * Creates or updates the pet from the modal, depending on whether one is being edited.
+   * Errors are left to propagate so PetFormModal can show them and stay open.
+   */
   async function handleSave(body) {
     if (editingPet) {
       const data = await updatePet(editingPet.id, body, token)
@@ -78,6 +90,7 @@ export default function PetstorePage() {
     setEditingPet(null)
   }
 
+  /** Deletes the pet after a native confirm() dialog. */
   async function handleDelete(pet) {
     const confirmed = window.confirm(t('petConfirmDelete', { name: pet.name }))
     if (!confirmed) return
@@ -193,6 +206,10 @@ export default function PetstorePage() {
   )
 }
 
+/**
+ * One count in the stats row.
+ * @param variant "total" or a pet status; picks the tile's colour.
+ */
 function StatTile({ label, value, variant, testid }) {
   return (
     <div className={`pet-stat-tile status-${variant}`} data-testid={testid}>

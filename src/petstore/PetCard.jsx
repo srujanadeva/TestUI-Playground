@@ -1,6 +1,12 @@
+// One pet in the petstore grid.
 import { useLang } from '../i18n.jsx'
 import { petEmoji } from './petAvatars.js'
 
+/**
+ * Card showing a pet's avatar, name, category, status and tags, with edit and delete buttons.
+ * @param onEdit Called with the pet when ✏️ is pressed.
+ * @param onDelete Called with the pet when 🗑️ is pressed; the caller confirms and deletes.
+ */
 export default function PetCard({ pet, onEdit, onDelete }) {
   const { t } = useLang()
   const statusKey =

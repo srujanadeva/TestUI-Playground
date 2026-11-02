@@ -1,3 +1,6 @@
+// Interactions page (/interactions): pointer and keyboard interactions that are
+// awkward to automate. Resizable panels (I1), a drag-and-drop grid (I2), a
+// Ctrl/⌘+K command palette (I3) and copy to clipboard (I4).
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
@@ -9,6 +12,11 @@ const SPLIT_MIN = 20
 const SPLIT_MAX = 80
 const SPLIT_DEFAULT = 35
 
+/**
+ * Two panels split by a draggable handle (role="separator"). The first panel's
+ * width is a percentage, clamped to SPLIT_MIN–SPLIT_MAX. Arrow keys move it by 5,
+ * Home/End jump to the limits, and a double-click resets it.
+ */
 function ResizableSection() {
   const { t, lang } = useLang()
   const splitRef = useRef(null)
@@ -19,15 +27,19 @@ function ResizableSection() {
 
   const onPointerDown = e => {
     e.preventDefault()
+    // Keeps pointermove coming to the handle even when the pointer moves off it mid-drag.
     e.currentTarget.setPointerCapture(e.pointerId)
     setDragging(true)
   }
   const onPointerMove = e => {
     if (!dragging) return
     const r = splitRef.current.getBoundingClientRect()
+    // Pointer position as a % of the container width. In Arabic (RTL) the first
+    // panel is on the right, so measure from the right edge instead.
     set(((rtl ? r.right - e.clientX : e.clientX - r.left) / r.width) * 100)
   }
   const onKeyDown = e => {
+    // The arrow pointing away from the first panel grows it, so the keys swap in RTL.
     const grow = rtl ? 'ArrowLeft' : 'ArrowRight'
     const shrink = rtl ? 'ArrowRight' : 'ArrowLeft'
     const next = { [grow]: size + 5, [shrink]: size - 5, Home: SPLIT_MIN, End: SPLIT_MAX }[e.key]
@@ -71,6 +83,11 @@ const swap = (order, a, b) => {
   return next
 }
 
+/**
+ * A 3×3 grid of numbered tiles to put in order 1–9. Tiles swap by mouse drag and
+ * drop, or by keyboard: Space/Enter grabs a tile, arrows move it, Space/Enter drops
+ * it and Escape puts everything back. Moves are announced in an aria-live line.
+ */
 function SortableGridSection() {
   const { t, lang } = useLang()
   const [order, setOrder]       = useState(START_ORDER)
@@ -80,6 +97,7 @@ function SortableGridSection() {
   const [note, setNote]         = useState(null)
   const tiles = useRef([])
 
+  // Deferred so the tile is focused after React has re-rendered the new order.
   const focusAt = i => setTimeout(() => tiles.current[i]?.focus())
 
   const onKeyDown = (e, i) => {
@@ -91,6 +109,7 @@ function SortableGridSection() {
     }
     if (e.key === 'Escape' && grabbed) {
       e.preventDefault()
+      // Restore the order from before the grab, and keep focus on the same tile at its old position.
       setOrder(grabbed.before); setGrabbed(null); setNote({ key: 'gridCancelled' })
       focusAt(grabbed.before.indexOf(order[i]))
       return
@@ -102,6 +121,8 @@ function SortableGridSection() {
     if (step === undefined) return
     e.preventDefault()
     const j = i + step
+    // Stop at the grid's edges: left/right must stay on the same row instead of
+    // wrapping to the next one, and up/down must stay inside the grid.
     if (j < 0 || j >= order.length || (Math.abs(step) === 1 && Math.floor(j / COLS) !== Math.floor(i / COLS))) return
     if (grabbed) { setOrder(o => swap(o, i, j)); setGrabbed(g => ({ ...g, index: j })) }
     focusAt(j)
@@ -109,6 +130,7 @@ function SortableGridSection() {
 
   const onDrop = (e, i) => {
     e.preventDefault()
+    // If no dragstart was seen here (e.g. a synthetic drop event), use the index in dataTransfer.
     const from = dragFrom ?? Number(e.dataTransfer.getData('text/plain'))
     if (Number.isInteger(from) && from !== i) {
       setOrder(o => swap(o, from, i))
@@ -166,6 +188,12 @@ const COMMANDS = [
   { key: 'go-data',        labelKey: 'cmdGoData' },
 ]
 
+/**
+ * A command palette opened with the button or Ctrl/⌘+K from anywhere on the page.
+ * Typing filters the commands by their translated label; arrows move the active
+ * option (aria-activedescendant, so focus stays in the input), Enter runs it and
+ * Escape closes it. Focus returns to the opener button afterwards.
+ */
 function CommandPaletteSection() {
   const { t, toggleLang } = useLang()
   const navigate = useNavigate()
@@ -180,6 +208,7 @@ function CommandPaletteSection() {
   const matches = COMMANDS.filter(c => t(c.labelKey).toLowerCase().includes(query.trim().toLowerCase()))
 
   const show = () => { setQuery(''); setActive(0); setOpen(true) }
+  // Focus is moved back after the palette has unmounted.
   const hide = () => { setOpen(false); setTimeout(() => openerRef.current?.focus()) }
 
   useEffect(() => {
@@ -208,6 +237,7 @@ function CommandPaletteSection() {
     if (!matches.length) return
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => (a + 1) % matches.length) }
     if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(a => (a <= 0 ? matches.length - 1 : a - 1)) }
+    // Clamped because `active` can point past the end right after the list was narrowed.
     if (e.key === 'Enter')     { e.preventDefault(); run(matches[Math.min(active, matches.length - 1)]) }
   }
 
@@ -237,6 +267,7 @@ function CommandPaletteSection() {
               aria-activedescendant={matches.length ? `palette-opt-${matches[Math.min(active, matches.length - 1)].key}` : undefined}
               value={query} onChange={e => { setQuery(e.target.value); setActive(0) }} onKeyDown={onKeyDown} />
             <ul id="palette-list" role="listbox" aria-label={t('paletteCommands')}>
+              {/* Options run on mousedown with preventDefault, so the input never loses focus. */}
               {matches.length ? matches.map((c, i) => (
                 <li key={c.key} id={`palette-opt-${c.key}`} role="option" data-command={c.key}
                   aria-selected={i === active} className={i === active ? 'is-active' : ''}
@@ -255,6 +286,11 @@ function CommandPaletteSection() {
 // ─── I4. Copy to clipboard ───────────────────────────────────────────────────
 const SNIPPET = 'npm install -D @playwright/test'
 
+/**
+ * A Copy button that writes SNIPPET to the clipboard and shows "copied" or "failed"
+ * for 2 s, plus a textarea that reports whether what is pasted into it matches.
+ * The Clipboard API needs a secure context and, in tests, clipboard permissions.
+ */
 function CopySection() {
   const { t } = useLang()
   const [state, setState]   = useState('idle')  // idle | copied | failed
@@ -301,6 +337,7 @@ function CopySection() {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Interactions page: hero header and the I1–I4 sections. */
 export default function InteractionsPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

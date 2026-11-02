@@ -1,11 +1,21 @@
+// Browser page (/browser): browser features that need special handling in tests.
+// Nested and closed Shadow DOM (B1), permission prompts (B2), full screen (B3)
+// and a cross-origin Google map (B4).
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SectionHeader, Output } from '../ui.jsx'
 
+/** Escapes text for use inside the HTML strings written into the shadow roots. */
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
 // ─── B1. Nested Shadow DOM with a slot, plus a closed root ───────────────────
+/**
+ * An open shadow root holding a slot and a second open shadow root with an
+ * input and button (two levels deep), plus a separate closed shadow root that
+ * `host.shadowRoot` can't reach. The shadow content is plain DOM built by hand,
+ * so it is rebuilt when the language changes.
+ */
 function NestedShadowSection() {
   const { t, lang } = useLang()
   const outerRef  = useRef(null)
@@ -15,6 +25,7 @@ function NestedShadowSection() {
 
   useEffect(() => {
     const host = outerRef.current
+    // A host can only be given one shadow root, so reuse it when the effect runs again.
     const outer = host.shadowRoot || host.attachShadow({ mode: 'open' })
     outer.innerHTML = `
       <style>
@@ -55,7 +66,8 @@ function NestedShadowSection() {
 
   useEffect(() => {
     const host = closedRef.current
-    if (!host._root) host._root = host.attachShadow({ mode: 'closed' })  // closed: host.shadowRoot is null
+    // closed: host.shadowRoot is null, so the root is kept on the element to reuse it on re-runs.
+    if (!host._root) host._root = host.attachShadow({ mode: 'closed' })
     const root = host._root
     root.innerHTML = `
       <style>
@@ -83,6 +95,12 @@ function NestedShadowSection() {
 }
 
 // ─── B2. Permission prompts (geolocation + notifications) ────────────────────
+/**
+ * The current state of a browser permission, kept up to date as it changes.
+ * @param name A Permissions API name, e.g. "geolocation".
+ * @returns `[state, setState]`: "granted" | "denied" | "prompt", "unknown" until the
+ *   first answer, or "unsupported" if the browser can't query it.
+ */
 function usePermission(name) {
   const [state, setState] = useState('unknown')
   useEffect(() => {
@@ -98,6 +116,11 @@ function usePermission(name) {
   return [state, setState]
 }
 
+/**
+ * Geolocation and notification permission prompts, each showing its permission state.
+ * Tests drive these with `context.grantPermissions()` rather than clicking the browser's prompt.
+ * @param onLocated Called with `{ lat, lng }` (4 decimals) after a successful location lookup.
+ */
 function PermissionsSection({ onLocated }) {
   const { t } = useLang()
   const [geoPerm] = usePermission('geolocation')
@@ -169,6 +192,11 @@ function PermissionsSection({ onLocated }) {
 }
 
 // ─── B3. Full screen ─────────────────────────────────────────────────────────
+/**
+ * Puts one box (not the whole page) into full screen. The state comes from the
+ * fullscreenchange event, so it also stays right when the user leaves with Esc.
+ * Browsers only allow requestFullscreen from a user gesture; a refusal shows an error.
+ */
 function FullscreenSection() {
   const { t } = useLang()
   const boxRef = useRef(null)
@@ -214,10 +242,13 @@ function FullscreenSection() {
 const DEFAULT_PLACE = { lat: '51.5074', lng: '-0.1278' }  // London
 const ZOOM_MIN = 3
 const ZOOM_MAX = 20
+/** Rounds a location to 3 decimals before it is sent to Google (see the privacy note above). */
 const roundPlace = p => ({ lat: Number(p.lat).toFixed(3), lng: Number(p.lng).toFixed(3) })
+/** The keyless embed URL for a place, zoom level and interface language. */
 const mapSrc = (place, zoom, lang) =>
   `https://maps.google.com/maps?q=${place.lat},${place.lng}&z=${zoom}&hl=${lang}&output=embed`
 
+/** Whether the browser reports being online; updates on the online/offline events. */
 function useOnline() {
   const [online, setOnline] = useState(navigator.onLine)
   useEffect(() => {
@@ -228,6 +259,11 @@ function useOnline() {
   return online
 }
 
+/**
+ * An embedded Google map (cross-origin iframe) with zoom buttons. It shows London
+ * until the user chooses to show the location found in B2.
+ * @param located B2's last location, or null; it is only used after "Show my location".
+ */
 function MapSection({ located }) {
   const { t, lang } = useLang()
   const online = useOnline()
@@ -239,6 +275,7 @@ function MapSection({ located }) {
   const place = shown || DEFAULT_PLACE
   const src = mapSrc(place, zoom, lang)
 
+  // A new src reloads the frame; data-state stays "loading" until its load event fires.
   useEffect(() => { setState('loading') }, [src])
 
   return (
@@ -280,6 +317,7 @@ function MapSection({ located }) {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Browser page: hero header and the B1–B4 sections. B2 passes its location to B4. */
 export default function BrowserPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

@@ -1,7 +1,10 @@
+// The signed-in user's account page (/account): name, email, member-since date,
+// a link to the petstore and the logout button. Behind ProtectedRoute.
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from './AuthContext.jsx'
 
+/** Account summary for the signed-in user; logging out returns to the home page. */
 export default function AccountPage() {
   const { t, lang } = useLang()
   const { user, logout } = useAuth()

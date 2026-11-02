@@ -1,3 +1,6 @@
+// Spreadsheet upload route (/api/spreadsheets) behind the Excel Upload Table page.
+// Accepts .xlsx, .xls or .csv, checks it defensively (size, file signature, ZIP bombs,
+// sheet/row/column caps) and returns every non-empty sheet as headers + string rows.
 import { Router } from 'express'
 import multer from 'multer'
 import path from 'node:path'
@@ -24,6 +27,7 @@ const upload = multer({
   limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 0, parts: 1 },
 }).single('file')
 
+/** An error whose message is safe to show the user, sent back with its HTTP status. */
 class UploadError extends Error {
   constructor(status, message) {
     super(message)
@@ -31,14 +35,25 @@ class UploadError extends Error {
   }
 }
 
-// Strips any folder path the browser sent and caps the length; the name is only echoed back as text.
+/**
+ * Strips any folder path the browser sent, removes control characters and caps the length.
+ * The name is only echoed back as text.
+ * @param name The original file name from the upload.
+ * @returns A display-safe name, or "upload" if nothing is left.
+ */
 function cleanFileName(name) {
   const base = path.basename(String(name || '').replace(/\\/g, '/')).replace(/[\u0000-\u001f\u007f]/g, '')
   return base.slice(0, MAX_NAME_LENGTH) || 'upload'
 }
 
-// The extension picks the expected format; the file's first bytes must agree with it.
-// Returns the decoded text for CSV files.
+/**
+ * Checks the file really is what its extension claims: the extension picks the
+ * expected format and the file's first bytes must agree with it.
+ * @param ext Lower-case extension including the dot (".xlsx", ".xls", ".csv").
+ * @param buf The uploaded file.
+ * @returns The decoded text for CSV files; undefined otherwise.
+ * @throws UploadError if the format is unsupported or the contents don't match.
+ */
 function checkSignature(ext, buf) {
   if (ext === '.xlsx') {
     if (!buf.subarray(0, 4).equals(ZIP_MAGIC)) throw new UploadError(400, 'This file is not a valid .xlsx spreadsheet.')
@@ -57,8 +72,12 @@ function checkSignature(ext, buf) {
   }
 }
 
-// Guards against ZIP bombs: adds up the uncompressed sizes listed in the ZIP's
-// central directory before anything is decompressed.
+/**
+ * Guards against ZIP bombs: adds up the uncompressed sizes listed in the ZIP's
+ * central directory before anything is decompressed.
+ * @param buf The uploaded .xlsx file (a ZIP archive).
+ * @throws UploadError if the archive is malformed or unpacks to more than MAX_UNZIPPED_BYTES.
+ */
 function checkUnzippedSize(buf) {
   const EOCD_SIG = 0x06054b50
   const CEN_SIG = 0x02014b50
@@ -69,6 +88,8 @@ function checkUnzippedSize(buf) {
   }
   if (eocd < 0) throw new UploadError(422, 'The spreadsheet could not be read.')
 
+  // Byte offsets below are from the ZIP format spec (APPNOTE.TXT).
+  // End record: +10 = total number of entries, +16 = where the central directory starts.
   const entries = buf.readUInt16LE(eocd + 10)
   let offset = buf.readUInt32LE(eocd + 16)
   let total = 0
@@ -76,15 +97,23 @@ function checkUnzippedSize(buf) {
     if (offset + 46 > buf.length || buf.readUInt32LE(offset) !== CEN_SIG) {
       throw new UploadError(422, 'The spreadsheet could not be read.')
     }
+    // Central directory entry: +24 = uncompressed size.
     total += buf.readUInt32LE(offset + 24)
     if (total > MAX_UNZIPPED_BYTES) {
       throw new UploadError(413, 'The spreadsheet expands to more than 50 MB when unpacked.')
     }
+    // Each entry is 46 fixed bytes followed by three variable-length fields whose
+    // lengths sit at +28 (file name), +30 (extra field) and +32 (comment).
     offset += 46 + buf.readUInt16LE(offset + 28) + buf.readUInt16LE(offset + 30) + buf.readUInt16LE(offset + 32)
   }
 }
 
-// Blank headers become "Column N"; repeats become "Name (2)", "Name (3)", ...
+/**
+ * Turns a sheet's first row into unique column names.
+ * Blank headers become "Column N"; repeats become "Name (2)", "Name (3)", ...
+ * @param row The header row, already padded to the sheet's width.
+ * @returns One name per column.
+ */
 function makeHeaders(row) {
   const seen = new Map()
   return row.map((value, i) => {
@@ -95,8 +124,14 @@ function makeHeaders(row) {
   })
 }
 
-// Rows are returned as arrays of strings, never as objects keyed by header,
-// so a header such as "__proto__" is just text.
+/**
+ * Reads one sheet as text, skipping blank rows and padding every row to the same width.
+ * Rows are returned as arrays of strings, never as objects keyed by header,
+ * so a header such as "__proto__" is just text.
+ * @param sheet A SheetJS worksheet.
+ * @returns `{ headers, rows }`, or null if the sheet has no data.
+ * @throws UploadError if the sheet is wider than MAX_COLS.
+ */
 function readSheet(sheet) {
   const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '', blankrows: false })
   const rows = grid
@@ -110,7 +145,14 @@ function readSheet(sheet) {
   return { headers: makeHeaders(pad(rows[0])), rows: rows.slice(1).map(pad) }
 }
 
-// `csvText` is set for CSV files, which are parsed from the decoded UTF-8 text.
+/**
+ * Parses the upload with SheetJS and applies the sheet and row caps.
+ * Formulas, styles, HTML and macros are not read; only cell text is kept.
+ * @param buf The uploaded file.
+ * @param csvText Set for CSV files, which are parsed from the decoded UTF-8 text.
+ * @returns The non-empty sheets as `{ name, headers, rows }`.
+ * @throws UploadError if the file can't be parsed, breaks a cap, or has no data.
+ */
 function parseWorkbook(buf, csvText) {
   let workbook
   try {
@@ -154,6 +196,8 @@ const MULTER_MESSAGES = {
   LIMIT_UNEXPECTED_FILE: [400, 'The file must be sent in the "file" field.'],
 }
 
+// POST /parse (multipart, "file") → { fileName, sheets: [{ name, headers, rows }] }
+// Every rejection is an UploadError with a status and a message the page can show as is.
 router.post('/parse', (req, res, next) => {
   upload(req, res, err => {
     if (err) {

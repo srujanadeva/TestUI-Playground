@@ -1,22 +1,30 @@
+// Live page (/live): elements that change on a timer. A live order feed (L1),
+// a countdown (L2), a moving button with re-rendered rows (L3) and a
+// session-timeout warning (L4). Every interval can be set with a ?param.
+// All timers here read Date.now() and use setInterval/setTimeout, so Playwright's
+// page.clock (or any fake timer) can fast-forward them.
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SectionHeader, Output, numberParam } from '../ui.jsx'
 
-// All timers here read Date.now() and use setInterval/setTimeout, so Playwright's
-// page.clock (or any fake timer) can fast-forward them.
-
+/** Seconds → "mm:ss". */
 const mmss = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 // ─── L1. Live feed ───────────────────────────────────────────────────────────
 const CUSTOMERS = ['Aarav', 'Mia', 'Noah', 'Zara', 'Liam', 'Ines', 'Omar', 'Yuki']
 const KEEP = 20
+/** Order number `n`, always generated the same way, so tests can predict any order's id and amount. */
 const makeOrder = n => ({
   id: `ORD-${5000 + n}`,
   customer: CUSTOMERS[n % CUSTOMERS.length],
   amount: (19 + ((n * 37) % 180)).toFixed(2),
 })
 
+/**
+ * A feed that adds a new order every ?feedInterval ms (default 2000), newest on top,
+ * showing at most KEEP. Pause stops it; Clear hides the orders received so far.
+ */
 function LiveFeedSection() {
   const { t } = useLang()
   const [count, setCount]   = useState(3)
@@ -29,6 +37,8 @@ function LiveFeedSection() {
     return () => clearInterval(id)
   }, [paused])
 
+  // Orders are derived from the counter rather than stored: newest first, down to
+  // whichever is later, the last cleared order or the KEEP limit.
   const orders = []
   for (let n = count; n > Math.max(cleared, count - KEEP); n--) orders.push(makeOrder(n))
 
@@ -57,6 +67,7 @@ function LiveFeedSection() {
 }
 
 // ─── L2. Countdown timer ─────────────────────────────────────────────────────
+/** A start / pause / reset countdown from ?countdown seconds (default 30). */
 function CountdownSection() {
   const { t } = useLang()
   const total = useRef(numberParam('countdown', 30, 1, 3600)).current
@@ -64,6 +75,8 @@ function CountdownSection() {
   const [remaining, setRemaining] = useState(total)
   const endAt = useRef(0)
 
+  // Counts down to a fixed end time instead of subtracting 1 per tick, so a late
+  // or throttled interval can't make the timer drift.
   useEffect(() => {
     if (state !== 'running') return
     const tick = () => {
@@ -75,6 +88,7 @@ function CountdownSection() {
     return () => clearInterval(id)
   }, [state])
 
+  // Starting (or resuming) sets a new end time from what is left.
   const start = () => { endAt.current = Date.now() + remaining * 1000; setState('running') }
   const pause = () => setState('paused')
   const reset = () => { setState('idle'); setRemaining(total) }
@@ -104,6 +118,11 @@ function CountdownSection() {
 // ─── L3. Moving target and re-rendered rows ──────────────────────────────────
 const PRODUCTS = ['Keyboard', 'Mouse', 'Monitor']
 
+/**
+ * A button that jumps to a random spot every ?moveInterval ms, and a list of Buy
+ * buttons whose DOM nodes are replaced every ?rerenderInterval ms. A test that holds
+ * on to an old element handle sees it go stale.
+ */
 function MovingTargetSection() {
   const { t } = useLang()
   const arenaRef = useRef(null)
@@ -127,7 +146,8 @@ function MovingTargetSection() {
     return () => clearInterval(id)
   }, [moving])
 
-  // The rows keep the same text, but React builds brand-new DOM nodes for them every 3 s.
+  // The rows keep the same text, but React builds brand-new DOM nodes for them every 3 s
+  // (their keys include `version`, so React can't reuse the old ones).
   useEffect(() => {
     const id = setInterval(() => setVersion(v => v + 1), numberParam('rerenderInterval', 3000, 200, 60000))
     return () => clearInterval(id)
@@ -163,9 +183,15 @@ function MovingTargetSection() {
 }
 
 // ─── L4. Session-timeout warning ─────────────────────────────────────────────
+/**
+ * A pretend session of ?sessionLength seconds. When ?sessionWarn seconds are left,
+ * a warning alertdialog takes focus, offering "Stay signed in" (restarts the session)
+ * or "Sign out". If nobody answers, the session expires.
+ */
 function SessionSection() {
   const { t } = useLang()
   const length = useRef(numberParam('sessionLength', 12, 3, 600)).current
+  // Capped below the session length, so the session always starts out active and only shows the warning later.
   const warnAt = useRef(Math.min(numberParam('sessionWarn', 6, 1, 600), length - 1)).current
   const [state, setState]   = useState('idle')  // idle | active | warning | expired | signed-out
   const [left, setLeft]     = useState(length)
@@ -230,6 +256,7 @@ function SessionSection() {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Live page: hero header and the L1–L4 sections. */
 export default function LivePage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

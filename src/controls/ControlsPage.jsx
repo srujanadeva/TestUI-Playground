@@ -1,8 +1,12 @@
+// Controls page (/controls): custom form controls that don't behave like plain
+// inputs. Combobox (C1), chips (C2), switches (C3), stepper (C4), colour (C5),
+// time pickers (C6), rich text (C7) and masked inputs (C8).
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { SectionHeader, Output, numberParam } from '../ui.jsx'
 
+/** "Saudi Arabia" → "saudi-arabia", for test ids. */
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
 // ─── C1. Autocomplete combobox ───────────────────────────────────────────────
@@ -14,6 +18,11 @@ const COUNTRIES = [
   'Thailand', 'United Arab Emirates', 'United Kingdom', 'United States', 'Vietnam',
 ]
 
+/**
+ * Country autocomplete (ARIA combobox). Options appear after a ?comboDelay ms
+ * "server" delay (default 400); arrows move the active option, Enter or a click
+ * picks it, Escape closes the list.
+ */
 function ComboboxSection() {
   const { t } = useLang()
   const [query, setQuery]       = useState('')
@@ -48,6 +57,7 @@ function ComboboxSection() {
     if (e.key === 'Enter' && active >= 0) { e.preventDefault(); pick(options[active]) }
   }
 
+  // Focus stays in the input (aria-activedescendant), so the list must be scrolled to the active option by hand.
   useEffect(() => {
     if (active >= 0) document.getElementById(`combo-opt-${active}`)?.scrollIntoView({ block: 'nearest' })
   }, [active])
@@ -72,6 +82,7 @@ function ComboboxSection() {
             aria-busy={loading}>
             {loading ? <li className="lab-pop-note" role="presentation">{t('ctlLoading')}</li>
               : !options.length ? <li className="lab-pop-note" role="presentation">{t('ctlNoMatches')}</li>
+              // mousedown + preventDefault: picking happens before the input's blur would close the list.
               : options.map((c, i) => (
                 <li key={c} id={`combo-opt-${i}`} role="option" data-value={c} aria-selected={i === active}
                   className={i === active ? 'is-active' : ''}
@@ -91,6 +102,10 @@ function ComboboxSection() {
 const SKILLS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'Rust', 'Kotlin', 'Swift', 'Ruby', 'SQL', 'Playwright', 'Selenium', 'Cypress']
 const MAX_CHIPS = 5
 
+/**
+ * Multi-select that shows each choice as a removable chip, up to MAX_CHIPS.
+ * Chosen skills drop out of the suggestions; Backspace in an empty input removes the last chip.
+ */
 function ChipsSection() {
   const { t } = useLang()
   const [chosen, setChosen] = useState(['JavaScript', 'Python'])
@@ -163,6 +178,7 @@ const SWITCHES = [
   { key: 'beta',   labelKey: 'switchBeta',   on: true, disabled: true },
 ]
 
+/** Toggle switches (buttons with role="switch"); the last one is disabled. */
 function SwitchesSection() {
   const { t } = useLang()
   const [on, setOn] = useState(() => Object.fromEntries(SWITCHES.map(s => [s.key, s.on])))
@@ -192,9 +208,15 @@ function SwitchesSection() {
 const STEP_MIN = 0
 const STEP_MAX = 10
 
+/**
+ * A − / + number stepper from STEP_MIN to STEP_MAX. Typed text is only applied
+ * on Enter or blur; then it is rounded and clamped, and anything that isn't a number
+ * reverts to the previous value.
+ */
 function StepperSection() {
   const { t } = useLang()
   const [value, setValue] = useState(1)
+  // What is typed, kept apart from the applied value so a half-typed entry isn't clamped mid-edit.
   const [draft, setDraft] = useState('1')
   const set = v => {
     const n = Number.isFinite(v) ? Math.min(STEP_MAX, Math.max(STEP_MIN, Math.round(v))) : value
@@ -229,6 +251,10 @@ const SWATCHES = [
   { hex: '#dc2626', name: 'Red' },    { hex: '#0284c7', name: 'Sky' },     { hex: '#db2777', name: 'Pink' },
 ]
 
+/**
+ * Colour chosen three ways: the native colour input, swatches, or a typed hex code
+ * (the "#" is optional). All values are stored lower-case.
+ */
 function ColourSection() {
   const { t } = useLang()
   const [color, setColor] = useState('#4f46e5')
@@ -271,10 +297,15 @@ function ColourSection() {
 const DT_MIN = '2026-01-01T00:00'
 const DT_MAX = '2026-12-31T23:59'
 
+/**
+ * Native time (09:00–17:00, 15-minute steps) and date-time (within 2026) pickers.
+ * Out-of-range values are flagged by the page, since browsers let them be typed anyway.
+ */
 function TimeSection() {
   const { t } = useLang()
   const [time, setTime] = useState('09:30')
   const [dt, setDt]     = useState('2026-11-02T14:00')
+  // Plain string comparison works because the inputs' values are zero-padded ISO strings.
   const timeError = time && (time < '09:00' || time > '17:00') ? t('timeOutside') : ''
   const dtError = dt && (dt < DT_MIN || dt > DT_MAX) ? t('dtOutside') : ''
   return (
@@ -311,6 +342,11 @@ const RTE_COMMANDS = [
 ]
 const RTE_INITIAL = 'Release notes for <b>v2.4</b>: select some text and use the toolbar.'
 
+/**
+ * A contenteditable rich text editor with bold / italic / underline / list buttons.
+ * Uses document.execCommand: deprecated, but still the only built-in way to format
+ * a contenteditable. The resulting HTML is shown below it for tests to check.
+ */
 function RichTextSection() {
   const { t } = useLang()
   const ref = useRef(null)
@@ -319,6 +355,8 @@ function RichTextSection() {
   const [pressed, setPressed] = useState({})
 
   const sync = () => { setHtml(ref.current.innerHTML); setChars(ref.current.textContent.length) }
+  // The editor's content is owned by the DOM, not React: it is set once here and read
+  // back on every input. Rendering it from state would reset the caret on each keystroke.
   useEffect(() => { ref.current.innerHTML = RTE_INITIAL; sync() }, [])
 
   // Reflect the formatting at the caret in each toolbar button's aria-pressed.
@@ -345,6 +383,8 @@ function RichTextSection() {
       <SectionHeader num="C7" title={t('secC7Title')} locator="contenteditable / data-cmd" />
       <p className="desc">{t('secC7Desc')}</p>
       <div className="lab-rte-bar" role="toolbar" aria-label={t('rteToolbar')}>
+        {/* Commands run on mousedown with preventDefault: a normal click would move focus
+            to the button first, losing the editor's text selection the command applies to. */}
         {RTE_COMMANDS.map(c => (
           <button key={c.cmd} className="btn-secondary lab-rte-btn" data-cmd={c.cmd} aria-label={t(c.key)}
             aria-pressed={!!pressed[c.cmd]} onMouseDown={e => { e.preventDefault(); run(c.cmd) }}
@@ -364,21 +404,35 @@ function RichTextSection() {
 }
 
 // ─── C8. Masked inputs ───────────────────────────────────────────────────────
+// Each input stores only digits; the mask is applied when rendering, and the raw
+// digits are exposed in data-raw.
+
+/** Formats up to 10 digits as a US phone number, as far as typed: "(555) 123-4567". */
 function formatPhone(d) {
   if (d.length > 6) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
   if (d.length > 3) return `(${d.slice(0, 3)}) ${d.slice(3)}`
   return d ? `(${d}` : ''
 }
+/**
+ * The card network from the leading digits (Amex 34/37, Visa 4, Mastercard
+ * 51–55 or the 2221–2720 range).
+ * @returns "amex" | "visa" | "mastercard" | "unknown", or "" when there are no digits.
+ */
 function cardBrand(d) {
   if (/^3[47]/.test(d)) return 'amex'
   if (/^4/.test(d)) return 'visa'
   if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(d)) return 'mastercard'
   return d ? 'unknown' : ''
 }
+/** Groups card digits for display: Amex as 4-6-5, every other brand in fours. */
 function formatCard(d, brand) {
   if (brand === 'amex') return [d.slice(0, 4), d.slice(4, 10), d.slice(10, 15)].filter(Boolean).join(' ')
   return d.replace(/(.{4})(?=.)/g, '$1 ')
 }
+/**
+ * Luhn checksum used by card numbers: from the right, double every second digit
+ * (subtracting 9 when that gives two digits); the total must be a multiple of 10.
+ */
 function luhn(d) {
   let sum = 0
   for (let i = 0; i < d.length; i++) {
@@ -389,6 +443,10 @@ function luhn(d) {
   return sum % 10 === 0
 }
 
+/**
+ * Phone, card and amount inputs that reformat while typing. The card input picks
+ * its length from the brand (Amex 15, others 16) and is checked with luhn() once complete.
+ */
 function MaskedSection() {
   const { t } = useLang()
   const [phone, setPhone]   = useState('')
@@ -399,6 +457,7 @@ function MaskedSection() {
   const cardLen = brand === 'amex' ? 15 : 16
   const cardDone = card.length === cardLen
   const cardValid = cardDone && luhn(card)
+  // Cash-register style: digits fill from the right, so "5" → 0.05 and "1234" → 12.34.
   const cents = amount.padStart(3, '0')
   const amountRaw = amount ? `${Number(cents.slice(0, -2))}.${cents.slice(-2)}` : ''
   const amountShown = amount ? '$' + Number(amountRaw).toLocaleString('en-US', { minimumFractionDigits: 2 }) : ''
@@ -438,6 +497,7 @@ function MaskedSection() {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Controls page: hero header and the C1–C8 sections in two groups. */
 export default function ControlsPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

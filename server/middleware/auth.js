@@ -1,5 +1,10 @@
+// JWT helpers for the API: issuing tokens at login/signup and checking them on protected routes.
 import jwt from 'jsonwebtoken'
 
+/**
+ * Express middleware that only lets requests with a valid `Authorization: Bearer <token>`
+ * header through. Sets `req.user` to `{ id, email }` from the token; otherwise answers 401.
+ */
 export function requireAuth(req, res, next) {
   const header = req.headers.authorization || ''
   const [scheme, token] = header.split(' ')
@@ -15,6 +20,11 @@ export function requireAuth(req, res, next) {
   }
 }
 
+/**
+ * Issues a JWT for the user, valid for 24 hours.
+ * @param user A user as returned by `toJSON()` (needs `id` and `email`).
+ * @returns The signed token string.
+ */
 export function signToken(user) {
   return jwt.sign({ sub: user.id, email: user.email }, process.env.JWT_SECRET, {
     expiresIn: '24h',

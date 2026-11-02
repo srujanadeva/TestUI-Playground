@@ -1,3 +1,4 @@
+// Signup page (/signup).
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
@@ -5,8 +6,14 @@ import { useAuth } from './AuthContext.jsx'
 import AuthLayout from './AuthLayout.jsx'
 import PasswordInput from './PasswordInput.jsx'
 
+// Same check as the server (server/routes/auth.js).
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/**
+ * Account creation form. Validates every field before submitting and shows each
+ * error next to its field; a taken email (409) is shown on the email field.
+ * New accounts stay signed in ("Remember me" is always on).
+ */
 export default function SignupPage() {
   const { t } = useLang()
   const { signup } = useAuth()
@@ -20,6 +27,7 @@ export default function SignupPage() {
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
 
+  /** Returns an error message per invalid field, keyed by field name; empty if all valid. */
   function validate() {
     const errs = {}
     if (!name.trim()) errs.name = t('authErrInvalid')

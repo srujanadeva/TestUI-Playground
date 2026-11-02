@@ -1,6 +1,12 @@
+// Password field with a show/hide toggle, used by the login and signup pages.
 import { useState } from 'react'
 import { useLang } from '../i18n.jsx'
 
+/**
+ * Controlled password input with an eye button that switches it to plain text.
+ * @param onChange Called with the new string value, not the change event.
+ * @param testIdPrefix data-testid of the input; the toggle gets `<prefix>-toggle`.
+ */
 export default function PasswordInput({
   id,
   value,

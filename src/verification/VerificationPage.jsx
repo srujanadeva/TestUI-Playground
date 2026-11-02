@@ -1,3 +1,7 @@
+// Verification page (/verification): identity-check flows, backed by the practice
+// endpoints in server/routes/verification.js. Image CAPTCHA (V1), checkbox CAPTCHA in
+// an iframe (V2), SMS-style OTP with a dev inbox (V3), selfie capture (V4) and simulated
+// ID-card OCR (V5). Timers and test shortcuts are set with ?params.
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
@@ -15,12 +19,17 @@ const OTP_LENGTH = 6
 // OCR fields below this confidence are flagged for the user to check.
 const LOW_CONFIDENCE = 0.8
 
+/** Seconds → "m:ss", rounded up so "0:00" only shows once time is really up. */
 function formatTime(sec) {
   const s = Math.max(0, Math.ceil(sec))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
-// Seconds left until `deadline` (ms timestamp), updated every 250 ms. null when there is no deadline.
+/**
+ * Seconds left until `deadline`, updated every 250 ms.
+ * @param deadline A ms timestamp, or null/undefined for no deadline.
+ * @returns Seconds left (never below 0, with fractions), or null when there is no deadline.
+ */
 function useCountdown(deadline) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -32,7 +41,11 @@ function useCountdown(deadline) {
   return deadline ? Math.max(0, (deadline - now) / 1000) : null
 }
 
-// Builds "?a=1&b=2" from the entries that have a value.
+/**
+ * Builds a query string from the entries that have a value.
+ * @param params e.g. `{ a: 1, b: '', c: null }`.
+ * @returns "?a=1", or "" if nothing is left.
+ */
 function query(params) {
   const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== ''))
   const s = q.toString()
@@ -40,9 +53,13 @@ function query(params) {
 }
 
 // ─── V1. Image CAPTCHA ───────────────────────────────────────────────────────
-// The server draws the code as an image, so it is not in the DOM. Tests are
-// not meant to read it: use ?captcha=test (fixed answer TEST42) or send the
-// X-Captcha-Test-Key header. Each challenge can be answered once.
+/**
+ * A contact form guarded by an image CAPTCHA that expires (?captchaTtl= seconds).
+ * The server draws the code as an image, so it is not in the DOM. Tests are
+ * not meant to read it: use ?captcha=test (fixed answer TEST42) or send the
+ * X-Captcha-Test-Key header. Each challenge can be answered once.
+ * @param params The page's URL search params.
+ */
 function ImageCaptchaSection({ params }) {
   const { t } = useLang()
   const { token } = useAuth()
@@ -56,12 +73,17 @@ function ImageCaptchaSection({ params }) {
   const [bypassed, setBypassed]   = useState(false)
   const left = useCountdown(challenge?.expiresAt)
 
+  /**
+   * Fetches a new challenge and clears the answer.
+   * @param keepError Leave the current error showing (used after a failed attempt).
+   */
   async function load(keepError = false) {
     setStatus('loading')
     setAnswer('')
     if (!keepError) setError('')
     try {
       const data = await apiFetch(`${API}/captcha${query({ mode: testMode ? 'test' : '', ttl })}`, { token })
+      // The server sends a lifetime, not a time, so the expiry is measured from this browser's clock.
       setChallenge({ id: data.id, image: data.image, expiresAt: Date.now() + data.expiresIn * 1000 })
       setStatus('ready')
     } catch (err) {
@@ -164,6 +186,12 @@ function ImageCaptchaSection({ params }) {
 // tells the page about the result with postMessage.
 const ROBOT_MESSAGE = 'tp-robot-check'
 
+/**
+ * The frame's HTML: a role="checkbox" that spins for 1.2 s when pressed, then
+ * ticks and posts a random token to the parent page.
+ * @param checking Status text while spinning; `checked` is the text afterwards.
+ * @returns A complete HTML document for srcdoc.
+ */
 function robotFrameDoc({ dir, label, checking, checked }) {
   return `<!DOCTYPE html><html dir="${dir}"><head><style>
   *{box-sizing:border-box;margin:0;font-family:-apple-system,'Segoe UI',Tahoma,sans-serif}
@@ -203,6 +231,10 @@ function robotFrameDoc({ dir, label, checking, checked }) {
 </script></body></html>`
 }
 
+/**
+ * The checkbox CAPTCHA frame plus a Submit button that unlocks once the frame
+ * has sent its token. Reset remounts the frame to clear it.
+ */
 function CheckboxCaptchaSection() {
   const { t, lang } = useLang()
   const frameRef = useRef(null)
@@ -237,6 +269,7 @@ function CheckboxCaptchaSection() {
       <SectionHeader num="V2" title={t('secV2Title')} locator="iframe / role=checkbox" />
       <p className="desc">{t('secV2Desc')}</p>
 
+      {/* A new key remounts the frame: on Reset, and when the language changes its text. */}
       <iframe key={`${frameKey}-${lang}`} ref={frameRef} id="robot-frame" className="robot-frame"
         title={t('robotFrameTitle')} srcDoc={doc} />
 
@@ -251,14 +284,24 @@ function CheckboxCaptchaSection() {
 }
 
 // ─── V3. OTP ─────────────────────────────────────────────────────────────────
-// Six one-digit boxes: typing moves on, Backspace on an empty box moves back,
-// pasting spreads the digits. The code is "sent" to the dev inbox below (also
-// GET /api/verification/dev-inbox), the way tests read OTPs from a test SMS
-// gateway. ?otpTtl= and ?otpCooldown= (seconds) shorten the timers.
+// The code is "sent" to the dev inbox below (also GET /api/verification/dev-inbox),
+// the way tests read OTPs from a test SMS gateway. ?otpTtl= and ?otpCooldown=
+// (seconds) shorten the timers.
+
+/**
+ * Six one-digit boxes: typing moves on, Backspace on an empty box moves back,
+ * pasting spreads the digits.
+ * @param digits Array of OTP_LENGTH one-character strings ('' for empty boxes).
+ * @param setDigits State setter for `digits`.
+ */
 function OtpBoxes({ digits, setDigits, disabled }) {
   const { t } = useLang()
   const refs = useRef([])
 
+  /**
+   * Writes the digits found in `text` into the boxes from box `i` onwards (as many
+   * as fit), then focuses the box after the last one filled.
+   */
   function fillFrom(i, text) {
     const chars = text.replace(/\D/g, '').slice(0, OTP_LENGTH - i).split('')
     if (chars.length === 0) return
@@ -313,6 +356,12 @@ function OtpBoxes({ digits, setDigits, disabled }) {
   )
 }
 
+/**
+ * Phone number → send code → enter code. Shows the expiry and resend countdowns
+ * from the server's answers, and moves to "locked" after too many wrong codes (429)
+ * or "expired" (410). The dev inbox on the side lists the messages "sent".
+ * @param params The page's URL search params.
+ */
 function OtpSection({ params }) {
   const { t } = useLang()
   const { token } = useAuth()
@@ -329,6 +378,7 @@ function OtpSection({ params }) {
   const expiresIn = useCountdown(expiresAt)
   const resendIn  = useCountdown(resendAt)
 
+  /** Reloads the test inbox for this user. */
   async function loadInbox() {
     try {
       const data = await apiFetch(`${API}/dev-inbox`, { token })
@@ -342,6 +392,7 @@ function OtpSection({ params }) {
     if (status === 'sent' && expiresIn === 0) setStatus('expired')
   }, [status, expiresIn])
 
+  /** Asks the server for a code (also used by Resend, without an event). */
   async function send(e) {
     e?.preventDefault()
     setError('')
@@ -355,6 +406,7 @@ function OtpSection({ params }) {
       setStatus('sent')
       loadInbox()
     } catch (err) {
+      // 429 during the cooldown: the server says how long to wait, so start that countdown.
       if (err.payload?.retryAfter) setResendAt(Date.now() + err.payload.retryAfter * 1000)
       setError(err.status ? err.message : t('verifyErrNetwork'))
     } finally {
@@ -362,6 +414,7 @@ function OtpSection({ params }) {
     }
   }
 
+  /** Checks the entered code; the error status decides which state the form goes to. */
   async function verify(e) {
     e.preventDefault()
     setError('')
@@ -394,6 +447,7 @@ function OtpSection({ params }) {
   }
 
   const codeEntered = digits.every(Boolean)
+  // null (no cooldown yet) or 0 (cooldown over) both allow a resend.
   const canResend = !resendIn
   const hasCode = ['sent', 'verifying', 'locked', 'expired'].includes(status)
 
@@ -481,8 +535,11 @@ function OtpSection({ params }) {
 }
 
 // ─── V4. Selfie ──────────────────────────────────────────────────────────────
-// Uses the camera through getUserMedia. Tests grant or deny the permission and
-// feed a fake camera (see README). Without a camera, upload a photo instead.
+/**
+ * Take a selfie with the camera, or pick a photo, and upload it.
+ * Uses the camera through getUserMedia. Tests grant or deny the permission and
+ * feed a fake camera (see README). Without a camera, upload a photo instead.
+ */
 function SelfieSection() {
   const { t } = useLang()
   const { token } = useAuth()
@@ -493,12 +550,14 @@ function SelfieSection() {
   const [error, setError]     = useState('')
   const [result, setResult]   = useState(null)
 
+  /** Releases the camera (turns its light off). */
   function stopCamera() {
     streamRef.current?.getTracks().forEach(track => track.stop())
     streamRef.current = null
   }
 
   useEffect(() => () => stopCamera(), [])
+  // Frees each preview's object URL when it is replaced or the section unmounts.
   useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.url) }, [photo])
 
   // The <video> only exists while live, so attach the stream once it renders.
@@ -508,6 +567,7 @@ function SelfieSection() {
     }
   }, [status])
 
+  /** Asks for the front camera and maps each kind of failure to denied / unavailable. */
   async function startCamera() {
     setError('')
     setResult(null)
@@ -536,8 +596,10 @@ function SelfieSection() {
     }
   }
 
+  /** Grabs the current video frame as a JPEG and turns the camera off. */
   function capture() {
     const video = videoRef.current
+    // videoWidth is 0 until the first frame has arrived; there is nothing to capture yet.
     if (!video?.videoWidth) return
     const canvas = document.createElement('canvas')
     canvas.width = video.videoWidth
@@ -550,6 +612,7 @@ function SelfieSection() {
     }, 'image/jpeg', 0.85)
   }
 
+  /** Uses a picked photo instead of the camera, after quick type and size checks (the server checks again). */
   function choose(file) {
     if (!file) return
     setResult(null)
@@ -561,10 +624,12 @@ function SelfieSection() {
     setStatus('captured')
   }
 
+  /** Uploads the photo; on failure it stays on screen so it can be sent again. */
   async function submit() {
     setStatus('uploading')
     setError('')
     const body = new FormData()
+    // A captured frame is a Blob with no name, so give it one with the right extension.
     body.append('file', photo.blob, photo.type === 'image/png' ? 'selfie.png' : 'selfie.jpg')
     try {
       const data = await apiFetch(`${API}/selfie`, { method: 'POST', token, body })
@@ -642,6 +707,11 @@ const OCR_SAMPLES = [
   { key: 'partial', url: samplePartial, file: 'id-partial.png' },
 ]
 
+/**
+ * Upload an ID card image, review the fields the "OCR" read, correct them and confirm.
+ * Fields under LOW_CONFIDENCE are highlighted; every field must be filled to confirm.
+ * @param params The page's URL search params.
+ */
 function OcrSection({ params }) {
   const { t } = useLang()
   const { token } = useAuth()
@@ -655,6 +725,7 @@ function OcrSection({ params }) {
 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
 
+  /** Checks the image, shows it, and sends it to the OCR endpoint. */
   async function read(file) {
     if (!file) return
     if (!IMAGE_TYPES.includes(file.type)) { setError(t('verifyErrImageType')); setStatus('error'); return }
@@ -668,6 +739,7 @@ function OcrSection({ params }) {
     body.append('file', file)
     try {
       const data = await apiFetch(`${API}/ocr${query({ delay })}`, { method: 'POST', token, body })
+      // `read` keeps what the OCR returned, so edits can be detected (data-edited).
       setFields(data.fields.map(f => ({ ...f, read: f.value })))
       setStatus('done')
     } catch (err) {
@@ -681,6 +753,7 @@ function OcrSection({ params }) {
     setMissing(m => m.filter(k => k !== key))
   }
 
+  /** Confirms the fields, or marks the empty ones as required. */
   function confirm(e) {
     e.preventDefault()
     const empty = fields.filter(f => !f.value.trim()).map(f => f.key)
@@ -775,6 +848,7 @@ function OcrSection({ params }) {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/** The Verification page: hero header and the V1–V5 sections, which read their ?params from here. */
 export default function VerificationPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

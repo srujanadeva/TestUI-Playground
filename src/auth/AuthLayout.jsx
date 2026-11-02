@@ -1,6 +1,11 @@
+// Shared frame for the login, signup and forgot-password pages.
 import { Link } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
 
+/**
+ * Centred card with the brand link, a language toggle and the page title.
+ * @param footer Optional content under the card body, e.g. a link to the other auth page.
+ */
 export default function AuthLayout({ title, children, footer }) {
   const { t, lang, toggleLang } = useLang()
   return (

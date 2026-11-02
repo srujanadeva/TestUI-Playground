@@ -1,3 +1,4 @@
+// Mongoose model for an app user. Emails are stored lower-cased and are unique.
 import mongoose from 'mongoose'
 
 const userSchema = new mongoose.Schema(
@@ -9,6 +10,7 @@ const userSchema = new mongoose.Schema(
   {
     timestamps: { createdAt: 'createdAt', updatedAt: false },
     toJSON: {
+      /** Shapes the API response: `_id` becomes `id`, and the password hash is never sent. */
       transform(_doc, ret) {
         ret.id = ret._id.toString()
         delete ret._id

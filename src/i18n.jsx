@@ -1,3 +1,6 @@
+// English and Arabic text for the whole app, plus the language context.
+// Every key in `en` should have an `ar` twin; a missing one falls back to English.
+// Strings may contain {name} placeholders, filled in by t(key, { name }).
 import { createContext, useContext, useState } from 'react'
 
 const translations = {
@@ -2234,15 +2237,26 @@ const translations = {
 
 const LanguageContext = createContext(null)
 
+/**
+ * Provides the current language and translation helpers. The language starts as
+ * English on every load; it isn't saved.
+ */
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState('en')
 
+  /**
+   * The translated string for `key`, with {placeholders} filled from `vars`.
+   * Falls back to English, then to the key itself, so a missing translation shows
+   * up visibly instead of as blank text.
+   * Each placeholder is replaced once (String.replace with a string pattern).
+   */
   const t = (key, vars = {}) => {
     const str = translations[lang]?.[key] ?? translations.en[key] ?? key
     if (typeof str !== 'string') return key
     return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), str)
   }
 
+  /** Like t, for keys whose value is an array (e.g. month or country lists). */
   const tArr = key => translations[lang]?.[key] ?? translations.en[key] ?? []
 
   const toggleLang = () => setLang(l => l === 'en' ? 'ar' : 'en')
@@ -2254,4 +2268,8 @@ export function LanguageProvider({ children }) {
   )
 }
 
+/**
+ * The language context.
+ * @returns `{ lang, t, tArr, toggleLang }`; lang is "en" or "ar".
+ */
 export const useLang = () => useContext(LanguageContext)

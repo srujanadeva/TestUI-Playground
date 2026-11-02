@@ -1,3 +1,6 @@
+// Media page (/media): images and videos that load, break or load lazily (M1–M6),
+// plus banners: a hero carousel (M7), a promo banner (M8), and an announcement bar
+// and cookie consent whose dismissal is remembered in localStorage (M9).
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -12,10 +15,15 @@ const MISSING_VIDEO = '/testresources/missing-video.mp4'
 const ANNOUNCEMENT_KEY = 'tp-media-announcement-dismissed'
 const COOKIE_KEY       = 'tp-media-cookie-consent'
 
-// Storage can throw (private mode, blocked site data) — fall back to "nothing stored".
+/**
+ * Reads a localStorage value. Storage can throw (private mode, blocked site
+ * data), so that counts as "nothing stored".
+ * @returns The stored string, or null.
+ */
 function readStore(key) {
   try { return localStorage.getItem(key) } catch { return null }
 }
+/** Saves a localStorage value, or removes it when `value` is null; failures are ignored. */
 function writeStore(key, value) {
   try {
     if (value == null) localStorage.removeItem(key)
@@ -23,7 +31,11 @@ function writeStore(key, value) {
   } catch { /* ignore */ }
 }
 
-// Becomes true once `targetRef` scrolls into view inside `rootRef`.
+/**
+ * Becomes true once `targetRef` scrolls into view inside the scroll box `rootRef`,
+ * and then stays true (the observer is dropped).
+ * @returns Whether the target has been seen.
+ */
 function useRevealInBox(rootRef, targetRef) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
@@ -40,6 +52,7 @@ function useRevealInBox(rootRef, targetRef) {
   return visible
 }
 
+/** Seconds → "m:ss"; "0:00" while the duration is still unknown (NaN). */
 function formatTime(sec) {
   if (!Number.isFinite(sec)) return '0:00'
   const s = Math.floor(sec)
@@ -47,6 +60,7 @@ function formatTime(sec) {
 }
 
 // ─── M1. Image — Loads ───────────────────────────────────────────────────────
+/** An image that loads; data-state and the status line report its natural size. */
 function ImageLoadedSection() {
   const { t } = useLang()
   const [state, setState] = useState('loading')
@@ -70,6 +84,7 @@ function ImageLoadedSection() {
 }
 
 // ─── M2. Image — Broken ──────────────────────────────────────────────────────
+/** An image whose file doesn't exist: it is hidden and replaced by a fallback once the error fires. */
 function ImageBrokenSection() {
   const { t } = useLang()
   const [state, setState] = useState('loading')
@@ -98,6 +113,10 @@ function ImageBrokenSection() {
 }
 
 // ─── M3. Image — Lazy Load ───────────────────────────────────────────────────
+/**
+ * An image at the bottom of a scroll box that gets no src until it is scrolled
+ * into view, so its data-state goes idle → loading → loaded at a moment tests control.
+ */
 function ImageLazySection() {
   const { t } = useLang()
   const boxRef    = useRef(null)
@@ -128,8 +147,13 @@ function ImageLazySection() {
 }
 
 // ─── Video player (shared by M4–M6) ──────────────────────────────────────────
-// No native controls: custom Play/Pause + Mute buttons, and data-state /
-// data-muted on the wrapper so tests can assert what the video is doing.
+/**
+ * A video with no native controls: custom Play/Pause + Mute buttons, and data-state /
+ * data-muted on the wrapper so tests can assert what the video is doing.
+ * data-state: idle (no src) | loading | ready | playing | paused | ended | error.
+ * @param src Video URL; leave undefined to show an idle player.
+ * @param testid Prefix for every data-testid inside the player.
+ */
 function VideoPlayer({ src, testid }) {
   const { t } = useLang()
   const videoRef = useRef(null)
@@ -140,6 +164,8 @@ function VideoPlayer({ src, testid }) {
 
   const togglePlay = () => {
     const v = videoRef.current
+    // play() rejects if the browser blocks playback or a pause interrupts it; the
+    // play/pause events already keep the state right, so the rejection is ignored.
     if (v.paused) v.play().catch(() => {})
     else v.pause()
   }
@@ -161,6 +187,7 @@ function VideoPlayer({ src, testid }) {
           data-testid={`${testid}-element`}
           onLoadedMetadata={e => { setDuration(e.target.duration); setState('ready') }}
           onPlay={() => setState('playing')}
+          // A pause event also fires when the video ends; keep "ended" in that case.
           onPause={e => { if (!e.target.ended) setState('paused') }}
           onEnded={() => setState('ended')}
           onTimeUpdate={e => setTime(e.target.currentTime)}
@@ -192,6 +219,7 @@ function VideoPlayer({ src, testid }) {
 }
 
 // ─── M4. Video — Plays ───────────────────────────────────────────────────────
+/** A working video in the custom player. */
 function VideoPlayingSection() {
   const { t } = useLang()
   return (
@@ -204,6 +232,7 @@ function VideoPlayingSection() {
 }
 
 // ─── M5. Video — Broken ──────────────────────────────────────────────────────
+/** A video whose file doesn't exist: the player goes to "error" and shows a fallback. */
 function VideoBrokenSection() {
   const { t } = useLang()
   return (
@@ -216,6 +245,7 @@ function VideoBrokenSection() {
 }
 
 // ─── M6. Video — Lazy Load ───────────────────────────────────────────────────
+/** A video at the bottom of a scroll box that only gets its src once scrolled into view. */
 function VideoLazySection() {
   const { t } = useLang()
   const boxRef    = useRef(null)
@@ -244,10 +274,15 @@ const HERO_SLIDES = [
   { titleKey: 'heroSlide3Title', textKey: 'heroSlide3Text', bg: 'linear-gradient(135deg, #10b981, #0f766e)' },
 ]
 
+/**
+ * A three-slide carousel with prev/next arrows and dots. It doesn't auto-advance;
+ * hidden slides stay in the DOM with the `hidden` attribute.
+ */
 function HeroCarouselSection() {
   const { t } = useLang()
   const [index, setIndex] = useState(0)
   const total = HERO_SLIDES.length
+  // Wraps around in both directions.
   const go = i => setIndex((i + total) % total)
 
   return (
@@ -284,6 +319,7 @@ function HeroCarouselSection() {
 }
 
 // ─── M8. Promo Banner ────────────────────────────────────────────────────────
+/** A closable promo banner whose button reveals a discount code. Not remembered across reloads. */
 function PromoBannerSection() {
   const { t } = useLang()
   const [open, setOpen]       = useState(true)
@@ -318,6 +354,11 @@ function PromoBannerSection() {
 }
 
 // ─── M9. Announcement Bar & Cookie Consent ───────────────────────────────────
+/**
+ * Status of the page-level announcement bar and cookie banner, with a button that
+ * clears their saved choices so both appear again.
+ * @param cookieChoice "accepted" | "rejected", or null if not chosen yet.
+ */
 function BannerStatusSection({ announcementOpen, cookieChoice, onReset }) {
   const { t } = useLang()
   const cookieLabel = cookieChoice === 'accepted' ? t('cookieAccepted')
@@ -340,6 +381,7 @@ function BannerStatusSection({ announcementOpen, cookieChoice, onReset }) {
   )
 }
 
+/** The dismissible bar at the top of the Media page. */
 function AnnouncementBar({ onClose }) {
   const { t } = useLang()
   return (
@@ -351,6 +393,11 @@ function AnnouncementBar({ onClose }) {
   )
 }
 
+/**
+ * A modal cookie-consent banner over the whole page; it blocks clicks on the
+ * page until Accept or Reject is chosen.
+ * @param onChoose Called with "accepted" or "rejected".
+ */
 function CookieBanner({ onChoose }) {
   const { t } = useLang()
   return (
@@ -373,6 +420,10 @@ function CookieBanner({ onChoose }) {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+/**
+ * The Media page. It owns the announcement and cookie state (saved in localStorage),
+ * because the bar and banner sit outside the M9 card that reports them.
+ */
 export default function MediaPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()

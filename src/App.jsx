@@ -1,3 +1,6 @@
+// The app's routes and layout, plus the home page ("Playground"): the numbered
+// practice sections 01–28 for basic UI automation. Every page except login, signup
+// and forgot-password needs a signed-in user. The themed pages live in their own folders.
 import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { LanguageProvider, useLang } from './i18n'
@@ -21,6 +24,7 @@ import ControlsPage from './controls/ControlsPage.jsx'
 import { SectionHeader, Output } from './ui.jsx'
 
 // ─── 01. Text Input ──────────────────────────────────────────────────────────
+/** A name field and a Greet button that writes a greeting below. */
 function TextInputSection() {
   const { t } = useLang()
   const [name, setName] = useState('')
@@ -43,6 +47,7 @@ function TextInputSection() {
 }
 
 // ─── 02. Password & Textarea ─────────────────────────────────────────────────
+/** A password field with show/hide, and a textarea with a live character count. */
 function PasswordTextareaSection() {
   const { t } = useLang()
   const [pass, setPass] = useState('')
@@ -67,6 +72,7 @@ function PasswordTextareaSection() {
 }
 
 // ─── 03. Date Picker ─────────────────────────────────────────────────────────
+/** A single native date input and a from/to range; values are shown as YYYY-MM-DD. */
 function DatePickerSection() {
   const { t } = useLang()
   const [date, setDate] = useState('')
@@ -95,6 +101,7 @@ function DatePickerSection() {
 }
 
 // ─── 04. Range Slider ────────────────────────────────────────────────────────
+/** Two 0–100 range sliders; the second sets a preview box's opacity. */
 function SliderSection() {
   const { t } = useLang()
   const [qty, setQty]             = useState(50)
@@ -124,12 +131,17 @@ function SliderSection() {
 }
 
 // ─── 05. File Upload ─────────────────────────────────────────────────────────
+/**
+ * A drop zone (or click to browse) over a hidden multi-file input. Lists the chosen
+ * files' names and sizes; nothing is uploaded.
+ */
 function FileUploadSection() {
   const { t } = useLang()
   const [files, setFiles]         = useState([])
   const [draggingOver, setDraggingOver] = useState(false)
   const inputRef                  = useRef(null)
 
+  // Each new pick or drop replaces the list rather than adding to it.
   const handleFiles = list =>
     setFiles(Array.from(list).map(f => ({
       name: f.name,
@@ -169,6 +181,10 @@ function FileUploadSection() {
 }
 
 // ─── 06. Form Validation ─────────────────────────────────────────────────────
+/**
+ * Email, phone and password fields checked on Submit: the email needs an "@",
+ * the phone exactly 10 digits, the password 8+ characters. Errors appear under each field.
+ */
 function FormValidationSection() {
   const { t } = useLang()
   const [form, setForm]   = useState({ email: '', phone: '', password: '' })
@@ -189,6 +205,7 @@ function FormValidationSection() {
     setOk(Object.keys(e).length === 0)
   }
 
+  // Returns the onChange handler for one field; any edit hides the success message.
   const set = key => e => { setForm(f => ({ ...f, [key]: e.target.value })); setOk(false) }
 
   const fields = [
@@ -217,8 +234,13 @@ function FormValidationSection() {
 }
 
 // ─── 07. Checkboxes ──────────────────────────────────────────────────────────
+// Stable ids for the checkboxes; the visible labels come from tArr('skills') in the same order.
 const SKILL_KEYS = ['javascript', 'python', 'java', 'rust', 'go', 'typescript']
 
+/**
+ * Skill checkboxes wrapped in <label for>. The selection is stored by index, so it
+ * survives a language switch even though the labels change.
+ */
 function CheckboxSection() {
   const { t, tArr } = useLang()
   const skills = tArr('skills')
@@ -253,6 +275,7 @@ const PLANS = [
   { id: 'plan-enterprise', value: 'Enterprise', price: '$49/mo', descKey: 'planEnterpriseDesc' },
 ]
 
+/** Plan cards built from radio inputs sharing name="plan-type". */
 function RadioSection() {
   const { t } = useLang()
   const [plan, setPlan] = useState('')
@@ -280,6 +303,7 @@ function RadioSection() {
 }
 
 // ─── 09. Dropdown & Multi-Select ─────────────────────────────────────────────
+/** A native <select> of countries, and toggle buttons that act as a multi-select of tags. */
 function DropdownSection() {
   const { t, tArr } = useLang()
   const countries = tArr('countries')
@@ -312,6 +336,7 @@ function DropdownSection() {
 }
 
 // ─── 10. Click Counter ───────────────────────────────────────────────────────
+/** Three buttons told apart only by class name, each with its own counter and a total. */
 function ClickCounterSection() {
   const { t } = useLang()
   const [counts, setCounts] = useState({ primary: 0, success: 0, danger: 0 })
@@ -343,9 +368,14 @@ function ClickCounterSection() {
 }
 
 // ─── 11. Double Click ────────────────────────────────────────────────────────
+/**
+ * An area that logs single, double and right clicks (the browser menu is suppressed).
+ * A double-click also logs the two single clicks before it, as browsers fire them.
+ */
 function DoubleClickSection() {
   const { t } = useLang()
   const [log, setLog] = useState([])
+  // Newest first, last 4 only.
   const add = msg => setLog(l => [msg, ...l].slice(0, 4))
   return (
     <section id="sec-dblclick" className="card">
@@ -372,6 +402,11 @@ function DoubleClickSection() {
 }
 
 // ─── 12. Dynamic Buttons ─────────────────────────────────────────────────────
+/**
+ * Buttons that change under a test: one that is disabled while "loading" for 2 s,
+ * one that swaps with a different button, and an Add button whose new buttons get
+ * an unpredictable data-dynamic-id (a timestamp) and remove themselves when clicked.
+ */
 function DynamicButtonsSection() {
   const { t } = useLang()
   const [loading, setLoading]   = useState(false)
@@ -422,6 +457,7 @@ const HOVER_CARDS = [
   { id: 'hover-danger',  labelKey: 'hoverDanger',  tipKey: 'tipDanger',  color: '#ef4444' },
 ]
 
+/** Cards whose tooltip only exists in the DOM while the mouse is over them. */
 function HoverSection() {
   const { t } = useLang()
   const [active, setActive] = useState(null)
@@ -450,6 +486,7 @@ function HoverSection() {
 const FOCUS_FIELD_KEYS = ['focusUsername', 'focusEmail', 'focusComment']
 const FOCUS_IDS        = ['username', 'email', 'comment']
 
+/** Three inputs that log their focus and blur events (last 5) and highlight the focused one. */
 function FocusBlurSection() {
   const { t, tArr } = useLang()
   const focusFields = tArr('focusFields')
@@ -494,12 +531,17 @@ const DRAG_KEYS = [
   { id: 'drag-5', labelKey: 'dragEpsilon', color: '#ef4444' },
 ]
 
+/**
+ * A list reordered with HTML5 drag and drop. Dropping an item on another moves it
+ * into that item's position (the rest shift); data-drag-pos gives each item's position.
+ */
 function DragDropSection() {
   const { t } = useLang()
   const [items, setItems]       = useState(DRAG_KEYS)
   const [dragging, setDragging] = useState(null)
   const [log, setLog]           = useState('')
 
+  // Remove the dragged item, then insert it at the target's index.
   const onDrop = targetId => {
     if (!dragging || dragging === targetId) return
     const from = items.findIndex(i => i.id === dragging)
@@ -522,6 +564,7 @@ function DragDropSection() {
             className={`drag-item ${dragging === item.id ? 'dragging' : ''}`}
             draggable
             onDragStart={() => setDragging(item.id)}
+            // preventDefault on dragover is what makes an element a valid drop target.
             onDragOver={e => e.preventDefault()}
             onDrop={() => onDrop(item.id)}
             style={{ borderLeftColor: item.color }}>
@@ -537,6 +580,10 @@ function DragDropSection() {
 }
 
 // ─── 16. Browser Popups ──────────────────────────────────────────────────────
+/**
+ * Native alert / prompt / confirm dialogs. They block the page, so a test must
+ * handle the dialog event before clicking; the result line shows what came back.
+ */
 function PopupsSection() {
   const { t } = useLang()
   const [result, setResult] = useState('')
@@ -570,6 +617,7 @@ function PopupsSection() {
 }
 
 // ─── 17. Links & New Windows ─────────────────────────────────────────────────
+/** An in-page anchor, a target="_blank" link, a download link, and window.open() as a tab and as a sized popup. */
 function LinksWindowsSection() {
   const { t } = useLang()
   const [log, setLog] = useState('')
@@ -603,6 +651,11 @@ function LinksWindowsSection() {
 }
 
 // ─── 19. Shadow DOM ──────────────────────────────────────────────────────────
+/**
+ * An input and button inside an open shadow root. The shadow content is plain DOM
+ * built by hand (React doesn't render into it), so it is rebuilt when the language changes.
+ * The Browser page (B1) has the harder nested and closed versions.
+ */
 function ShadowDOMSection() {
   const { t, lang } = useLang()
   const hostRef = useRef(null)
@@ -610,6 +663,7 @@ function ShadowDOMSection() {
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
+    // A host can only be given one shadow root, so reuse it when the effect runs again.
     if (!host.shadowRoot) {
       host.attachShadow({ mode: 'open' })
     }
@@ -665,6 +719,10 @@ const EMPLOYEES = Array.from({ length: 25 }, (_, i) => ({
 }))
 const PER_PAGE = 5
 
+/**
+ * A 25-row employee table, 5 rows per page, with a search over name, department and id.
+ * Searching goes back to page 1.
+ */
 function PaginationTableSection() {
   const { t } = useLang()
   const [page, setPage]     = useState(1)
@@ -733,6 +791,7 @@ function PaginationTableSection() {
 }
 
 // ─── 21. Show / Hide & Tabs ──────────────────────────────────────────────────
+/** A collapsible panel that is removed from the DOM when closed, and a three-tab bar. */
 function ShowHideSection() {
   const { t, tArr } = useLang()
   const tabs       = tArr('tabs')
@@ -798,6 +857,10 @@ const POPUP_TYPES = {
   },
 }
 
+/**
+ * In-page modal dialogs (role="dialog") in three styles, unlike the native ones in 16.
+ * Closed by ✕, Dismiss, or a click on the overlay.
+ */
 function PopupAlertsSection() {
   const { t } = useLang()
   const [active, setActive] = useState(null)
@@ -838,6 +901,10 @@ function PopupAlertsSection() {
 }
 
 // ─── 23. Conditional Fields ──────────────────────────────────────────────────
+/**
+ * A checkbox that reveals a text field, a dropdown and a radio group. Values are
+ * kept while the fields are hidden, so they come back when it is ticked again.
+ */
 function ConditionalFieldsSection() {
   const { t } = useLang()
   const [enabled, setEnabled] = useState(false)
@@ -905,8 +972,12 @@ function ConditionalFieldsSection() {
 }
 
 // ─── 24. Delayed Widget ──────────────────────────────────────────────────────
-// Loads 1–6 s after the page renders, like a slow backend call. ?delay=<ms>
-// in the URL fixes the delay for deterministic test runs.
+/**
+ * How long the widget takes to "load".
+ * Loads 1–6 s after the page renders, like a slow backend call. ?delay=<ms>
+ * in the URL fixes the delay for deterministic test runs.
+ * @returns Milliseconds.
+ */
 function pickDelay() {
   const override = Number.parseInt(new URLSearchParams(window.location.search).get('delay'), 10)
   if (Number.isFinite(override) && override >= 0) return override
@@ -919,6 +990,10 @@ const DELAYED_STATS = [
   { key: 'users',   labelKey: 'statUsers',   value: '312' },
 ]
 
+/**
+ * Stat cards that show skeletons until pickDelay() has passed. Wait on
+ * data-state="loaded", not a fixed sleep. Reload runs it again with a new delay.
+ */
 function DelayedWidgetSection() {
   const { t } = useLang()
   const [run, setRun]     = useState(0)
@@ -986,12 +1061,19 @@ function DelayedWidgetSection() {
 const STAR_VALUES = [1, 2, 3, 4, 5]
 const READONLY_RATING = 3.5
 
+/**
+ * How a star should be drawn for a rating.
+ * @param value The rating, in steps of 0.5.
+ * @param star The star's number, 1–5.
+ * @returns "full" | "half" | "empty".
+ */
 function starFill(value, star) {
   if (value >= star) return 'full'
   if (value >= star - 0.5) return 'half'
   return 'empty'
 }
 
+/** The three star ratings described above. */
 function RatingsSection() {
   const { t, lang } = useLang()
   const [product, setProduct] = useState(0)
@@ -999,13 +1081,17 @@ function RatingsSection() {
   const [hover, setHover]     = useState(null)
   const rtl = lang === 'ar'
 
-  // The first half of a star (left in LTR, right in RTL) is worth n - 0.5.
+  /**
+   * The half-star rating under the pointer.
+   * The first half of a star (left in LTR, right in RTL) is worth n - 0.5.
+   */
   function valueFromPointer(e, star) {
     const rect = e.currentTarget.getBoundingClientRect()
     const fromStart = rtl ? rect.right - e.clientX : e.clientX - rect.left
     return fromStart < rect.width / 2 ? star - 0.5 : star
   }
 
+  /** Slider keys: arrows step by 0.5 (left/right swap in RTL), Home → 0, End → 5. */
   function handleKey(e) {
     const inc = rtl ? 'ArrowLeft' : 'ArrowRight'
     const dec = rtl ? 'ArrowRight' : 'ArrowLeft'
@@ -1019,6 +1105,7 @@ function RatingsSection() {
     setHalf(next)
   }
 
+  // Hovering previews a rating; leaving the stars shows the committed one again.
   const shown = hover ?? half
 
   return (
@@ -1101,6 +1188,7 @@ const PROGRESS_STATUS_KEYS = {
   cancelled: 'progressCancelled',
 }
 
+/** The determinate and indeterminate progress bars described above. */
 function ProgressSection() {
   const { t } = useLang()
   const [pct, setPct]           = useState(0)
@@ -1112,6 +1200,11 @@ function ProgressSection() {
 
   useEffect(() => () => { clearTimeout(timer.current); clearTimeout(taskTimer.current) }, [])
 
+  /**
+   * Advances the bar by 3–12% every 150–300 ms until 100%. In fail mode it is
+   * capped at 60%, sits there for 2 s, then fails.
+   * Each step schedules the next with setTimeout, so cancel() only has to clear one timer.
+   */
   function step(value, fail) {
     if (value >= 100) { setState('complete'); return }
     if (fail && value >= 60) {
@@ -1138,6 +1231,7 @@ function ProgressSection() {
     setState('cancelled')
   }
 
+  /** Runs the indeterminate task for a random 2–4 s. */
   function startTask() {
     setTask('running')
     taskTimer.current = setTimeout(() => setTask('done'), 2000 + Math.floor(Math.random() * 2001))
@@ -1182,6 +1276,7 @@ function ProgressSection() {
 
       <div className="progress-block">
         <span className="field-label" id="progress-task-label">{t('progressTaskLabel')}</span>
+        {/* ARIA: an indeterminate progressbar has no value attributes; they appear only once it is done. */}
         <div id="progress-indeterminate" className="progress-track progress-indeterminate"
           role="progressbar" aria-labelledby="progress-task-label"
           aria-valuemin={task === 'done' ? 0 : undefined}
@@ -1216,6 +1311,12 @@ const STEPS = [
 const STEPPER_COUNTRIES = ['in', 'ae', 'gb', 'us']
 const STEPPER_EMPTY = { name: '', email: '', city: '', country: '', contact: '', newsletter: false }
 
+/**
+ * Checks the fields of one wizard step.
+ * @param step 0-based step index; the review step (3) has nothing to check.
+ * @param v All the wizard's values.
+ * @returns Translation keys of the errors, keyed by field; empty if the step is valid.
+ */
 function validateStep(step, v) {
   const errors = {}
   if (step === 0) {
@@ -1230,6 +1331,7 @@ function validateStep(step, v) {
   return errors
 }
 
+/** The 4-step wizard described above. */
 function StepperSection() {
   const { t } = useLang()
   const [step, setStep]           = useState(0)
@@ -1392,6 +1494,10 @@ function StepperSection() {
 // signature.
 const SIGNATURE_MIN_LENGTH = 60
 
+/**
+ * Draws one stroke as connected line segments; a single point (a click) becomes a dot.
+ * @param points Canvas-pixel [x, y] pairs.
+ */
 function drawStroke(ctx, points) {
   ctx.beginPath()
   if (points.length === 1) {
@@ -1404,6 +1510,7 @@ function drawStroke(ctx, points) {
   ctx.stroke()
 }
 
+/** Total length of all strokes in canvas px (sum of the distances between consecutive points). */
 function inkLength(strokes) {
   let total = 0
   strokes.forEach(s => {
@@ -1412,14 +1519,17 @@ function inkLength(strokes) {
   return total
 }
 
+/** The signature pad described above, with Undo, Clear and Save (shows a PNG preview). */
 function SignatureSection() {
   const { t } = useLang()
   const canvasRef = useRef(null)
+  // The stroke being drawn, kept in a ref so pointermove doesn't re-render on every point.
   const current   = useRef(null)
   const [strokes, setStrokes] = useState([])
   const [saved, setSaved]     = useState(null)
   const [error, setError]     = useState('')
 
+  /** The canvas's 2D context with the pen style applied. */
   function context() {
     const ctx = canvasRef.current.getContext('2d')
     ctx.lineWidth = 2.5
@@ -1437,6 +1547,10 @@ function SignatureSection() {
     strokes.forEach(s => drawStroke(ctx, s))
   }, [strokes])
 
+  /**
+   * The pointer position in canvas pixels. The canvas is drawn at 600×200 but CSS
+   * may show it at another size, so screen coordinates are scaled to match.
+   */
   function point(e) {
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
@@ -1448,6 +1562,7 @@ function SignatureSection() {
 
   function onPointerDown(e) {
     if (e.button !== 0) return
+    // Keeps the stroke going even if the pointer leaves the canvas mid-stroke.
     e.currentTarget.setPointerCapture(e.pointerId)
     current.current = [point(e)]
     setError('')
@@ -1460,6 +1575,7 @@ function SignatureSection() {
     const p = point(e)
     const last = current.current[current.current.length - 1]
     current.current.push(p)
+    // Draw only the new segment now; the whole stroke goes into state on pointerup.
     drawStroke(context(), [last, p])
   }
 
@@ -1476,6 +1592,7 @@ function SignatureSection() {
       return
     }
     const url = canvasRef.current.toDataURL('image/png')
+    // Base64 is 4 characters per 3 bytes, so ×0.75 approximates the PNG's size.
     setSaved({ url, kb: (url.length * 0.75 / 1024).toFixed(1) })
   }
 
@@ -1526,6 +1643,8 @@ function SignatureSection() {
 }
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
+// The Playground's sections, in sidebar order. `id` must match the section's
+// element id; it is used both to scroll there and to highlight the visible section.
 const NAV = [
   { id: 'sec-text',        labelKey: 'navTextInput',        groupKey: 'navInputs' },
   { id: 'sec-password',    labelKey: 'navPasswordTextarea', groupKey: 'navInputs' },
@@ -1572,6 +1691,12 @@ const PAGE_LINKS = [
   { to: '/browser',      icon: '🌐', labelKey: 'navBrowser',      className: 'nav-browser-cta',      testId: 'nav-browser' },
 ]
 
+/**
+ * The left navigation: language toggle, petstore and feature-page links, the
+ * Playground's section groups (collapsible), and the account / logout area.
+ * @param active Id of the Playground section currently on screen, highlighted in the list.
+ * @param onPlaygroundItem Called with a section id when one of its links is clicked.
+ */
 function Sidebar({ active, onPlaygroundItem }) {
   const { t, lang, toggleLang } = useLang()
   const { user, logout } = useAuth()
@@ -1710,11 +1835,18 @@ function Sidebar({ active, onPlaygroundItem }) {
   )
 }
 
-// ─── Playground (the original 22-section page) ────────────────────────────────
+// ─── Playground (the original practice page) ─────────────────────────────────
+/**
+ * The home page: every numbered section, plus the footer.
+ * @param contentRef The scrolling <main> element, used as the scroll root.
+ * @param setActive Called with the id of the section currently in view.
+ */
 function Playground({ contentRef, setActive }) {
   const { t } = useLang()
   const location = useLocation()
 
+  // Scroll-spy: a section counts as "in view" once it reaches a band in the upper
+  // part of the scroll area (the rootMargin trims 10% off the top and 55% off the bottom).
   useEffect(() => {
     const content = contentRef.current
     if (!content) return
@@ -1733,6 +1865,7 @@ function Playground({ contentRef, setActive }) {
   useEffect(() => {
     if (!location.hash) return
     const id = location.hash.slice(1)
+    // Wait a frame so the sections have rendered before scrolling to one.
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
@@ -1778,6 +1911,7 @@ function Playground({ contentRef, setActive }) {
 }
 
 // ─── Shell (sidebar + routed main) ────────────────────────────────────────────
+/** The signed-in layout: the sidebar plus the routed page. Every page here is behind ProtectedRoute. */
 function Shell() {
   const { lang } = useLang()
   const [active, setActive] = useState('sec-text')
@@ -1785,6 +1919,10 @@ function Shell() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  /**
+   * Goes to a Playground section: scrolls to it when already on the home page,
+   * otherwise navigates to /#id and lets Playground scroll once it has mounted.
+   */
   function handlePlaygroundItem(id) {
     if (location.pathname === '/') {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -1895,6 +2033,7 @@ function Shell() {
               </ProtectedRoute>
             }
           />
+          {/* Unknown paths go back to the home page. */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -1902,6 +2041,10 @@ function Shell() {
   )
 }
 
+/**
+ * Root component: the auth pages stand alone (no sidebar); everything else is the
+ * Shell, which needs a signed-in user.
+ */
 export default function App() {
   return (
     <LanguageProvider>

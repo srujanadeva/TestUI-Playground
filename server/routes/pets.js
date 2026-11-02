@@ -1,3 +1,5 @@
+// CRUD routes for the signed-in user's pets (/api/pets). Every query is
+// scoped to req.user.id, so a user can never read or change another user's pets.
 import { Router } from 'express'
 import mongoose from 'mongoose'
 import { Pet } from '../models/Pet.js'
@@ -9,6 +11,13 @@ router.use(requireAuth)
 
 const VALID_STATUS = ['available', 'pending', 'sold']
 
+/**
+ * Copies only the fields a client may set, trimmed and type-checked, so a
+ * request body can't set ownerId or other server-owned fields.
+ * Tags without a numeric id are numbered by position; blank tags and photo URLs are dropped.
+ * @param body Raw request body; anything unknown is dropped.
+ * @returns The safe subset to pass to Mongoose.
+ */
 function sanitizeBody(body = {}) {
   const out = {}
   if (typeof body.name === 'string') out.name = body.name.trim()
@@ -36,6 +45,7 @@ function sanitizeBody(body = {}) {
   return out
 }
 
+// GET /?status=available|pending|sold → { pets }, newest first. An unknown status is ignored.
 router.get('/', async (req, res) => {
   const query = { ownerId: req.user.id }
   if (req.query.status && VALID_STATUS.includes(req.query.status)) {
@@ -45,6 +55,7 @@ router.get('/', async (req, res) => {
   res.json({ pets: pets.map(p => p.toJSON()) })
 })
 
+// POST / { name, category?, photoUrls?, tags?, status? } → 201 { pet }
 router.post('/', async (req, res) => {
   const data = sanitizeBody(req.body)
   if (!data.name) return res.status(400).json({ error: 'Pet name is required' })
@@ -52,13 +63,16 @@ router.post('/', async (req, res) => {
   res.status(201).json({ pet: pet.toJSON() })
 })
 
+// GET /:id → { pet }
 router.get('/:id', async (req, res) => {
+  // A malformed id would make Mongoose throw a CastError; treat it as not found instead.
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Not found' })
   const pet = await Pet.findOne({ _id: req.params.id, ownerId: req.user.id })
   if (!pet) return res.status(404).json({ error: 'Not found' })
   res.json({ pet: pet.toJSON() })
 })
 
+// PUT /:id { …fields to change } → { pet }. Only the fields sent are updated.
 router.put('/:id', async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Not found' })
   const data = sanitizeBody(req.body)
@@ -71,6 +85,7 @@ router.put('/:id', async (req, res) => {
   res.json({ pet: pet.toJSON() })
 })
 
+// DELETE /:id → { ok: true }
 router.delete('/:id', async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Not found' })
   const pet = await Pet.findOneAndDelete({ _id: req.params.id, ownerId: req.user.id })

@@ -1,8 +1,8 @@
-import { Router } from 'express'
-
 // Serves the page shown inside the Frames page's cross-origin iframe (F6).
 // It is served by the API (port 4000), so it has a different origin from the
 // app (port 3000): the app can't read its DOM, and the two talk only via postMessage.
+import { Router } from 'express'
+
 const router = Router()
 
 const TEXT = {
@@ -21,6 +21,9 @@ const TEXT = {
 // Only post back to an app running on this machine.
 const ALLOWED_PARENT = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/
 
+// GET /cross-origin?lang=en|ar&parent=<app origin>
+// `parent` is the only origin the frame posts messages to and accepts messages from;
+// without a valid one the frame still renders but stays silent.
 router.get('/cross-origin', (req, res) => {
   const lang = req.query.lang === 'ar' ? 'ar' : 'en'
   const parent = typeof req.query.parent === 'string' && ALLOWED_PARENT.test(req.query.parent)
