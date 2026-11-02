@@ -1,64 +1,43 @@
-# Checks the Node version and npm packages, starts MongoDB (if not already running),
-# then the Vite frontend + Express API.
+# Checks Node and the npm packages, starts MongoDB if it isn't running (whichever one setup
+# chose: the MongoDB service or setup's own copy), then the Vite frontend + Express API.
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less scripts as ANSI.
 $ErrorActionPreference = 'Stop'
 
 $ProjectDir = Split-Path -Parent $PSScriptRoot
 Set-Location $ProjectDir
+. (Join-Path $PSScriptRoot 'lib.ps1')
+# The system Path comes before the user Path, so an older Node there would otherwise win.
+Use-OwnTools
 
-function Test-Port([int]$Port) {
-  $client = New-Object System.Net.Sockets.TcpClient
-  try {
-    $async = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
-    return ($async.AsyncWaitHandle.WaitOne(500) -and $client.Connected)
-  } catch {
-    return $false
-  } finally {
-    $client.Close()
-  }
+if (-not (Has-Command node)) {
+  Write-Host 'ERROR: Node.js is not installed. Run setup first: double-click setup.cmd' -ForegroundColor Red
+  exit 1
 }
 
-Write-Host "==> Checking Node and npm packages..."
+Write-Host '==> Checking Node and npm packages...'
 & node scripts/check-deps.js
 if ($LASTEXITCODE -eq 2) {
-  Write-Host "ERROR: Upgrade Node the way it was installed (e.g. 'winget upgrade OpenJS.NodeJS.LTS', 'nvm install 22', or https://nodejs.org), then run 'npm run setup:win'." -ForegroundColor Red
+  Write-Host 'ERROR: This Node.js is too old. Run setup.cmd, which updates it.' -ForegroundColor Red
   exit 1
 } elseif ($LASTEXITCODE -ne 0) {
-  Write-Host "ERROR: Run 'npm run setup:win' to install them (needed after pulling changes that add packages)." -ForegroundColor Red
+  Write-Host 'ERROR: The npm packages are missing or out of date (usually after pulling changes). Run setup.cmd.' -ForegroundColor Red
   exit 1
 }
 
-Write-Host "==> Checking MongoDB (127.0.0.1:27017)..."
-if (Test-Port 27017) {
-  Write-Host "    Mongo already running."
-} else {
-  if (-not (Get-Service -Name MongoDB -ErrorAction SilentlyContinue)) {
-    Write-Host "ERROR: No 'MongoDB' Windows service found. Run 'npm run setup:win' first." -ForegroundColor Red
-    exit 1
+Write-Host '==> Checking MongoDB (127.0.0.1:27017)...'
+if (-not (Start-Mongo)) {
+  if ($script:MongoHow -eq 'not installed') {
+    Write-Host "ERROR: MongoDB $MongoMin or later is not installed. Run setup.cmd." -ForegroundColor Red
+  } else {
+    $why = Get-MongoLogExplanation $script:MongoLogFile
+    Write-Host "ERROR: MongoDB did not start ($($script:MongoHow)). $($why[0])" -ForegroundColor Red
+    Write-Host "       Fix: $($why[1] -replace '::', ': ')" -ForegroundColor Red
   }
-  Write-Host "    Mongo not running - starting the MongoDB service..."
-  try {
-    Start-Service -Name MongoDB
-  } catch {
-    Write-Host "ERROR: Could not start the MongoDB service: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Run 'Start-Service MongoDB' from an Administrator PowerShell, then try again." -ForegroundColor Red
-    exit 1
-  }
-
-  Write-Host -NoNewline "    Waiting for Mongo to accept connections"
-  $up = $false
-  for ($i = 0; $i -lt 30 -and -not $up; $i++) {
-    Start-Sleep -Seconds 1
-    Write-Host -NoNewline "."
-    $up = Test-Port 27017
-  }
-  Write-Host ""
-  if (-not $up) {
-    Write-Host "ERROR: MongoDB did not start within 30s. Check 'Get-Service MongoDB' and the MongoDB logs." -ForegroundColor Red
-    exit 1
-  }
+  exit 1
 }
+Write-Host "    MongoDB is running ($($script:MongoHow))."
 
 Write-Host "==> Starting web (Vite) + api (Express) via 'npm run dev'..."
+Write-Host '    Open https://localhost:3000 (Ctrl+C stops it)'
 & npm run dev
 exit $LASTEXITCODE
