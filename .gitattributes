@@ -1,2 +1,4 @@
 # Bash scripts must keep LF line endings, even on Windows checkouts (WSL / Git Bash).
 *.sh text eol=lf
+# Batch files misparse labels and long lines with LF endings.
+*.cmd text eol=crlf

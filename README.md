@@ -56,25 +56,16 @@ Compatible with **Playwright**, **Selenium**, **Cypress**, and any other browser
 
 ## Prerequisites
 
-| Tool | Minimum Version | macOS | Windows |
-|------|----------------|-------|---------|
-| [Node.js](https://nodejs.org/) | 20.19+ or 22.12+ (needed by Vite 8 and React Router 7) | `brew install node` | `winget install OpenJS.NodeJS.LTS` |
-| npm | 9.x or higher | Bundled with Node.js | Bundled with Node.js |
-| [MongoDB Community](https://www.mongodb.com/try/download/community) | Any installed version is used; new installs get 8.0 | `brew tap mongodb/brew && brew install mongodb/brew/mongodb-community@8.0 --without-mongosh` | the 8.0.32 `.msi` from mongodb.com, installed as the `MongoDB` service |
-| mongosh (optional shell) | any | `npm install -g mongosh` | `winget install MongoDB.Shell` |
-| Package manager (used by the setup script) | — | [Homebrew](https://brew.sh) | `winget` (comes with Windows 10/11 as "App Installer") |
-| A modern browser | Latest Chrome / Edge / Firefox / Safari | | |
+You don't need to install anything by hand: the setup script installs what's missing (see [Installation](#installation)). These are the versions it makes sure you have:
 
-You don't need to install Node or MongoDB by hand — the setup script does it for you (see [Installation](#installation)). This table is for reference or manual setup.
+| Tool | Minimum version | Installed by setup when missing or older |
+|------|-----------------|------------------------------------------|
+| [Node.js](https://nodejs.org/) (with npm) | 26.3.1 | Node.js 26.3.1 |
+| [MongoDB Community](https://www.mongodb.com/try/download/community) | 8.0.32 | MongoDB 8.0.32 |
+| [mongosh](https://www.mongodb.com/try/download/shell) (optional shell, for looking at the data yourself) | 2.12.0 | mongosh 2.12.0 |
+| A modern browser | Latest Chrome / Edge / Firefox / Safari | — |
 
-**Supported platforms:** the scripts support **macOS** (bash + Homebrew) and **Windows 10/11** (PowerShell + winget). On **Linux** the scripts don't work yet, because they rely on Homebrew services: install Node and MongoDB with your distro's package manager, start MongoDB with `sudo systemctl start mongod`, create `certs/` and `server/.env` the same way steps 5–6 of `scripts/setup.sh` do, then run `npm install`, `npm run seed` and `npm run dev`.
-
-Verify your environment before proceeding:
-
-```bash
-node --version    # should print v20.19.x or higher (on the 22 line, v22.12.0 or higher)
-npm --version     # should print 9.x.x or higher
-```
+**Supported platforms:** macOS 13.5 or later (Apple Silicon and Intel) and 64-bit Windows 10/11. Linux isn't supported by the scripts yet; see [Manual setup](#manual-setup-linux).
 
 ---
 
@@ -95,63 +86,94 @@ No external UI libraries, no CSS frameworks. The 27 playground sections are self
 
 ## Installation
 
-```bash
-# 1. Navigate to the project directory
-cd test-playground
+Clone the repository, then run the setup for your system. Nothing needs to be installed first, and nothing needs administrator rights.
 
-# 2. One-time setup
-npm run setup        # macOS
-npm run setup:win    # Windows
+| | macOS | Windows |
+|---|---|---|
+| Run setup | `bash setup.sh` in Terminal, from the project folder | Double-click `setup.cmd` in the project folder |
+| Or, once Node is installed | `npm run setup` | `npm run setup:win` |
+| Options | `--no-start` (don't start the app at the end)<br>`--no-brew` (ignore Homebrew)<br>`--ca-cert <file>` (company root certificate) | `-NoStart`<br>`-CaCert <file>` |
+| Full log | `logs/setup.log` | `logs\setup.log` |
+
+Setup runs 11 steps and ends by starting the app at **https://localhost:3000**. The first run takes 5–15 minutes on a Mac and 10–20 minutes on Windows, where MongoDB is an 800 MB download. Later runs take a few seconds, because finished steps are skipped. It's safe to run again at any time, for example after pulling changes.
+
+### What each step does
+
+For every tool, setup follows one rule: **missing → installed; the minimum version or newer → kept; older → updated.**
+
+| Step | Already fine | Missing or out of date |
+|------|--------------|------------------------|
+| 1. Checking this computer | — | Stops with a fix when the OS is too old, setup runs with `sudo`, the project is incomplete, or less than 2 GB (Windows: 4 GB) of disk is free. Picks up a proxy from `HTTPS_PROXY` or the system settings |
+| 2. Node.js 26.3.1+ | Kept | Installed or updated (see [Where tools come from](#where-tools-come-from)) |
+| 3. MongoDB 8.0.32+ | Kept | Installed or updated (see [MongoDB version](#mongodb-version)) |
+| 4. mongosh 2.12.0+ (optional) | Kept | Installed. If this fails, setup carries on and lists it at the end |
+| 5. Default in new windows | — | On macOS, a marked block in `~/.zshrc` (or `~/.bash_profile`) puts setup's own tools first on `PATH`; on Windows, they go first on your user `Path`. Only when setup's own copies are used |
+| 6. npm packages | Skipped when every package is at the version in `package-lock.json` and was built for this computer | `npm ci` (SheetJS is downloaded from `cdn.sheetjs.com`, see below) |
+| 7. HTTPS certificate (`certs/`) | Kept while valid | Created, or renewed when missing, broken or about to expire (self-signed for `localhost` and `127.0.0.1`, valid 825 days). The old files are kept as `*.pem.old` |
+| 8. `server/.env` | Kept | Created from `server/.env.example` with a random `JWT_SECRET`. If a newer `.env.example` has settings your `.env` lacks, those are added; your values are never changed |
+| 9. MongoDB running on `127.0.0.1:27017` | Kept | Started |
+| 10. Sample users | Left as is | Created (see [Sample login](#sample-login)) |
+| 11. Start the app | Already running → left as is | `npm run start:all` (`start:all:win` on Windows). Stops with a fix if another program holds port 3000 or 4000 |
+
+**When a step fails**, setup stops there and prints what went wrong, why, and what to do, with the exact command to run where there is one:
+
+```
+✗ Step 6 of 11 failed: npm packages
+
+  Problem  The npm packages could not be installed.
+
+  Cause    npm could not reach registry.npmjs.org or cdn.sheetjs.com (SheetJS is installed from its
+           own site). Either there is no internet connection, a VPN is not connected, or a proxy is needed.
+
+  Fix      1. Connect to the internet or the VPN.
+           2. On a company network, ask IT for the proxy address and set it, then run setup again
+              from the same window:
+
+                export HTTPS_PROXY=http://<proxy-host>:<port>
+
+  Then     Run setup again (bash setup.sh). Finished steps are skipped.
+
+  Log      logs/setup.log
 ```
 
-`npm run setup` runs `scripts/setup.sh`, and `npm run setup:win` runs `scripts/setup.ps1`. Both follow one rule for every step: **if it's already on the machine, use it and skip; if it's missing, create or install it.** Nothing that already exists is replaced.
+It recognises, among others: no internet, a proxy that is missing or needs a password, a company network that inspects HTTPS traffic, blocked sites, a full disk, damaged downloads (every download is checksum-verified), files left behind by an earlier `sudo`, locked files on Windows, an older MongoDB already running, and another program on ports 27017, 3000 or 4000.
 
-| Step | Already there | Missing |
-|------|---------------|---------|
-| 1. Node.js 20.19+ or 22.12+ | Used as is. An older Node is left alone and setup tells you to upgrade it | Installed (Homebrew on macOS, winget on Windows) |
-| 2. npm dependencies | Skipped when every package is installed at the version in `package-lock.json` | `npm install` (SheetJS is downloaded from `cdn.sheetjs.com`, see below) |
-| 3. Dev TLS certs (`certs/cert.pem`, `certs/key.pem`) | Kept | Generated (self-signed, `localhost`, 1 year) |
-| 4. `server/.env` | Kept | Created from `server/.env.example` with a random `JWT_SECRET` |
-| 5. MongoDB | **Any installed version is used as is** | MongoDB 8.0 is installed (`mongodb-community@8.0` via Homebrew on macOS; the 8.0.32 installer as the `MongoDB` service on Windows) |
-| 6. MongoDB running on `127.0.0.1:27017` | Used as is | Started (`brew services` for whichever MongoDB formula is installed on macOS; the `MongoDB` service on Windows) |
-| 7. Sample users | Left as is | Created (see [Sample login](#sample-login)) |
+**Company networks that inspect HTTPS** (Zscaler, Netskope and similar): Node is told to trust the system certificate store, where IT normally installs the company certificate, so this usually works without doing anything. If a step still says the connection is not trusted, get the company root certificate (a `.cer` or `.pem` file) from IT and pass it: `bash setup.sh --ca-cert <file>` or `setup.cmd -CaCert <file>`.
 
-It also installs the optional `mongosh` shell if it's missing (from npm on macOS, winget on Windows).
+### Where tools come from
 
-**SheetJS comes from its own site.** The spreadsheet reader, SheetJS (`xlsx`), is installed from `https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`, not from the npm registry. The copy on npm (0.18.5) is no longer updated and has two known high-severity vulnerabilities in reading files (CVE-2023-30533, CVE-2024-22363), both fixed in the version from SheetJS's site. `package-lock.json` records the file's sha512 hash, so if the download ever changes, `npm install` fails instead of installing it. The first install needs `cdn.sheetjs.com` to be reachable; if it isn't, setup says so (see [Troubleshooting](#troubleshooting)).
-
-Each step prints whether it was skipped, done, or failed. If a step fails, the steps that don't depend on it still run, the summary at the end lists what failed and why, and the command exits with an error. It's safe to re-run at any time.
-
-Homebrew (macOS) or winget (Windows) is only needed when something has to be installed.
-
-**If Node isn't installed yet**, `npm` doesn't exist either, so run the script directly instead:
-
-```bash
-# macOS
-bash scripts/setup.sh
-```
-
-```powershell
-# Windows (PowerShell)
-powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
-```
-
-**Windows notes:**
-- Installing MongoDB, and starting or stopping its Windows service, may show a UAC prompt or require an **Administrator** PowerShell. If a script says it couldn't start or stop the service, run `Start-Service MongoDB` or `Stop-Service MongoDB` from an Administrator PowerShell.
-- OpenSSL is needed to create the dev certs. The script uses the copy bundled with Git for Windows if it's installed, and otherwise installs one with `winget install ShiningLight.OpenSSL.Light`.
-- If a newly installed tool isn't found, open a new PowerShell window (so it picks up the updated `PATH`) and run the setup again.
-- If MongoDB has to be installed, its installer is about 750 MB, so that first run takes a while.
+- **macOS with Homebrew:** a missing tool is installed with Homebrew, and a Homebrew tool that is too old is updated with `brew upgrade`, but only when Homebrew has a prebuilt copy for this Mac. Without one Homebrew would compile from source, which takes hours (common on Intel Macs), so setup downloads the official build instead.
+- **Otherwise (and always on Windows):** the official build is downloaded from nodejs.org or mongodb.com, its checksum is verified, and it is unpacked into `~/.test-playground/tools` (Windows: `%LOCALAPPDATA%\TestPlayground\tools`). Nothing is installed system-wide, so no administrator password or UAC prompt is needed.
+- **An older copy from another installer** (nvm, the nodejs.org installer, a MongoDB `.msi`, …) is never changed or removed. Setup installs the required version next to it and makes that the default (step 5). `npm run start:all` / `start:all:win` always use the right one, even in a window that was open before setup ran.
 
 ### MongoDB version
 
-If a machine already has MongoDB, of any version, setup and the start/stop scripts use it as is.
+The minimum is **8.0.32**. MongoDB needs extra care, because a newer MongoDB can upgrade the data files in a way an older one can't read again:
 
-Only when a machine has **no** MongoDB does setup install one, and then it installs the **8.0** long-term-support line:
+| What the computer has | What setup does |
+|-----------------------|-----------------|
+| MongoDB 8.0.32 or newer (8.x, 9.x, …) | Kept, including its data |
+| An older 8.0.x from Homebrew | Updated in place with `brew upgrade` (patch releases use the same data format) |
+| MongoDB 7.x or older, or an older 8.0.x from another installer | Left as it is. MongoDB 8.0.32 is installed next to it, with its own data folder (`~/.test-playground/mongodb-data`, Windows: `%LOCALAPPDATA%\TestPlayground\mongodb-data`). The app starts with an empty database plus the sample users; the old data stays with the old MongoDB |
+| None | MongoDB 8.0.32 is installed |
 
-| Platform | Where the version for new installs is set | Current value |
-|----------|-------------------------------------------|---------------|
-| macOS | `MONGO_INSTALL_FORMULA` in `scripts/setup.sh` | `mongodb-community@8.0` (Homebrew installs the newest 8.0.x patch) |
-| Windows | `$MongoInstallVersion` in `scripts/setup.ps1` | `8.0.32` |
+If the older MongoDB is still running, setup stops and shows how to stop it, because only one MongoDB can use port 27017.
+
+When setup starts its own MongoDB (rather than a Homebrew service or the `MongoDB` Windows service), it runs as a normal process listening only on `127.0.0.1`, and its log is `~/.test-playground/mongod.log` (Windows: `%LOCALAPPDATA%\TestPlayground\mongod.log`).
+
+The versions live at the top of `scripts/lib.sh` and `scripts/lib.ps1` (minimums) and `setup.sh` and `scripts/setup.ps1` (the versions installed). The Node minimum must match `engines` in `package.json`.
+
+### Manual setup (Linux)
+
+Install Node.js 26.3.1+ and MongoDB 8.0.32+ with your distribution's package manager and start MongoDB (`sudo systemctl start mongod`). Then, from the project folder:
+
+```bash
+npm ci
+node scripts/make-cert.js    # certs/cert.pem + key.pem
+node scripts/make-env.js     # server/.env
+npm run seed
+npm run dev
+```
 
 ---
 
@@ -159,7 +181,7 @@ Only when a machine has **no** MongoDB does setup install one, and then it insta
 
 ### Start everything (MongoDB + API + frontend)
 
-The app includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script. It first checks that Node matches the version `package.json` requires (`engines`) and that every npm package is installed at the version in `package-lock.json`. If either check fails, for example after pulling changes that need a newer Node or add a package, it stops and tells you what to do. It then starts MongoDB if it isn't already running (`brew services` on macOS, the `MongoDB` Windows service on Windows), then starts the Vite frontend and the Express API together:
+The app includes a login-gated backend (Express + MongoDB), so the easiest way to run everything is the bundled start script. It first checks that Node matches the version `package.json` requires (`engines`) and that every npm package is installed at the version in `package-lock.json`. If either check fails, for example after pulling changes that need a newer Node or add a package, it stops and tells you what to do. It then starts MongoDB if it isn't already running (the same MongoDB setup chose: a Homebrew service, the `MongoDB` Windows service, or setup's own copy), then starts the Vite frontend and the Express API together:
 
 ```bash
 npm run start:all        # macOS
@@ -177,7 +199,7 @@ npm run stop:all:win     # Windows
 
 | Task | macOS | Windows |
 |------|-------|---------|
-| One-time setup | `npm run setup` → `scripts/setup.sh` | `npm run setup:win` → `scripts/setup.ps1` |
+| Setup (first time, and after pulling changes) | `bash setup.sh` or `npm run setup` | `setup.cmd` or `npm run setup:win` → `scripts/setup.ps1` |
 | Start everything | `npm run start:all` → `scripts/start.sh` | `npm run start:all:win` → `scripts/start.ps1` |
 | Stop everything | `npm run stop:all` → `scripts/stop.sh` | `npm run stop:all:win` → `scripts/stop.ps1` |
 | Re-seed sample users | `npm run seed` | `npm run seed` |
@@ -1276,13 +1298,18 @@ test-playground/
 ├── index.html              Entry point HTML
 ├── vite.config.js          Vite config — dev server on port 3000, proxies /api → :4000
 ├── package.json            Dependencies and npm scripts
-├── .gitattributes          Keeps *.sh files LF-only on Windows checkouts
+├── .gitattributes          Keeps *.sh files LF-only and *.cmd files CRLF on every checkout
+├── setup.sh                One-click setup for macOS — bash setup.sh / npm run setup
+├── setup.cmd               One-click setup for Windows (double-click); runs scripts/setup.ps1
 ├── scripts/
-│   ├── mongo.sh             Shared MongoDB start/stop helpers used by the macOS scripts
-│   ├── setup.sh / .ps1      One-time bootstrap (Node, Mongo, certs, .env, seed) — npm run setup / setup:win
+│   ├── lib.sh / lib.ps1     Shared by setup, start and stop: minimum versions, setup's tools folder, MongoDB start/stop
+│   ├── setup.ps1            The Windows setup steps — setup.cmd / npm run setup:win
 │   ├── start.sh / .ps1      Checks Node + npm packages, starts MongoDB (if needed) + frontend + API — npm run start:all / start:all:win
-│   ├── check-deps.js        Checks Node matches package.json "engines" and npm packages match package-lock.json — used by setup and start
-│   └── stop.sh / .ps1       Stops frontend + API + MongoDB — npm run stop:all / stop:all:win
+│   ├── stop.sh / .ps1       Stops frontend + API + MongoDB — npm run stop:all / stop:all:win
+│   ├── check-deps.js        Checks Node matches "engines", packages match package-lock.json and were built for this computer
+│   ├── make-cert.js         Creates or renews the localhost HTTPS certificate (plain Node, no OpenSSL needed)
+│   ├── make-env.js          Creates server/.env, or adds settings a newer .env.example has
+│   └── mongo-admin.js       Asks the local MongoDB for its version, or to shut down cleanly
 ├── server/                 Express + MongoDB API (port 4000)
 │   ├── index.js             App bootstrap, middleware, route mounting
 │   ├── db.js                Mongoose connection
@@ -2153,13 +2180,7 @@ npm run dev
 
 **`npm install` fails with Node version errors**
 
-Upgrade Node to 20.19+ or 22.12+ (setup prints which Node it found and where). Using [nvm](https://github.com/nvm-sh/nvm):
-
-```bash
-nvm install 22
-nvm use 22
-npm install
-```
+The project needs Node 26.3.1 or later. Run setup (`bash setup.sh` or `setup.cmd`): it updates Node and reinstalls the packages for it.
 
 **Vite not found after install**
 
@@ -2184,23 +2205,11 @@ await source.dragTo(target)
 
 **API fails to start — `ECONNREFUSED 127.0.0.1:27017`**
 
-MongoDB isn't running. Either use the bundled script, which starts Mongo for you:
+MongoDB isn't running. Use the bundled script, which starts the right MongoDB for you, or run setup, which also explains why MongoDB doesn't start:
 
 ```bash
 npm run start:all        # macOS
 npm run start:all:win    # Windows
-```
-
-or start it manually:
-
-```bash
-# macOS
-brew services start <formula>   # find it with: brew list | grep mongodb-community
-```
-
-```powershell
-# Windows (Administrator PowerShell)
-Start-Service MongoDB
 ```
 
 **macOS: `brew services` says "has not implemented #plist, #service or provided a locatable service file"**
@@ -2211,13 +2220,9 @@ Homebrew updated the MongoDB formula to a newer version than the one installed, 
 brew upgrade <formula>   # e.g. mongodb-community or mongodb-community@8.0
 ```
 
-**Setup says "Couldn't start MongoDB automatically"**
-
-Your MongoDB isn't a Homebrew service and has no Homebrew config file, so setup can't know how you normally run it. Start MongoDB the way you usually do, so it listens on `127.0.0.1:27017`, then re-run `npm run setup`.
-
 **macOS: Homebrew starts compiling Node or Rust from source**
 
-Homebrew no longer ships prebuilt packages for Intel Macs, so installing or upgrading `mongosh` (or `node`) through Homebrew can mean hours of compiling. The setup avoids this by installing MongoDB with `--without-mongosh` and getting `mongosh` from npm instead. If a `brew upgrade` starts building `rust` or `node`, it's safe to press `Ctrl+C`; the packages you already have keep working.
+Homebrew has no prebuilt packages for some Macs (often Intel Macs on a recent macOS), so `brew install` or `brew upgrade` of `node` or `mongosh` can mean hours of compiling. Setup checks for a prebuilt copy first and downloads the official build when there isn't one. If a `brew upgrade` you started yourself begins building `llvm`, `rust` or `node`, it's safe to press `Ctrl+C`; the packages you already have keep working.
 
 **Port 4000 already in use**
 
@@ -2231,29 +2236,21 @@ lsof -ti:4000 | xargs kill -9
 Get-NetTCPConnection -LocalPort 4000 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
 ```
 
-**Windows: "running scripts is disabled on this system"**
+**Windows: "running scripts is disabled on this system" or "not digitally signed"**
 
-PowerShell's execution policy is blocking the `.ps1` file. `npm run setup:win` / `start:all:win` / `stop:all:win` already bypass it for that one run. If you run a script yourself, launch it the same way:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
-```
+`setup.cmd` and the `npm run …:win` commands already bypass PowerShell's execution policy for that one run, and setup.cmd removes the "downloaded from the internet" mark from the scripts. If it still says this, your company enforces the policy through Group Policy: ask IT to allow `scripts\setup.ps1` from the project folder.
 
 **Windows: "Could not start (or stop) the MongoDB service"**
 
-Controlling a Windows service usually needs admin rights. Open PowerShell with **Run as administrator** and run `Start-Service MongoDB` (or `Stop-Service MongoDB`), then run the npm command again.
+Controlling a Windows service needs administrator rights. Start and stop fall back to running MongoDB directly, without the service, so this usually needs nothing from you. To use the service itself, open PowerShell with **Run as administrator** and run `Start-Service MongoDB` (or `Stop-Service MongoDB`).
 
-**Setup fails with "cdn.sheetjs.com unreachable"**
+**Setup says npm could not reach `cdn.sheetjs.com`**
 
-SheetJS is installed from `cdn.sheetjs.com`, not the npm registry (see [Installation](#installation)), and your network blocked it. Allow `https://cdn.sheetjs.com` through your proxy or firewall, or set npm's proxy (`npm config set https-proxy http://your-proxy:port`), then re-run setup. Once it's installed, later installs reuse it.
+SheetJS is installed from `cdn.sheetjs.com`, not the npm registry (see [Installation](#installation)), and your network blocked it. Ask IT to allow `https://cdn.sheetjs.com`, or set the proxy (`export HTTPS_PROXY=http://<proxy-host>:<port>` on macOS, `set HTTPS_PROXY=…` in Command Prompt on Windows) and run setup again. Once it's installed, later installs reuse it.
 
-**Start says "Node vX is too old for this project"**
+**Start says "This Node.js is too old" or "The npm packages are missing or out of date"**
 
-The project needs Node 20.19+ or 22.12+. Upgrade Node the way it was installed (`brew upgrade node`, `nvm install 22`, `winget upgrade OpenJS.NodeJS.LTS`, or the installer from [nodejs.org](https://nodejs.org)); the message shows which `node` it found. Then run `npm run setup` (or `npm run setup:win`) so the packages are rebuilt for the new Node, and start again.
-
-**Start says "Missing or out-of-date npm packages"**
-
-The code needs packages that aren't installed yet, usually after pulling changes that add one. Run `npm run setup` (or `npm run setup:win`), then start again.
+The code needs a newer Node or packages that aren't installed yet, usually after pulling changes. Run setup again (`bash setup.sh` or `setup.cmd`); it only changes what is missing or out of date.
 
 **Keeping SheetJS up to date**
 

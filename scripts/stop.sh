@@ -3,7 +3,7 @@
 set -uo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source "$PROJECT_DIR/scripts/mongo.sh"
+source "$PROJECT_DIR/scripts/lib.sh"
 
 echo "==> Stopping dev processes for $PROJECT_DIR ..."
 
@@ -31,7 +31,7 @@ if [ "$killed_any" -eq 1 ]; then
 fi
 
 echo "==> Stopping MongoDB..."
-stop_mongo
+stop_mongo || echo "    MongoDB is still running; quit mongod in Activity Monitor if needed."
 
 sleep 1
 echo "==> Final status:"

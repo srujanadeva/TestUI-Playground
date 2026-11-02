@@ -1,7 +1,7 @@
-// Checks that the running Node matches package.json "engines", then that every direct
-// dependency is installed at the version package-lock.json pins.
-// Used by setup and start (bash and PowerShell).
-// Exit 0 = all good, 1 = packages missing or out of date, 2 = Node too old.
+// Checks that the running Node matches package.json "engines", that every direct dependency
+// is installed at the version package-lock.json pins, and that Vite's native part was built
+// for this computer. Used by setup and start. Exit 0 = good, 1 = packages missing or out of
+// date, 2 = Node too old, 3 = packages installed for another processor or system.
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -60,4 +60,13 @@ for (const name of names) {
 if (problems.length) {
   console.log(`Missing or out-of-date npm packages: ${problems.join(', ')}`)
   process.exit(1)
+}
+
+// Vite's bundler is a native binary chosen at install time. node_modules copied from another
+// computer, or installed by a Node of another architecture (Rosetta), has the wrong one.
+try {
+  await import('rolldown')
+} catch (err) {
+  console.log(`The npm packages were installed for another computer (this one is ${process.platform}-${process.arch}): ${err.message.split('\n')[0]}`)
+  process.exit(3)
 }

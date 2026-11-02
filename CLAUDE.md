@@ -1,5 +1,42 @@
 # Test Playground
 
+A practice site for UI test automation: a React app (Vite, port 3000) and an Express +
+MongoDB API (port 4000). `bash setup.sh` (Windows: double-click `setup.cmd`) installs everything and starts
+the app; after that `npm run start:all` (Windows: `:win`). Setup logic and versions: `setup.sh`, `scripts/`.
+
+## Project layout
+
+| Where | What |
+|---|---|
+| `src/App.jsx` | Routes only: the auth pages, and the signed-in Shell (sidebar + `PAGES` table) |
+| `src/layout/Sidebar.jsx` | Sidebar, plus `NAV`: the Playground section list used by the sidebar and the scroll-spy |
+| `src/playground/` | The home page: `PlaygroundPage.jsx` and the numbered sections, grouped into `inputs`, `selection`, `buttons`, `events`, `windows`, `advanced`, `workflows` |
+| `src/<feature>/` | One folder per themed page (`media`, `frames`, `data`, …), plus `auth` and `petstore` |
+| `src/i18n.jsx` | Language context and `t()`; merges every `strings.js` file |
+| `src/**/strings.js`, `src/playground/*.strings.js`, `src/common.strings.js` | The text, one file per feature |
+| `src/ui.jsx` | `SectionHeader`, `Output`, `numberParam` shared by all pages |
+| `server/` | API: `routes/` per feature, `models/`, `middleware/auth.js` |
+
+### Adding things
+
+- **A themed page:** create `src/<feature>/<Feature>Page.jsx` and `src/<feature>/strings.js`,
+  add the page to `PAGES` in `App.jsx`, its link to `PAGE_LINKS` in `Sidebar.jsx`, and its
+  strings module to `MODULES` in `i18n.jsx`. No `ProtectedRoute` needed: the whole Shell is guarded.
+- **A Playground section:** add the component to the matching group file and render it in
+  `PlaygroundPage.jsx`; add its `id` to `NAV` so the sidebar and the scroll-spy know it.
+- **A Playground group file** should stay roughly under 350 lines; split it rather than grow it.
+- **Text:** never hard-code UI text. Add the key to the feature's `strings.js`, in **both**
+  `en` and `ar`. Keys share one namespace across all files; in development the console
+  warns about a duplicate key or one missing from a language. Keys built at runtime
+  (``t(`cd_${state}`)``) must still exist for every value the variable can take.
+
+### Testing
+
+The repo has no automated test suite. After a change, run `npm run build`, open the affected
+pages in both languages (the Arabic toggle flips the layout to RTL) and check the browser
+console. Most timers can be pinned with URL params (`?delay=0`, `?feedInterval=`, …; see
+`numberParam` and each page's file header).
+
 ## Code comments
 
 Comments explain what a file or function is for and why the code is the way it is.

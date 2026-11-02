@@ -96,17 +96,31 @@ export function DragDropSection() {
   const [dragging, setDragging] = useState(null)
   const [log, setLog]           = useState('')
 
+  // The item's id also goes into dataTransfer: scripted drags (Selenium tests fire
+  // dragstart → drop from one script, before React re-renders) read it from there,
+  // and older Firefox versions won't start a drag that carries no data.
+  const onDragStart = (e, id) => {
+    e.dataTransfer.setData('text/plain', id)
+    e.dataTransfer.effectAllowed = 'move'
+    setDragging(id)
+  }
+
   // Remove the dragged item, then insert it at the target's index.
-  const onDrop = targetId => {
-    if (!dragging || dragging === targetId) return
-    const from = items.findIndex(i => i.id === dragging)
+  const onDrop = (e, targetId) => {
+    // Without this, Firefox treats the dropped text as a link and navigates to it.
+    e.preventDefault()
+    // If no dragstart was seen here (e.g. a synthetic drop event), use the id in dataTransfer.
+    const source = dragging ?? e.dataTransfer.getData('text/plain')
+    setDragging(null)
+    if (!source || source === targetId) return
+    const from = items.findIndex(i => i.id === source)
+    if (from < 0) return
     const to   = items.findIndex(i => i.id === targetId)
     const next = [...items]
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
     setItems(next)
     setLog(t('dragMoved', { label: t(moved.labelKey), pos: to + 1 }))
-    setDragging(null)
   }
 
   return (
@@ -118,10 +132,12 @@ export function DragDropSection() {
           <div key={item.id} data-drag-id={item.id} data-drag-pos={idx + 1}
             className={`drag-item ${dragging === item.id ? 'dragging' : ''}`}
             draggable
-            onDragStart={() => setDragging(item.id)}
+            onDragStart={e => onDragStart(e, item.id)}
             // preventDefault on dragover is what makes an element a valid drop target.
             onDragOver={e => e.preventDefault()}
-            onDrop={() => onDrop(item.id)}
+            onDrop={e => onDrop(e, item.id)}
+            // Fires on the source after any drag, including one dropped outside the list.
+            onDragEnd={() => setDragging(null)}
             style={{ borderLeftColor: item.color }}>
             <span className="drag-handle">⠿</span>
             <span className="drag-label">{t(item.labelKey)}</span>

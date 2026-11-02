@@ -1,19 +1,9 @@
-# Stops the Vite frontend and Express API (and their npm/concurrently wrappers),
-# then stops MongoDB.
+# Stops the Vite frontend and Express API (and their npm/concurrently wrappers), then MongoDB:
+# the Windows service when it runs as one, otherwise a clean shutdown through the database.
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less scripts as ANSI.
 $ProjectDir = Split-Path -Parent $PSScriptRoot
-
-function Test-Port([int]$Port) {
-  $client = New-Object System.Net.Sockets.TcpClient
-  try {
-    $async = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
-    return ($async.AsyncWaitHandle.WaitOne(500) -and $client.Connected)
-  } catch {
-    return $false
-  } finally {
-    $client.Close()
-  }
-}
+. (Join-Path $PSScriptRoot 'lib.ps1')
+Use-OwnTools
 
 function Stop-Tree([int]$ProcessId, [string]$Reason) {
   Write-Host "    Stopping PID $ProcessId ($Reason)"
@@ -41,17 +31,13 @@ foreach ($conn in $listeners) {
   }
 }
 
-Write-Host "==> Stopping MongoDB (Windows service)..."
-if (Get-Service -Name MongoDB -ErrorAction SilentlyContinue) {
-  try {
-    Stop-Service -Name MongoDB -ErrorAction Stop
-    Write-Host "    MongoDB service stopped."
-  } catch {
-    Write-Host "    Could not stop the MongoDB service: $($_.Exception.Message)" -ForegroundColor Yellow
-    Write-Host "    Run 'Stop-Service MongoDB' from an Administrator PowerShell." -ForegroundColor Yellow
-  }
+Write-Host "==> Stopping MongoDB..."
+if (-not (Test-MongoUp)) {
+  Write-Host "    MongoDB is not running."
+} elseif (Stop-Mongo $ProjectDir) {
+  Write-Host "    MongoDB stopped."
 } else {
-  Write-Host "    No 'MongoDB' service found - nothing to stop."
+  Write-Host "    MongoDB is still running. If it is the 'MongoDB' Windows service, stop it from an Administrator PowerShell: Stop-Service MongoDB" -ForegroundColor Yellow
 }
 
 Start-Sleep -Seconds 1

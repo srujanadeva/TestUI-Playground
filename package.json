@@ -4,17 +4,17 @@
   "version": "1.0.0",
   "type": "module",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=26.3.1"
   },
   "scripts": {
     "dev": "concurrently -k -n web,api -c blue,green \"npm:dev:web\" \"npm:server\"",
     "dev:web": "vite",
     "server": "nodemon server/index.js",
-    "setup": "bash scripts/setup.sh",
+    "setup": "bash setup.sh",
     "seed": "node server/seed.js",
     "start:all": "bash scripts/start.sh",
     "stop:all": "bash scripts/stop.sh",
-    "setup:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup.ps1",
+    "setup:win": "setup.cmd",
     "start:all:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start.ps1",
     "stop:all:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop.ps1",
     "build": "vite build",
