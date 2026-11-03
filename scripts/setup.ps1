@@ -665,7 +665,13 @@ try {
     switch -wildcard ($c[1]) {
         'present*' { Skipped "The certificate is $($c[1]). Nothing to do."; Add-Summary 'ok' 'Certificate' '' 'already present' }
         'created*' { Installed "Created a self-signed certificate for localhost, $($c[1] -replace '^created, ', '')."; Add-Summary 'ok' 'Certificate' '' 'created' }
-        'renewed*' { Updated "Renewed the certificate: the old one was $($c[1] -replace '^renewed \(', '')"; Add-Summary 'ok' 'Certificate' '' 'renewed' }
+        'renewed*' {
+            # Built outside the string: Windows PowerShell 5.1 can't parse a "(" inside a quoted
+            # literal within "...$( )...".
+            $reason = $c[1].Substring('renewed ('.Length)
+            Updated "Renewed the certificate: the old one was $reason"
+            Add-Summary 'ok' 'Certificate' '' 'renewed'
+        }
         default    { Stop-Setup 'The HTTPS certificate could not be created.' ($c[1] -replace '^failed: ', '') @("Check that you can write to $ProjectDir\certs.") }
     }
 
