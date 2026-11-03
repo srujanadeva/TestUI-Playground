@@ -640,21 +640,27 @@ try {
             'updated'    { Updated 'Updated setup''s tools on your user Path.' }
             'removed'    { Updated 'Removed setup''s tools from your user Path; they are no longer needed.' }
         }
-        # The system Path comes before the user Path: an older Node there still answers "node -v".
-        if ($script:PathAdd -contains (Split-Path $OwnNode)) {
+        Add-Summary 'ok' 'User Path' '' $pathResult
+    } catch {
+        Write-Log "user Path: $($_.Exception.Message)"
+        Add-Attention "Your user Path could not be changed ($($_.Exception.Message)), so new windows may use older tools." "Add these folders to Path yourself: Start > 'Edit environment variables for your account' > Path > New: $($script:PathAdd -join ', ')"
+        Add-Summary 'warn' 'User Path' '' 'needs attention'
+    }
+
+    # The system Path comes before the user Path: an older Node there still answers "node -v".
+    # Only a hint, so it has its own try: a strange system Path entry must not fail the step above.
+    if ($script:PathAdd -contains (Split-Path $OwnNode)) {
+        try {
             foreach ($dir in ([Environment]::GetEnvironmentVariable('Path', 'Machine') -split ';')) {
-                $exe = Join-Path ([Environment]::ExpandEnvironmentVariables($dir)) 'node.exe'
-                if ($dir -and (Test-Path $exe)) {
+                # System Paths usually hold empty entries (";;" or a trailing ";"), which Join-Path rejects.
+                if (-not $dir.Trim()) { continue }
+                $exe = [IO.Path]::Combine([Environment]::ExpandEnvironmentVariables($dir.Trim()), 'node.exe')
+                if (Test-Path -LiteralPath $exe) {
                     Info "The system Path also has Node.js $(Get-NodeVersion $exe) in $dir, so typing node -v in a new window shows that one. npm run start:all:win always uses the right one. To change it, an administrator removes $dir from the system Path or uninstalls that Node.js."
                     break
                 }
             }
-        }
-        Add-Summary 'ok' 'User Path' '' $pathResult
-    } catch {
-        Write-Log $_.Exception.Message
-        Add-Attention 'Your user Path could not be changed, so new windows may use older tools.' "Add these folders to Path yourself: Start > 'Edit environment variables for your account' > Path > New: $($script:PathAdd -join ', ')"
-        Add-Summary 'warn' 'User Path' '' 'needs attention'
+        } catch { Write-Log "system Path check skipped: $($_.Exception.Message)" }
     }
 
     # --- 6. npm packages ----------------------------------------------------------
