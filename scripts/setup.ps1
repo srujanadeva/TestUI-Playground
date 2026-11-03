@@ -287,11 +287,22 @@ function Save-Download([string]$Url, [string]$Dest, [string]$Expected, [string]$
     Move-Item -Path $part -Destination $Dest -Force
 }
 
+# Runs $Action until it stops throwing, up to $Tries times 2 s apart. Antivirus software
+# (Microsoft Defender) scans freshly unpacked .exe files and holds them open meanwhile, so a
+# move or delete right after unpacking fails with "being used by another process" for a while.
+function Invoke-Retry([scriptblock]$Action, [string]$What, [int]$Tries = 15) {
+    for ($i = 1; $i -le $Tries; $i++) {
+        try { & $Action; return $true }
+        catch { Write-Log "$What, attempt ${i}: $($_.Exception.Message)"; Start-Sleep -Seconds 2 }
+    }
+    return $false
+}
+
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 # Unpacks a zip with one top folder and puts that folder at $Target (replacing it)
 function Expand-ToolZip([string]$Zip, [string]$Target, [string]$What) {
-    $stage = Join-Path $TpWork 'stage'
-    Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+    # A new folder each time: one left over from an interrupted run may still be locked.
+    $stage = Join-Path $TpWork ('stage-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
     try { [IO.Compression.ZipFile]::ExtractToDirectory($Zip, $stage) }
     catch {
         Write-Log $_.Exception.Message
@@ -301,10 +312,23 @@ function Expand-ToolZip([string]$Zip, [string]$Target, [string]$What) {
     $inner = Get-ChildItem $stage -Directory | Select-Object -First 1
     New-Item -ItemType Directory -Force -Path (Split-Path $Target) | Out-Null
     if (Test-Path $Target) {
-        try { Remove-Item $Target -Recurse -Force }
-        catch { Stop-Setup "The old $What in $Target could not be replaced." 'A program is still using it (the running app, a terminal, or VS Code).' @('Stop the app::npm run stop:all:win', 'Close VS Code and every Command Prompt and PowerShell window except this one.') }
+        if (-not (Invoke-Retry { Remove-Item $Target -Recurse -Force -ErrorAction Stop } "remove old $Target" 5)) {
+            Stop-Setup "The old $What in $Target could not be replaced." 'A program is still using it (the running app, a terminal, or VS Code).' @('Stop the app::npm run stop:all:win', 'Close VS Code and every Command Prompt and PowerShell window except this one.')
+        }
     }
-    Move-Item -Path $inner.FullName -Destination $Target
+    Info "Putting $What in place (antivirus software may scan it first; this can take a minute)"
+    # Moving a folder is a rename and needs every file in it free; copying only reads them, so it
+    # works while they are being scanned. Try the fast move first.
+    $placed = Invoke-Retry { Move-Item -Path $inner.FullName -Destination $Target -ErrorAction Stop } "move to $Target"
+    if (-not $placed) {
+        Remove-Item $Target -Recurse -Force -ErrorAction SilentlyContinue
+        $placed = Invoke-Retry { Copy-Item -Path $inner.FullName -Destination $Target -Recurse -Force -ErrorAction Stop } "copy to $Target" 5
+    }
+    if (-not $placed) {
+        Remove-Item $Target -Recurse -Force -ErrorAction SilentlyContinue
+        Stop-Setup "$What could not be put in place in $Target." 'Antivirus software kept the unpacked files locked for more than a minute.' `
+            @('Wait a minute, then run setup.cmd again.', "If it happens again, ask IT to exclude the folder $TpHome from antivirus scanning.")
+    }
     Remove-Item $stage, $Zip -Recurse -Force -ErrorAction SilentlyContinue
 }
 
