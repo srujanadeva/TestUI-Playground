@@ -26,9 +26,11 @@ set RESULT=%ERRORLEVEL%
 if not %RESULT%==0 if not exist "%~dp0logs\setup.started" (
     echo.
     echo X Setup could not start.
-    echo   If the message above says "running scripts is disabled" or "not digitally signed",
-    echo   your company blocks PowerShell scripts. Ask IT to allow scripts\setup.ps1 from this
-    echo   folder, then run setup.cmd again.
+    echo   If the message above says "ParserError" or "missing", the setup script itself is
+    echo   broken or incomplete: download the latest version of the project and try again,
+    echo   or send the message above to the team.
+    echo   If it says "running scripts is disabled" or "not digitally signed", your company
+    echo   blocks PowerShell scripts: ask IT to allow scripts\setup.ps1 from this folder.
     echo.
 )
 
