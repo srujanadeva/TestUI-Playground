@@ -1,6 +1,6 @@
 // Playground sections 10–12 (sidebar group "Buttons"): click counters, single /
 // double / right clicks, and buttons that change or appear at runtime.
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLang } from '../i18n.jsx'
 import { SectionHeader } from '../ui.jsx'
 
@@ -14,13 +14,13 @@ export function ClickCounterSection() {
   const total = counts.primary + counts.success + counts.danger
   return (
     <section id="sec-counter" className="card">
-      <SectionHeader num="10" title={t('sec10Title')} locator="className" />
+      <SectionHeader num="10" title={t('sec10Title')} locator="className" tip="tip10" />
       <p className="desc">{t('sec10Desc')}</p>
       <div className="button-row">
         <button className="btn-primary"   onClick={() => inc('primary')}>{t('btnPrimary')}</button>
         <button className="btn-success"   onClick={() => inc('success')}>{t('btnSuccess')}</button>
         <button className="btn-danger"    onClick={() => inc('danger')}>{t('btnDanger')}</button>
-        <button className="btn-secondary" onClick={reset}>{t('btnReset')}</button>
+        <button id="counter-reset-btn" className="btn-secondary btn-row-end" onClick={reset}>{t('btnReset')}</button>
       </div>
       <div className="counter-stats">
         {['primary', 'success', 'danger'].map(k => (
@@ -48,7 +48,7 @@ export function DoubleClickSection() {
   const add = msg => setLog(l => [msg, ...l].slice(0, 4))
   return (
     <section id="sec-dblclick" className="card">
-      <SectionHeader num="11" title={t('sec11Title')} locator="data-testid" />
+      <SectionHeader num="11" title={t('sec11Title')} locator="data-testid" tip="tip11" />
       <p className="desc">{t('sec11Desc')}</p>
       <div
         className="click-area"
@@ -58,6 +58,10 @@ export function DoubleClickSection() {
         onContextMenu={e => { e.preventDefault(); add(t('evtRightClick')) }}
       >
         <span className="click-area-text">{t('clickAreaLabel')}</span>
+      </div>
+      <div className="button-row">
+        <button id="click-log-clear" className="btn-secondary" disabled={log.length === 0}
+          onClick={() => setLog([])}>{t('btnClearLog')}</button>
       </div>
       {log.length > 0 && (
         <div id="click-log" className="event-log">
@@ -82,15 +86,25 @@ export function DynamicButtonsSection() {
   const [loadDone, setLoadDone] = useState(false)
   const [visible, setVisible]   = useState(true)
   const [extras, setExtras]     = useState([])
+  const loadTimer = useRef(null)
+
+  useEffect(() => () => clearTimeout(loadTimer.current), [])
 
   const simulateLoad = () => {
     setLoading(true); setLoadDone(false)
-    setTimeout(() => { setLoading(false); setLoadDone(true) }, 2000)
+    loadTimer.current = setTimeout(() => { setLoading(false); setLoadDone(true) }, 2000)
   }
+
+  // Also cancels a load in progress, so a pending timer can't flip the button to Done afterwards.
+  const reset = () => {
+    clearTimeout(loadTimer.current)
+    setLoading(false); setLoadDone(false); setVisible(true); setExtras([])
+  }
+  const pristine = !loading && !loadDone && visible && extras.length === 0
 
   return (
     <section id="sec-dynamic" className="card">
-      <SectionHeader num="12" title={t('sec12Title')} locator="id / data-dynamic-id" />
+      <SectionHeader num="12" title={t('sec12Title')} locator="id / data-dynamic-id" tip="tip12" />
       <p className="desc">{t('sec12Desc')}</p>
       <div className="button-row">
         <button id="btn-load" onClick={simulateLoad} disabled={loading}
@@ -103,6 +117,8 @@ export function DynamicButtonsSection() {
         }
         <button id="btn-add-dynamic" className="btn-secondary"
           onClick={() => setExtras(e => [...e, Date.now()])}>{t('btnAddButton')}</button>
+        <button id="dynamic-reset-btn" className="btn-secondary btn-row-end" disabled={pristine}
+          onClick={reset}>{t('btnReset')}</button>
       </div>
       {extras.length > 0 && (
         <div className="extra-buttons">

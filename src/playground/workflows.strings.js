@@ -3,7 +3,7 @@ export default {
   en: {
     // ── 26 Progress Bar ──
     sec26Title:          'Progress Bar',
-    sec26Desc:           'The upload bar fills in random steps; wait for aria-valuenow="100" or data-state="complete". Tick the box to make it stall at 60% and fail. The task bar is indeterminate: it has no aria-valuenow until it is done.',
+    sec26Desc:           'Start an upload bar that fills in random steps, and a task bar that runs until it is done.',
     progressUploadLabel: 'Upload progress',
     progressIdle:        'Not started',
     progressRunning:     'Uploading…',
@@ -22,7 +22,7 @@ export default {
 
     // ── 27 Stepper ──
     sec27Title:          'Stepper',
-    sec27Desc:           'A 4-step wizard. Next checks the current step; earlier steps are clickable to go back, later ones are disabled. The active step has aria-current="step", and each step has data-state complete, active or upcoming.',
+    sec27Desc:           'A 4-step sign-up form. Next checks the current step before moving on; click an earlier step to go back.',
     stepperAria:         'Registration steps',
     stepAccount:         'Account',
     stepAddress:         'Address',
@@ -60,12 +60,26 @@ export default {
     stepSubmitted:       'Registration submitted for {name}',
     stepStartOver:       'Start over',
     navStepper:          'Stepper',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip26Steps: [
+      'Press Start upload and wait for 100%.',
+      'Tick "Stall at 60% and fail" and start again: it stops at 60%, then fails. Cancel stops it.',
+      'Press Run task: its bar shows no percentage until it finishes.',
+    ],
+    tip26Check: 'waiting for aria-valuenow="100" or data-state="complete" / "failed", never a fixed sleep. The task bar has no aria-valuenow until it is done.',
+    tip27Steps: [
+      'Press Next with empty fields to see the errors.',
+      'Fill in each step and press Next; click an earlier step to go back. Your values are kept.',
+      'Press Submit on the last step; Start over clears everything.',
+    ],
+    tip27Check: 'the step with aria-current="step", each step\'s data-state (complete, active or upcoming), and that later steps are disabled.',
   },
 
   ar: {
     // ── 26 Progress Bar ──
     sec26Title:          'شريط التقدم',
-    sec26Desc:           'يمتلئ شريط الرفع بخطوات عشوائية؛ انتظر aria-valuenow="100" أو data-state="complete". فعّل الخيار ليتوقف عند 60% ثم يفشل. شريط المهمة غير محدد: لا يحتوي على aria-valuenow حتى ينتهي.',
+    sec26Desc:           'شغّل شريط رفع يمتلئ بخطوات عشوائية، وشريط مهمة يعمل حتى ينتهي.',
     progressUploadLabel: 'تقدم الرفع',
     progressIdle:        'لم يبدأ',
     progressRunning:     'جارٍ الرفع…',
@@ -84,7 +98,7 @@ export default {
 
     // ── 27 Stepper ──
     sec27Title:          'معالج الخطوات',
-    sec27Desc:           'معالج من 4 خطوات. زر التالي يتحقق من الخطوة الحالية؛ يمكن النقر على الخطوات السابقة للرجوع، والخطوات اللاحقة معطلة. الخطوة النشطة تحمل aria-current="step"، ولكل خطوة data-state بقيمة complete أو active أو upcoming.',
+    sec27Desc:           'نموذج تسجيل من 4 خطوات. زر «التالي» يتحقق من الخطوة الحالية قبل المتابعة؛ وانقر على خطوة سابقة للرجوع.',
     stepperAria:         'خطوات التسجيل',
     stepAccount:         'الحساب',
     stepAddress:         'العنوان',
@@ -122,5 +136,19 @@ export default {
     stepSubmitted:       'تم إرسال التسجيل باسم {name}',
     stepStartOver:       'البدء من جديد',
     navStepper:          'معالج الخطوات',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip26Steps: [
+      'اضغط «ابدأ الرفع» وانتظر 100%.',
+      'فعّل «توقف عند 60% ثم افشل» وابدأ مجددًا: يتوقف عند 60% ثم يفشل. «إلغاء» يوقفه.',
+      'اضغط «شغّل المهمة»: لا يعرض شريطها نسبة حتى ينتهي.',
+    ],
+    tip26Check: 'انتظار aria-valuenow="100" أو data-state="complete" أو "failed"، وليس انتظارًا ثابتًا. شريط المهمة لا يحمل aria-valuenow حتى ينتهي.',
+    tip27Steps: [
+      'اضغط «التالي» والحقول فارغة لترى الأخطاء.',
+      'املأ كل خطوة واضغط «التالي»؛ وانقر على خطوة سابقة للرجوع. تبقى قيمك محفوظة.',
+      'اضغط «إرسال» في الخطوة الأخيرة؛ و«البدء من جديد» يمسح كل شيء.',
+    ],
+    tip27Check: 'الخطوة التي تحمل aria-current="step"، وقيمة data-state لكل خطوة (complete أو active أو upcoming)، وأن الخطوات اللاحقة معطّلة.',
   },
 }

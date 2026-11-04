@@ -14,6 +14,11 @@ export default {
     // ── Footer ──
     footerRights: 'All rights reserved · Not for commercial use',
     footerWit:    'findElement(By.Copyright, "violator") → NoSuchElementException',
+
+    // ── Section tip box (ⓘ) ──
+    tipButtonLabel: 'How to use this section',
+    tipTryThis:     'Try this',
+    tipTestChecks:  'A test would check:'
   },
 
   ar: {
@@ -29,5 +34,10 @@ export default {
     // ── Footer ──
     footerRights: 'جميع الحقوق محفوظة · غير مخصص للاستخدام التجاري',
     footerWit:    'findElement(By.Copyright, "violator") → NoSuchElementException',
+
+    // ── Section tip box (ⓘ) ──
+    tipButtonLabel: 'كيفية استخدام هذا القسم',
+    tipTryThis:     'جرّب ما يلي',
+    tipTestChecks:  'ما يتحقق منه الاختبار:'
   },
 }

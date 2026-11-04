@@ -190,6 +190,23 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   transition: box-shadow .2s;
 }
 .card:hover { box-shadow: var(--shadow-lg); }
+/* Lights the card while the user is working in it. Only a shadow ring, so the
+   layout and element positions don't move. .card-acting-search lights only for
+   its search box, not for the table's paging and sort buttons. The file input
+   is hidden and never takes focus, so that card sets .is-acting from JS. */
+/* Opening a section's ⓘ tip is reading, not working in the card, so it doesn't light it. */
+.card-acting:focus-within:not(:has(.info-tip-btn:focus)),
+.card-acting.is-acting,
+.card-acting-search:has(#employee-search:focus) {
+  box-shadow: 0 0 0 2px var(--primary), var(--shadow-lg);
+}
+/* The card the sidebar just jumped to. The ring is held for most of the run so it
+   is still showing when the smooth scroll arrives. */
+.card[data-flash] { animation: card-flash 1.6s ease-out; }
+@keyframes card-flash {
+  0%, 60% { box-shadow: 0 0 0 3px var(--primary), var(--shadow-lg); }
+  100%    { box-shadow: var(--shadow); }
+}
 
 .section-header {
   display: flex;
@@ -211,6 +228,56 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   flex-shrink: 0;
 }
 .section-title { font-size: 0.95rem; font-weight: 700; flex: 1; }
+
+/* ── Section "Try this" tip (ⓘ) ── */
+/* Physical margin-left, not inline-start: if the header wraps, this keeps the ⓘ on
+   the right in RTL too (the header is row-reversed there), where the box needs it. */
+.info-tip { position: relative; display: inline-flex; margin-left: auto; }
+.info-tip-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: var(--primary);
+  border: 1px solid #bfdbfe;
+  font: italic 700 0.75rem Georgia, serif;
+  line-height: 1;
+}
+.info-tip-btn:hover, .info-tip-btn[aria-expanded="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+.info-tip-btn:active { transform: none; }
+/* Anchored to the right edge: the ⓘ is the header's right-most item in both
+   LTR and RTL (the RTL header is row-reversed), so the box opens inward. */
+.info-tip-box {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: start;
+}
+.info-tip-title { display: block; color: #fff; margin-bottom: 4px; }
+.info-tip-box ol { padding-inline-start: 18px; margin: 0 0 8px; }
+.info-tip-box li + li { margin-top: 2px; }
+.info-tip-check { margin: 0; padding-top: 8px; border-top: 1px solid #334155; color: #cbd5e1; }
+.info-tip-check strong { color: #a5b4fc; }
+.info-tip-code {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: .72rem;
+  background: rgba(255,255,255,.08);
+  color: #c7d2fe;
+  padding: 0 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
 
 .locator-badge {
   font-family: 'SFMono-Regular', Consolas, monospace;
@@ -317,6 +384,8 @@ button:not([class]):hover { background: var(--primary-d); }
 .input-row { display: flex; gap: 8px; align-items: stretch; }
 .input-row input { flex: 1; }
 .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Pushes a Reset to the far end of its row, apart from the buttons it resets. */
+.btn-row-end { margin-inline-start: auto; }
 
 /* ── Output / Messages ───────────────────────────────────────────────────── */
 .output {
@@ -2706,3 +2775,114 @@ input[aria-invalid="true"], .lab-input[aria-invalid="true"] { border-color: var(
 /* B4: embedded Google map */
 .lab-map { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #e2e8f0; }
 .lab-map iframe { display: block; width: 100%; height: 280px; border: 0; }
+
+/* ── Snackbar (section 29) ────────────────────────────────────────────────── */
+/* Fixed to the bottom corner away from the sidebar (right in LTR, left in RTL),
+   so it floats over the page the way real snackbars do. */
+.snackbar-stack {
+  position: fixed;
+  bottom: 24px;
+  inset-inline-end: 24px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.snackbar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 10px;
+  padding-inline: 16px 12px;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #f1f5f9;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.85rem;
+  animation: snackbar-in .2s ease-out;
+}
+.snackbar-error { background: #991b1b; }
+.snackbar-text { flex: 1; }
+.snackbar-action {
+  background: none;
+  color: #a5b4fc;
+  padding: 4px 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+.snackbar-error .snackbar-action { color: #fecaca; }
+.snackbar-close {
+  background: none;
+  color: inherit;
+  opacity: .7;
+  padding: 2px 6px;
+  font-size: 0.85rem;
+}
+.snackbar-action:hover, .snackbar-close:hover { background: rgba(255,255,255,.1); opacity: 1; }
+@keyframes snackbar-in { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .snackbar { animation: none; } }
+
+/* ── N7 Hamburger menu ────────────────────────────────────────────────────── */
+.lab-site {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: visible;
+  background: #f8fafc;
+  margin-inline: auto;
+  width: 100%;
+  transition: max-width .2s;
+  max-width: 100%;
+}
+/* "Phone width": a typical phone's CSS width, so the header folds without resizing the window. */
+.lab-site.is-phone { max-width: 360px; }
+.lab-site-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #1e293b;
+  color: #fff;
+  border-radius: 10px 10px 0 0;
+}
+.lab-site-logo { font-size: 1rem; letter-spacing: .02em; }
+.lab-site-links { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.lab-site-link {
+  background: none;
+  color: #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: .85rem;
+}
+.lab-site-link:hover { background: rgba(255,255,255,.08); color: #fff; }
+.lab-site-link[aria-current="page"] { background: var(--primary); color: #fff; }
+.lab-hamburger {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  font-size: 1.1rem;
+  border-radius: 6px;
+}
+.lab-hamburger[aria-expanded="true"] { background: var(--primary); }
+.lab-site-menu {
+  position: absolute;
+  inset-inline: 0;
+  top: 56px;
+  z-index: 5;
+  background: #1e293b;
+  border-radius: 0 0 10px 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+}
+.lab-site-menu ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.lab-site-menu .lab-site-link { display: block; width: 100%; text-align: start; padding: 10px 12px; }
+.lab-site-body { padding: 18px 16px 22px; min-height: 120px; }
+.lab-site-body h3 { font-size: 1.05rem; margin-bottom: 6px; }
+.lab-site-body p { font-size: .85rem; color: var(--text-muted); }

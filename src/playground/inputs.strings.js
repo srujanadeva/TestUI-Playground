@@ -10,12 +10,12 @@ export default {
     sec06Title: 'Form Validation',
 
     // ── Section descriptions ──
-    sec01Desc: 'Type a name and click Greet.',
-    sec02Desc: 'Password with show/hide toggle. Textarea for multi-line input.',
-    sec03Desc: 'Single date and date-range inputs.',
-    sec04Desc: 'Numeric sliders for continuous values.',
-    sec05Desc: 'Click to browse or drag-and-drop files onto the zone.',
-    sec06Desc: 'Multi-field form with inline validation messages.',
+    sec01Desc: 'Type a name, then press Greet to see a greeting appear below.',
+    sec02Desc: 'Type a password and use Show / Hide to reveal it. Type notes below to see a live character count.',
+    sec03Desc: 'Pick a single date, or a From and a To date for a range. The chosen values appear below.',
+    sec04Desc: 'Drag a slider, or click it and use the arrow keys. The number next to its label follows it.',
+    sec05Desc: 'Click the zone to choose files, or drag files onto it. Their names and sizes are listed; nothing is uploaded.',
+    sec06Desc: 'Fill in email, phone and password, then press Submit. Any field that is wrong shows a message under it.',
 
     // ── 01 Text Input ──
     phEnterName:   'Enter your name',
@@ -60,6 +60,44 @@ export default {
     errPassword:     'Password must be at least 8 characters',
     btnSubmit:       'Submit',
     formSuccess:     'Form submitted successfully!',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip01Steps: [
+      'Type your name in the box.',
+      'Press Greet.',
+      'Press Greet with the box empty: it greets "stranger".',
+    ],
+    tip01Check: 'the greeting in #greeting-output contains the typed name.',
+    tip02Steps: [
+      'Type a password; it shows as dots.',
+      'Press Show: the field becomes plain text. Press Hide to mask it again.',
+      'Type in the notes box and watch the count update.',
+    ],
+    tip02Check: 'the password field\'s type attribute switches between "password" and "text", and #textarea-char-count shows the right length.',
+    tip03Steps: [
+      'Pick a date from the calendar, or type it.',
+      'Fill in both From and To.',
+      'The range line appears only once both are set.',
+    ],
+    tip03Check: 'the input value is in YYYY-MM-DD form whatever format the browser displays, and #date-range-output appears only when both dates are set.',
+    tip04Steps: [
+      'Drag the Quantity slider and watch the number change.',
+      'Click a slider, then press the arrow keys to move it one step at a time.',
+      'Move Brightness and watch the preview box fade.',
+    ],
+    tip04Check: 'the slider\'s value, or the number in its label. Dragging by pixels is fragile, so tests usually set the value or press arrow keys.',
+    tip05Steps: [
+      'Click the zone and choose one or more files.',
+      'Or drag files from your desktop onto the zone.',
+      'Choosing again replaces the list.',
+    ],
+    tip05Check: 'one .file-item per file with the right data-filename. Tests set files on the hidden #file-upload-input directly instead of using the system dialog.',
+    tip06Steps: [
+      'Press Submit with everything empty to see all three errors.',
+      'Fix them one at a time: an email with "@", a 10-digit phone, a password of 8+ characters.',
+      'Press Submit again to see the success message.',
+    ],
+    tip06Check: 'each error (#email-error, #phone-error, #password-error) appears and goes away as expected, and then #form-success.',
   },
 
   ar: {
@@ -72,12 +110,12 @@ export default {
     sec06Title: 'التحقق من النموذج',
 
     // ── Section descriptions ──
-    sec01Desc: 'اكتب اسمًا وانقر على ترحيب.',
-    sec02Desc: 'كلمة مرور مع خيار الإظهار/الإخفاء. منطقة نص للإدخال متعدد الأسطر.',
-    sec03Desc: 'إدخالات تاريخ مفرد ونطاق تاريخ.',
-    sec04Desc: 'أشرطة تمرير رقمية للقيم المستمرة.',
-    sec05Desc: 'انقر للتصفح أو اسحب الملفات وأفلتها على المنطقة.',
-    sec06Desc: 'نموذج متعدد الحقول مع رسائل التحقق المضمّنة.',
+    sec01Desc: 'اكتب اسمًا ثم اضغط «ترحيب» لتظهر رسالة ترحيب في الأسفل.',
+    sec02Desc: 'اكتب كلمة مرور واستخدم «إظهار» / «إخفاء» لكشفها. اكتب ملاحظات في الأسفل لترى عدد الأحرف يتحدّث مباشرة.',
+    sec03Desc: 'اختر تاريخًا واحدًا، أو تاريخَي «من» و«إلى» لنطاق. تظهر القيم المختارة في الأسفل.',
+    sec04Desc: 'اسحب شريط التمرير، أو انقر عليه واستخدم مفاتيح الأسهم. يتبعه الرقم بجانب عنوانه.',
+    sec05Desc: 'انقر على المنطقة لاختيار ملفات، أو اسحب الملفات إليها. تُعرض أسماؤها وأحجامها؛ ولا يُرفع شيء.',
+    sec06Desc: 'املأ البريد الإلكتروني والهاتف وكلمة المرور ثم اضغط «إرسال». كل حقل غير صحيح تظهر تحته رسالة.',
 
     // ── 01 Text Input ──
     phEnterName:   'أدخل اسمك',
@@ -122,5 +160,43 @@ export default {
     errPassword:     'يجب أن تكون كلمة المرور 8 أحرف على الأقل',
     btnSubmit:       'إرسال',
     formSuccess:     'تم إرسال النموذج بنجاح!',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip01Steps: [
+      'اكتب اسمك في المربع.',
+      'اضغط «ترحيب».',
+      'اضغط «ترحيب» والمربع فارغ: تظهر تحية لـ "stranger".',
+    ],
+    tip01Check: 'أن رسالة الترحيب في #greeting-output تحتوي على الاسم المكتوب.',
+    tip02Steps: [
+      'اكتب كلمة مرور؛ تظهر كنقاط.',
+      'اضغط «إظهار»: يصبح الحقل نصًا عاديًا. اضغط «إخفاء» لإخفائها من جديد.',
+      'اكتب في مربع الملاحظات وراقب العدد يتغيّر.',
+    ],
+    tip02Check: 'أن خاصية type لحقل كلمة المرور تتبدّل بين "password" و "text"، وأن #textarea-char-count يعرض الطول الصحيح.',
+    tip03Steps: [
+      'اختر تاريخًا من التقويم أو اكتبه.',
+      'املأ حقلَي «من» و«إلى».',
+      'يظهر سطر النطاق فقط بعد تعيين التاريخين.',
+    ],
+    tip03Check: 'أن قيمة الحقل بصيغة YYYY-MM-DD أيًّا كانت الصيغة التي يعرضها المتصفح، وأن #date-range-output لا يظهر إلا بعد تعيين التاريخين.',
+    tip04Steps: [
+      'اسحب شريط «الكمية» وراقب الرقم يتغيّر.',
+      'انقر على شريط ثم اضغط مفاتيح الأسهم لتحريكه خطوة واحدة في كل مرة.',
+      'حرّك «السطوع» وراقب مربع المعاينة يخفت.',
+    ],
+    tip04Check: 'قيمة شريط التمرير أو الرقم في عنوانه. السحب بالبكسل غير موثوق، لذا تضبط الاختبارات القيمة عادةً أو تضغط مفاتيح الأسهم.',
+    tip05Steps: [
+      'انقر على المنطقة واختر ملفًا أو أكثر.',
+      'أو اسحب ملفات من سطح المكتب إلى المنطقة.',
+      'الاختيار من جديد يستبدل القائمة.',
+    ],
+    tip05Check: 'وجود عنصر .file-item لكل ملف بقيمة data-filename الصحيحة. تضع الاختبارات الملفات في #file-upload-input المخفي مباشرةً بدلاً من نافذة النظام.',
+    tip06Steps: [
+      'اضغط «إرسال» والحقول فارغة لترى الأخطاء الثلاثة.',
+      'صحّحها واحدًا تلو الآخر: بريد يحتوي على "@"، وهاتف من 10 أرقام، وكلمة مرور من 8 أحرف أو أكثر.',
+      'اضغط «إرسال» مرة أخرى لترى رسالة النجاح.',
+    ],
+    tip06Check: 'أن كل خطأ (#email-error و #phone-error و #password-error) يظهر ويختفي كما هو متوقع، ثم يظهر #form-success.',
   },
 }

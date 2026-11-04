@@ -69,7 +69,7 @@ export function ProgressSection() {
 
   return (
     <section id="sec-progress" className="card">
-      <SectionHeader num="26" title={t('sec26Title')} locator="role=progressbar / aria-valuenow" />
+      <SectionHeader num="26" title={t('sec26Title')} locator="role=progressbar / aria-valuenow" tip="tip26" />
       <p className="desc">{t('sec26Desc')}</p>
 
       <div className="progress-block">
@@ -198,8 +198,8 @@ export function StepperSection() {
   ]
 
   return (
-    <section id="sec-stepper" className="card">
-      <SectionHeader num="27" title={t('sec27Title')} locator="data-step / aria-current" />
+    <section id="sec-stepper" className="card card-acting">
+      <SectionHeader num="27" title={t('sec27Title')} locator="data-step / aria-current" tip="tip27" />
       <p className="desc">{t('sec27Desc')}</p>
 
       <ol className="stepper" aria-label={t('stepperAria')}>

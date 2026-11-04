@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { SectionHeader, Output } from '../ui.jsx'
+import { SectionHeader, Output, numberParam } from '../ui.jsx'
 import testImage from '../testresources/testimage.jpg'
 import testVideo from '../testresources/testvideo.mp4'
 
@@ -274,23 +274,47 @@ const HERO_SLIDES = [
   { titleKey: 'heroSlide3Title', textKey: 'heroSlide3Text', bg: 'linear-gradient(135deg, #10b981, #0f766e)' },
 ]
 
+const HERO_INTERVAL = numberParam('carouselInterval', 4000, 500, 60000)  // ms per slide while playing
+
 /**
- * A three-slide carousel with prev/next arrows and dots. It doesn't auto-advance;
- * hidden slides stay in the DOM with the `hidden` attribute.
+ * A three-slide carousel with prev/next arrows and dots; hidden slides stay in the DOM
+ * with the `hidden` attribute. Autoplay is off until Play is pressed. While playing it
+ * pauses whenever the mouse or keyboard focus is inside it, as WCAG asks, so a test
+ * that hovers to click an arrow doesn't see the slide change under it.
  */
 function HeroCarouselSection() {
   const { t } = useLang()
-  const [index, setIndex] = useState(0)
+  const [index, setIndex]       = useState(0)
+  const [playing, setPlaying]   = useState(false)
+  const [hovered, setHovered]   = useState(false)
+  const [focused, setFocused]   = useState(false)
   const total = HERO_SLIDES.length
+  const paused = playing && (hovered || focused)
   // Wraps around in both directions.
   const go = i => setIndex((i + total) % total)
+
+  // Re-armed on every slide change, so a manual click also restarts the full interval.
+  useEffect(() => {
+    if (!playing || paused) return
+    const timer = setTimeout(() => setIndex(i => (i + 1) % total), HERO_INTERVAL)
+    return () => clearTimeout(timer)
+  }, [playing, paused, index, total])
+
+  // focusout also fires when focus moves between two buttons inside, so only count
+  // it as leaving when the newly focused element is outside the carousel.
+  const onBlur = e => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false) }
 
   return (
     <section id="sec-media-hero" className="card media-wide">
       <SectionHeader num="M7" title={t('secM7Title')} locator="data-testid / data-active-slide" />
       <p className="desc">{t('secM7Desc')}</p>
       <div className="hero-carousel" data-testid="hero-carousel" data-active-slide={index + 1}
-        role="region" aria-roledescription="carousel" aria-label={t('secM7Title')}>
+        data-autoplay={playing ? 'on' : 'off'} data-paused={paused}
+        role="region" aria-roledescription="carousel" aria-label={t('secM7Title')}
+        // Screen readers announce slide changes only when the user caused them.
+        aria-live={playing ? 'off' : 'polite'}
+        onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)} onBlur={onBlur}>
         {HERO_SLIDES.map((s, i) => (
           <div key={i} className="hero-slide" data-slide={i + 1} hidden={i !== index}
             aria-roledescription="slide" aria-label={t('heroStatus', { n: i + 1, total })}
@@ -313,7 +337,16 @@ function HeroCarouselSection() {
           ))}
         </div>
       </div>
-      <Output id="hero-status">{t('heroStatus', { n: index + 1, total })}</Output>
+      <div className="button-row">
+        <button className="btn-secondary" data-testid="hero-autoplay" aria-pressed={playing}
+          onClick={() => setPlaying(p => !p)}>
+          {playing ? t('heroPause') : t('heroPlay')}
+        </button>
+      </div>
+      <Output id="hero-status">
+        {t('heroStatus', { n: index + 1, total })}
+        {playing && ` · ${paused ? t('heroPausedNote') : t('heroPlayingNote', { s: HERO_INTERVAL / 1000 })}`}
+      </Output>
     </section>
   )
 }

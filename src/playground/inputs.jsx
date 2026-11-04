@@ -1,6 +1,6 @@
 // Playground sections 01–06 (sidebar group "Inputs"): text, password and textarea,
 // date pickers, range sliders, file upload and form validation.
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useLang } from '../i18n.jsx'
 import { SectionHeader, Output } from '../ui.jsx'
 
@@ -11,8 +11,8 @@ export function TextInputSection() {
   const [name, setName] = useState('')
   const [greeting, setGreeting] = useState('')
   return (
-    <section id="sec-text" className="card">
-      <SectionHeader num="01" title={t('sec01Title')} locator="id" />
+    <section id="sec-text" className="card card-acting">
+      <SectionHeader num="01" title={t('sec01Title')} locator="id" tip="tip01" />
       <p className="desc">{t('sec01Desc')}</p>
       <div className="input-row">
         <input id="first-name-input" type="text" placeholder={t('phEnterName')}
@@ -35,8 +35,8 @@ export function PasswordTextareaSection() {
   const [note, setNote] = useState('')
   const [shown, setShown] = useState(false)
   return (
-    <section id="sec-password" className="card">
-      <SectionHeader num="02" title={t('sec02Title')} locator="id / className" />
+    <section id="sec-password" className="card card-acting">
+      <SectionHeader num="02" title={t('sec02Title')} locator="id / className" tip="tip02" />
       <p className="desc">{t('sec02Desc')}</p>
       <div className="input-row">
         <input id="password-input" type={shown ? 'text' : 'password'}
@@ -60,8 +60,8 @@ export function DatePickerSection() {
   const [from, setFrom] = useState('')
   const [to, setTo]     = useState('')
   return (
-    <section id="sec-date" className="card">
-      <SectionHeader num="03" title={t('sec03Title')} locator="id" />
+    <section id="sec-date" className="card card-acting">
+      <SectionHeader num="03" title={t('sec03Title')} locator="id" tip="tip03" />
       <p className="desc">{t('sec03Desc')}</p>
       <label className="field-label" htmlFor="single-date">{t('labelSingleDate')}</label>
       <input id="single-date" type="date" value={date} onChange={e => setDate(e.target.value)} />
@@ -88,8 +88,8 @@ export function SliderSection() {
   const [qty, setQty]             = useState(50)
   const [brightness, setBrightness] = useState(70)
   return (
-    <section id="sec-slider" className="card">
-      <SectionHeader num="04" title={t('sec04Title')} locator="id" />
+    <section id="sec-slider" className="card card-acting">
+      <SectionHeader num="04" title={t('sec04Title')} locator="id" tip="tip04" />
       <p className="desc">{t('sec04Desc')}</p>
       <div className="slider-group">
         <label className="field-label" htmlFor="qty-slider">
@@ -120,18 +120,28 @@ export function FileUploadSection() {
   const { t } = useLang()
   const [files, setFiles]         = useState([])
   const [draggingOver, setDraggingOver] = useState(false)
+  const [justPicked, setJustPicked]     = useState(false)
   const inputRef                  = useRef(null)
+  const pickedTimer               = useRef(null)
 
-  // Each new pick or drop replaces the list rather than adding to it.
-  const handleFiles = list =>
+  useEffect(() => () => clearTimeout(pickedTimer.current), [])
+
+  // Each new pick or drop replaces the list rather than adding to it. The hidden
+  // input never takes focus, so the card lights briefly after each pick instead.
+  const handleFiles = list => {
     setFiles(Array.from(list).map(f => ({
       name: f.name,
       size: (f.size / 1024).toFixed(1) + ' KB',
     })))
+    setJustPicked(true)
+    clearTimeout(pickedTimer.current)
+    pickedTimer.current = setTimeout(() => setJustPicked(false), 1500)
+  }
 
   return (
-    <section id="sec-file" className="card">
-      <SectionHeader num="05" title={t('sec05Title')} locator="id" />
+    <section id="sec-file"
+      className={`card card-acting ${draggingOver || justPicked ? 'is-acting' : ''}`}>
+      <SectionHeader num="05" title={t('sec05Title')} locator="id" tip="tip05" />
       <p className="desc">{t('sec05Desc')}</p>
       <div
         className={`drop-zone ${draggingOver ? 'drop-active' : ''}`}
@@ -196,8 +206,8 @@ export function FormValidationSection() {
   ]
 
   return (
-    <section id="sec-form" className="card">
-      <SectionHeader num="06" title={t('sec06Title')} locator="placeholder / aria-label" />
+    <section id="sec-form" className="card card-acting">
+      <SectionHeader num="06" title={t('sec06Title')} locator="placeholder / aria-label" tip="tip06" />
       <p className="desc">{t('sec06Desc')}</p>
       {fields.map(f => (
         <div key={f.key} className="form-field">
