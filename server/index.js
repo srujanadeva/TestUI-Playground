@@ -31,7 +31,15 @@ app.use('/frames', framesRoutes)
 
 // Last-resort handler for errors thrown by routes. Express only treats a
 // middleware as an error handler when it takes four arguments, so `_next` must stay.
+// Bad input that slipped past a route's own checks is still the client's fault:
+// body-parser sets a 4xx `status` on malformed JSON, and Mongoose names its errors.
 app.use((err, _req, res, _next) => {
+  if (err.status >= 400 && err.status < 500) {
+    return res.status(err.status).json({ error: err.expose ? err.message : 'Bad request' })
+  }
+  if (err.name === 'ValidationError' || err.name === 'CastError') {
+    return res.status(400).json({ error: err.message })
+  }
   console.error('[server] error:', err)
   res.status(500).json({ error: 'Internal server error' })
 })

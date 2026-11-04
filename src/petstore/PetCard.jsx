@@ -1,4 +1,6 @@
-// One pet in the petstore grid.
+// One pet in the petstore grid. The avatar is the pet's first photo URL, or an
+// emoji when it has none or the image fails to load.
+import { useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { petEmoji } from './petAvatars.js'
 
@@ -9,6 +11,11 @@ import { petEmoji } from './petAvatars.js'
  */
 export default function PetCard({ pet, onEdit, onDelete }) {
   const { t } = useLang()
+  const photo = pet.photoUrls?.[0]
+  // Remembers which URL failed rather than a flag, so editing the pet to a new
+  // URL tries the image again.
+  const [failedPhoto, setFailedPhoto] = useState(null)
+  const showPhoto = photo && failedPhoto !== photo
   const statusKey =
     pet.status === 'pending'
       ? 'petStatusPending'
@@ -18,8 +25,19 @@ export default function PetCard({ pet, onEdit, onDelete }) {
 
   return (
     <article className={`pet-card status-${pet.status}`} data-testid={`pet-card-${pet.id}`}>
-      <div className="pet-card-avatar" aria-hidden>
-        <span>{petEmoji(pet)}</span>
+      <div className="pet-card-avatar" aria-hidden={!showPhoto}>
+        {showPhoto ? (
+          <img
+            src={photo}
+            alt={t('petPhotoAlt', { name: pet.name })}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setFailedPhoto(photo)}
+            data-testid={`pet-photo-${pet.id}`}
+          />
+        ) : (
+          <span data-testid={`pet-avatar-${pet.id}`}>{petEmoji(pet)}</span>
+        )}
       </div>
       <div className="pet-card-body">
         <h3 className="pet-card-name" data-testid={`pet-name-${pet.id}`}>

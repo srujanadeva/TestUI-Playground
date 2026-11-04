@@ -4,8 +4,9 @@ import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { User } from '../models/User.js'
 import { requireAuth, signToken } from '../middleware/auth.js'
+import { asyncSafe } from '../middleware/asyncSafe.js'
 
-const router = Router()
+const router = asyncSafe(Router())
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -15,6 +16,8 @@ router.post('/signup', async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' })
   }
+  // bcrypt throws on anything but a string, e.g. a JSON number.
+  if (typeof password !== 'string') return res.status(400).json({ error: 'Password must be a string' })
   if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Invalid email' })
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters' })
@@ -35,6 +38,7 @@ router.post('/login', async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' })
   }
+  if (typeof password !== 'string') return res.status(400).json({ error: 'Password must be a string' })
   // Unknown email and wrong password give the same message, so the response
   // doesn't reveal which emails are registered.
   const user = await User.findOne({ email: String(email).toLowerCase() })

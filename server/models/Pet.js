@@ -12,7 +12,7 @@ const petSchema = new mongoose.Schema(
     },
     photoUrls: { type: [String], default: [] },
     tags: {
-      type: [{ id: Number, name: String }],
+      type: [new mongoose.Schema({ id: Number, name: String }, { _id: false })],
       default: [],
     },
     status: {
@@ -25,12 +25,16 @@ const petSchema = new mongoose.Schema(
   {
     timestamps: true,
     toJSON: {
-      /** Shapes the API response: `_id` becomes `id`, and internal fields such as ownerId are left out. */
+      /**
+       * Shapes the API response: `_id` becomes `id`, and internal fields such as ownerId are left out.
+       * Tags are rebuilt as { id, name } because pets saved before tags had `_id: false` still store one.
+       */
       transform(_doc, ret) {
         ret.id = ret._id.toString()
         delete ret._id
         delete ret.__v
         delete ret.ownerId
+        if (Array.isArray(ret.tags)) ret.tags = ret.tags.map(({ id, name }) => ({ id, name }))
       },
     },
   },
