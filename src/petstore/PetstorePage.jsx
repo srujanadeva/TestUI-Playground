@@ -1,66 +1,97 @@
-// Petstore page (/petstore): the signed-in user's pets with status stats,
-// filter chips, and add / edit / delete. Behind ProtectedRoute.
-import { useCallback, useEffect, useMemo, useState } from 'react'
+// Petstore page (/petstore): the signed-in user's pets with status stats, filter
+// chips, search, paging, and add / edit / delete. URL params: `?toastDuration=<ms>`
+// (default 2500), `?pageSize=` (12), `?searchDelay=<ms>` (300), and `?confirm=dialog`
+// to confirm deletes in an in-page dialog instead of the browser's confirm().
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
+import { numberParam } from '../ui.jsx'
 import { listPets, createPet, updatePet, deletePet } from './api.js'
 import PetCard from './PetCard.jsx'
 import PetFormModal from './PetFormModal.jsx'
+import ConfirmDeleteDialog from './ConfirmDeleteDialog.jsx'
 
 const FILTERS = ['all', 'available', 'pending', 'sold']
 
+const EMPTY = { pets: [], page: 1, pages: 1, total: 0, counts: { all: 0, available: 0, pending: 0, sold: 0 } }
+
 /**
- * Loads every pet once and filters on the client, so the stat tiles always count
- * all pets whichever filter is active. Saves and deletes update the list in place
- * instead of reloading it.
+ * The server filters, searches and pages; the stat tiles use its `counts`, which
+ * always cover every pet whichever filter or search is active. After any save or
+ * delete the current page is fetched again, since the change can move pets
+ * between pages.
  */
 export default function PetstorePage() {
   const { t, lang } = useLang()
   const { token, user } = useAuth()
 
-  const [pets, setPets] = useState([])
+  const [settings] = useState(() => ({
+    pageSize: numberParam('pageSize', 12, 1, 100),
+    searchDelay: numberParam('searchDelay', 300, 0, 5000),
+    inPageConfirm: new URLSearchParams(window.location.search).get('confirm') === 'dialog',
+  }))
+
+  const [data, setData] = useState(EMPTY)
   const [filter, setFilter] = useState('all')
+  const [searchText, setSearchText] = useState('')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPet, setEditingPet] = useState(null)
+  const [deletingPet, setDeletingPet] = useState(null)
   const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
+  const requestId = useRef(0)
 
   const refresh = useCallback(async () => {
-    setLoading(true)
+    // Typing in the search box starts a request per pause; only the newest may update the page.
+    const id = ++requestId.current
+    setBusy(true)
     setError('')
     try {
-      const data = await listPets({ token })
-      setPets(data.pets)
+      const res = await listPets({ token, status: filter, q: search, page, limit: settings.pageSize })
+      if (id === requestId.current) setData(res)
     } catch (err) {
-      setError(err.message || 'Failed to load pets')
+      if (id === requestId.current) setError(err.message || 'Failed to load pets')
     } finally {
-      setLoading(false)
+      if (id === requestId.current) {
+        setBusy(false)
+        setLoading(false)
+      }
     }
-  }, [token])
+  }, [token, filter, search, page, settings.pageSize])
 
   useEffect(() => {
     refresh()
   }, [refresh])
 
-  /** Shows a confirmation message for 2.5 s. */
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setSearch(searchText.trim())
+      setPage(1)
+    }, settings.searchDelay)
+    return () => clearTimeout(id)
+  }, [searchText, settings.searchDelay])
+
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
+
+  /**
+   * Shows a confirmation message for `?toastDuration=` ms (default 2.5 s). A new
+   * toast restarts the timer, so the previous one's timeout can't hide it early.
+   */
   function showToast(message) {
+    clearTimeout(toastTimer.current)
     setToast(message)
-    setTimeout(() => setToast(null), 2500)
+    toastTimer.current = setTimeout(() => setToast(null), numberParam('toastDuration', 2500, 0, 60000))
   }
 
-  const filteredPets = useMemo(
-    () => (filter === 'all' ? pets : pets.filter(p => p.status === filter)),
-    [pets, filter],
-  )
-
-  const stats = useMemo(() => {
-    const base = { all: pets.length, available: 0, pending: 0, sold: 0 }
-    pets.forEach(p => {
-      if (base[p.status] != null) base[p.status]++
-    })
-    return base
-  }, [pets])
+  function chooseFilter(key) {
+    setFilter(key)
+    setPage(1)
+  }
 
   function openAdd() {
     setEditingPet(null)
@@ -74,34 +105,50 @@ export default function PetstorePage() {
 
   /**
    * Creates or updates the pet from the modal, depending on whether one is being edited.
-   * Errors are left to propagate so PetFormModal can show them and stay open.
+   * Errors are left to propagate so PetFormModal can show them and stay open; a 409
+   * (changed in another tab) also reloads the list, so reopening the pet shows the latest.
    */
   async function handleSave(body) {
-    if (editingPet) {
-      const data = await updatePet(editingPet.id, body, token)
-      setPets(list => list.map(p => (p.id === data.pet.id ? data.pet : p)))
-      showToast(t('toastPetUpdated'))
-    } else {
-      const data = await createPet(body, token)
-      setPets(list => [data.pet, ...list])
-      showToast(t('toastPetAdded'))
+    try {
+      if (editingPet) {
+        await updatePet(editingPet.id, body, token)
+        showToast(t('toastPetUpdated'))
+      } else {
+        await createPet(body, token)
+        showToast(t('toastPetAdded'))
+      }
+    } catch (err) {
+      if (err.status === 409) refresh()
+      throw err
     }
     setModalOpen(false)
     setEditingPet(null)
+    // A new pet is the newest, so it is on page 1; changing the page triggers the reload.
+    if (!editingPet && page !== 1) setPage(1)
+    else refresh()
   }
 
-  /** Deletes the pet after a native confirm() dialog. */
-  async function handleDelete(pet) {
-    const confirmed = window.confirm(t('petConfirmDelete', { name: pet.name }))
-    if (!confirmed) return
+  /** Asks for confirmation, in the browser's confirm() or the in-page dialog, then deletes. */
+  function handleDelete(pet) {
+    if (settings.inPageConfirm) setDeletingPet(pet)
+    else if (window.confirm(t('petConfirmDelete', { name: pet.name }))) removePet(pet)
+  }
+
+  const cancelDelete = useCallback(() => setDeletingPet(null), [])
+
+  /** Deletes the pet and reloads the page; the server moves back a page if this one is now empty. */
+  async function removePet(pet) {
+    setDeletingPet(null)
     try {
       await deletePet(pet.id, token)
-      setPets(list => list.filter(p => p.id !== pet.id))
       showToast(t('toastPetDeleted'))
+      refresh()
     } catch (err) {
       setError(err.message || 'Delete failed')
     }
   }
+
+  const { pets, counts } = data
 
   return (
     <div className="petstore-page" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -119,37 +166,49 @@ export default function PetstorePage() {
       </header>
 
       <section className="pet-stats" aria-label="Pet statistics">
-        <StatTile label={t('petstoreStatTotal')} value={stats.all} variant="total" testid="stat-total" />
-        <StatTile label={t('petstoreStatAvailable')} value={stats.available} variant="available" testid="stat-available" />
-        <StatTile label={t('petstoreStatPending')} value={stats.pending} variant="pending" testid="stat-pending" />
-        <StatTile label={t('petstoreStatSold')} value={stats.sold} variant="sold" testid="stat-sold" />
+        <StatTile label={t('petstoreStatTotal')} value={counts.all} variant="total" testid="stat-total" />
+        <StatTile label={t('petstoreStatAvailable')} value={counts.available} variant="available" testid="stat-available" />
+        <StatTile label={t('petstoreStatPending')} value={counts.pending} variant="pending" testid="stat-pending" />
+        <StatTile label={t('petstoreStatSold')} value={counts.sold} variant="sold" testid="stat-sold" />
       </section>
 
-      <section className="pet-filter-chips" role="tablist" aria-label="Filter by status">
-        {FILTERS.map(key => {
-          const labelKey =
-            key === 'all'
-              ? 'petstoreFilterAll'
-              : key === 'available'
-                ? 'petStatusAvailable'
-                : key === 'pending'
-                  ? 'petStatusPending'
-                  : 'petStatusSold'
-          const active = filter === key
-          return (
-            <button
-              key={key}
-              role="tab"
-              aria-pressed={active}
-              className={`pet-chip status-${key} ${active ? 'is-active' : ''}`}
-              onClick={() => setFilter(key)}
-              data-testid={`pets-filter-${key}`}
-            >
-              <span className="pet-chip-dot" /> {t(labelKey)}
-            </button>
-          )
-        })}
-      </section>
+      <div className="pet-toolbar">
+        <section className="pet-filter-chips" role="tablist" aria-label="Filter by status">
+          {FILTERS.map(key => {
+            const labelKey =
+              key === 'all'
+                ? 'petstoreFilterAll'
+                : key === 'available'
+                  ? 'petStatusAvailable'
+                  : key === 'pending'
+                    ? 'petStatusPending'
+                    : 'petStatusSold'
+            const active = filter === key
+            return (
+              <button
+                key={key}
+                role="tab"
+                aria-pressed={active}
+                className={`pet-chip status-${key} ${active ? 'is-active' : ''}`}
+                onClick={() => chooseFilter(key)}
+                data-testid={`pets-filter-${key}`}
+              >
+                <span className="pet-chip-dot" /> {t(labelKey)}
+              </button>
+            )
+          })}
+        </section>
+        <input
+          type="search"
+          className="pet-search"
+          value={searchText}
+          onChange={e => setSearchText(e.target.value)}
+          placeholder={t('petSearchPlaceholder')}
+          aria-label={t('petSearchLabel')}
+          maxLength={50}
+          data-testid="pets-search"
+        />
+      </div>
 
       {error && (
         <div className="pet-page-error" role="alert" data-testid="petstore-error">
@@ -161,20 +220,49 @@ export default function PetstorePage() {
         <div className="pet-loading" role="status">
           <div className="spinner" />
         </div>
-      ) : filteredPets.length === 0 ? (
-        <div className="pet-empty-state" data-testid="pets-empty">
-          <div className="pet-empty-illustration" aria-hidden>🐾</div>
-          <p>{t('petEmptyState')}</p>
-          <button className="pet-btn pet-btn-primary" onClick={openAdd} data-testid="pets-empty-add">
-            {t('petAdd')}
-          </button>
-        </div>
+      ) : pets.length === 0 ? (
+        counts.all === 0 ? (
+          <div className="pet-empty-state" data-testid="pets-empty">
+            <div className="pet-empty-illustration" aria-hidden>🐾</div>
+            <p>{t('petEmptyState')}</p>
+            <button className="pet-btn pet-btn-primary" onClick={openAdd} data-testid="pets-empty-add">
+              {t('petAdd')}
+            </button>
+          </div>
+        ) : (
+          <div className="pet-empty-state" data-testid="pets-no-matches">
+            <p>{t('petNoMatches')}</p>
+          </div>
+        )
       ) : (
-        <div className="pets-grid" data-testid="pets-grid">
-          {filteredPets.map(pet => (
-            <PetCard key={pet.id} pet={pet} onEdit={openEdit} onDelete={handleDelete} />
-          ))}
-        </div>
+        <>
+          <div className="pets-grid" aria-busy={busy} data-testid="pets-grid">
+            {pets.map(pet => (
+              <PetCard key={pet.id} pet={pet} onEdit={openEdit} onDelete={handleDelete} />
+            ))}
+          </div>
+          {data.pages > 1 && (
+            <nav className="pet-pager" aria-label={t('petPageInfo', { page: data.page, pages: data.pages })}>
+              <button
+                className="pet-btn pet-btn-ghost"
+                onClick={() => setPage(data.page - 1)}
+                disabled={data.page <= 1}
+                data-testid="pets-page-prev"
+              >
+                {t('petPagePrev')}
+              </button>
+              <span data-testid="pets-page-info">{t('petPageInfo', { page: data.page, pages: data.pages })}</span>
+              <button
+                className="pet-btn pet-btn-ghost"
+                onClick={() => setPage(data.page + 1)}
+                disabled={data.page >= data.pages}
+                data-testid="pets-page-next"
+              >
+                {t('petPageNext')}
+              </button>
+            </nav>
+          )}
+        </>
       )}
 
       <button
@@ -196,6 +284,8 @@ export default function PetstorePage() {
         }}
         onSave={handleSave}
       />
+
+      <ConfirmDeleteDialog pet={deletingPet} onConfirm={removePet} onCancel={cancelDelete} />
 
       {toast && (
         <div className="pet-toast" role="status" data-testid="pet-toast">

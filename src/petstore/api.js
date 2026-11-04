@@ -3,13 +3,19 @@
 import { apiFetch } from '../api/client.js'
 
 /**
- * Lists the user's pets, newest first.
+ * Lists one page of the user's pets, newest first.
  * @param status "available" | "pending" | "sold" to filter on the server; omit or "all" for every pet.
- * @returns `{ pets }`.
+ * @param q Search text matched against name, category and tags.
+ * @returns `{ pets, page, pages, limit, total, counts }`; see GET /api/pets in server/routes/pets.js.
  */
-export function listPets({ status, token }) {
-  const q = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''
-  return apiFetch(`/api/pets${q}`, { token })
+export function listPets({ status, q, page, limit, token }) {
+  const params = new URLSearchParams()
+  if (status && status !== 'all') params.set('status', status)
+  if (q) params.set('q', q)
+  if (page) params.set('page', String(page))
+  if (limit) params.set('limit', String(limit))
+  const qs = params.toString()
+  return apiFetch(`/api/pets${qs ? `?${qs}` : ''}`, { token })
 }
 
 /**
@@ -23,6 +29,8 @@ export function createPet(body, token) {
 
 /**
  * Updates the fields given in `body` on one pet.
+ * @param body May include the `updatedAt` last read, so the save fails with a 409
+ *   ApiError if the pet has changed since.
  * @returns `{ pet }` after the update.
  */
 export function updatePet(id, body, token) {

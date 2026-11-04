@@ -1,17 +1,30 @@
 // Add / edit pet dialog for the petstore. The form edits tags and photo URLs as
-// plain text and converts them to the API's shape when saving.
+// plain text and converts them to the API's shape when saving. An edit sends the
+// pet's updatedAt, so saving over a change made in another tab fails with a 409.
 import { useEffect, useState } from 'react'
 import { useLang } from '../i18n.jsx'
 
 const STATUSES = ['available', 'pending', 'sold']
 
-/** "cute, fluffy" → [{ id: 1, name: 'cute' }, { id: 2, name: 'fluffy' }]; blanks are dropped. */
-function parseTags(text) {
+// Same limits the API enforces (server/routes/pets.js). The photo and tag boxes hold
+// lists, so they only get a loose cap (count × (item length + separator)); the
+// per-item and count checks are the server's, and its message shows in the form.
+const MAX = { name: 50, category: 30, photoText: 5 * 501, tagText: 10 * 22 }
+
+/**
+ * "cute, fluffy" → [{ id: 1, name: 'cute' }, { id: 2, name: 'fluffy' }]; blanks are dropped.
+ * A tag the pet already has keeps its id, and new tags get ids after the highest
+ * existing one, so ids stay stable across saves.
+ * @param existing The pet's current tags, or [] for a new pet.
+ */
+function parseTags(text, existing = []) {
+  const idByName = new Map(existing.map(t => [t.name, t.id]))
+  let nextId = Math.max(0, ...existing.map(t => t.id).filter(Number.isFinite)) + 1
   return text
     .split(',')
     .map(s => s.trim())
     .filter(Boolean)
-    .map((name, i) => ({ id: i + 1, name }))
+    .map(name => ({ id: idByName.get(name) ?? nextId++, name }))
 }
 
 /** The reverse of parseTags: tag objects → "cute, fluffy". */
@@ -63,7 +76,7 @@ export default function PetFormModal({ open, pet, onClose, onSave }) {
 
   if (!open) return null
 
-  const livePreviewTags = parseTags(tagText)
+  const livePreviewTags = parseTags(tagText, pet?.tags)
   const canSave = name.trim().length > 0 && !submitting
 
   async function handleSubmit(e) {
@@ -75,12 +88,13 @@ export default function PetFormModal({ open, pet, onClose, onSave }) {
       await onSave({
         name: name.trim(),
         status,
-        category: category.trim() ? { id: 1, name: category.trim() } : undefined,
+        category: category.trim() ? { id: pet?.category?.id ?? 1, name: category.trim() } : undefined,
         photoUrls: parseUrls(photoText),
         tags: livePreviewTags,
+        ...(pet && { updatedAt: pet.updatedAt }),
       })
     } catch (err) {
-      setError(err.message || 'Save failed')
+      setError(err.status === 409 ? t('petConflict') : err.message || 'Save failed')
       setSubmitting(false)
     }
   }
@@ -117,6 +131,7 @@ export default function PetFormModal({ open, pet, onClose, onSave }) {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
+              maxLength={MAX.name}
               required
               data-testid="pet-form-name"
             />
@@ -147,6 +162,7 @@ export default function PetFormModal({ open, pet, onClose, onSave }) {
               type="text"
               value={category}
               onChange={e => setCategory(e.target.value)}
+              maxLength={MAX.category}
               placeholder="dog, cat, rabbit…"
               data-testid="pet-form-category"
             />
@@ -157,6 +173,7 @@ export default function PetFormModal({ open, pet, onClose, onSave }) {
               rows={3}
               value={photoText}
               onChange={e => setPhotoText(e.target.value)}
+              maxLength={MAX.photoText}
               placeholder="https://…"
               data-testid="pet-form-photos"
             />
@@ -167,6 +184,7 @@ export default function PetFormModal({ open, pet, onClose, onSave }) {
               type="text"
               value={tagText}
               onChange={e => setTagText(e.target.value)}
+              maxLength={MAX.tagText}
               placeholder="cute, fluffy, energetic"
               data-testid="pet-form-tags"
             />

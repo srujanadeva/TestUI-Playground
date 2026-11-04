@@ -1655,6 +1655,40 @@ tr:hover td      { background: #f8fafc; }
 .pet-chip.is-active.status-sold      { background: #64748b; border-color: #64748b; box-shadow: 0 4px 14px rgba(100, 116, 139, .25); }
 .pet-chip.is-active .pet-chip-dot { background: #fff; }
 
+/* ── Toolbar: filter chips + search ───────────────────────────────────────── */
+.pet-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.pet-toolbar .pet-filter-chips { margin-bottom: 0; }
+.pet-search {
+  flex: 0 1 260px;
+  min-width: 180px;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: .9rem;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+}
+.pet-search:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, .15);
+}
+
+/* ── Pager ────────────────────────────────────────────────────────────────── */
+.pet-pager {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin-top: 22px;
+  font-size: .9rem;
+  color: var(--text-muted);
+}
+.pet-btn-ghost:disabled { opacity: .5; cursor: not-allowed; }
+.pets-grid[aria-busy="true"] { opacity: .6; transition: opacity .15s ease; }
+
 /* ── Pet card grid ────────────────────────────────────────────────────────── */
 .pets-grid {
   display: grid;
@@ -1691,7 +1725,9 @@ tr:hover td      { background: #f8fafc; }
   display: flex; align-items: center; justify-content: center;
   font-size: 2.2rem;
   align-self: center;
+  overflow: hidden;
 }
+.pet-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .pet-card.status-available .pet-card-avatar { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
 .pet-card.status-pending   .pet-card-avatar { background: linear-gradient(135deg, #fed7aa, #fdba74); }
 .pet-card.status-sold      .pet-card-avatar { background: linear-gradient(135deg, #e2e8f0, #cbd5e1); }
@@ -1868,6 +1904,16 @@ tr:hover td      { background: #f8fafc; }
   color: var(--text);
 }
 .pet-btn-ghost:hover { background: var(--bg); }
+.pet-btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.pet-btn-danger:hover { background: var(--danger-d); }
+
+/* ── Delete confirmation (?confirm=dialog) ────────────────────────────────── */
+.pet-confirm { max-width: 400px; padding-bottom: 20px; }
+.pet-confirm-text { padding: 0 24px 4px; color: var(--text); }
+.pet-confirm .pet-modal-footer { margin: 8px 24px 0; }
 
 /* ── Toast ────────────────────────────────────────────────────────────────── */
 .pet-toast {
