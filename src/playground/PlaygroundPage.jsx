@@ -4,11 +4,12 @@ import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
 import { NAV } from '../layout/Sidebar.jsx'
+import { flashSection } from '../ui.jsx'
 import { TextInputSection, PasswordTextareaSection, DatePickerSection, SliderSection, FileUploadSection, FormValidationSection } from './inputs.jsx'
 import { CheckboxSection, RadioSection, DropdownSection, RatingsSection } from './selection.jsx'
 import { ClickCounterSection, DoubleClickSection, DynamicButtonsSection } from './buttons.jsx'
 import { HoverSection, FocusBlurSection, DragDropSection, SignatureSection } from './events.jsx'
-import { PopupsSection, LinksWindowsSection, PopupAlertsSection } from './windows.jsx'
+import { PopupsSection, LinksWindowsSection, PopupAlertsSection, SnackbarSection } from './windows.jsx'
 import { ShadowDOMSection, PaginationTableSection, ShowHideSection, ConditionalFieldsSection, DelayedWidgetSection } from './advanced.jsx'
 import { ProgressSection, StepperSection } from './workflows.jsx'
 
@@ -24,13 +25,17 @@ export default function Playground({ contentRef, setActive }) {
 
   // Scroll-spy: a section counts as "in view" once it reaches a band in the upper
   // part of the scroll area (the rootMargin trims 10% off the top and 55% off the bottom).
+  // Cards in one grid row enter the band together, so the current section is kept
+  // while it is still in view; otherwise the first one in sidebar order wins.
   useEffect(() => {
     const content = contentRef.current
     if (!content) return
+    const inView = new Set()
     const observer = new IntersectionObserver(
       entries => {
-        const hit = entries.find(e => e.isIntersecting)
-        if (hit) setActive(hit.target.id)
+        entries.forEach(e => e.isIntersecting ? inView.add(e.target.id) : inView.delete(e.target.id))
+        const first = NAV.find(n => inView.has(n.id))
+        if (first) setActive(current => inView.has(current) ? current : first.id)
       },
       { root: content, threshold: 0.25, rootMargin: '-10% 0px -55% 0px' }
     )
@@ -45,6 +50,7 @@ export default function Playground({ contentRef, setActive }) {
     // Wait a frame so the sections have rendered before scrolling to one.
     requestAnimationFrame(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      flashSection(id)
     })
   }, [location.hash])
 
@@ -78,6 +84,7 @@ export default function Playground({ contentRef, setActive }) {
         <ProgressSection />
         <StepperSection />
         <SignatureSection />
+        <SnackbarSection />
       </div>
       <footer className="site-footer">
         <span className="footer-copy">© 2026 Srujana Deva · {t('footerRights')}</span>

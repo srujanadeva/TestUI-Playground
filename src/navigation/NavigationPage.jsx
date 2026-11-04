@@ -1,6 +1,7 @@
 // Navigation page (/navigation): menus and ways of leaving a view. Accordion (N1),
 // URL-driven breadcrumbs (N2), a custom context menu (N3), a dropdown with a
-// submenu (N4), a side drawer (N5) and an unsaved-changes guard (N6).
+// submenu (N4), a side drawer (N5), an unsaved-changes guard (N6) and a header
+// whose links collapse into a hamburger menu when narrow (N7).
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang } from '../i18n.jsx'
@@ -534,8 +535,103 @@ function UnsavedGuardSection() {
   )
 }
 
+// ─── N7. Hamburger menu ──────────────────────────────────────────────────────
+const SITE_PAGES   = ['home', 'products', 'pricing', 'contact']
+const SITE_NARROW  = 520  // px; below this header width the links fold behind ☰
+
+/**
+ * A small site header that shows its links in a row when wide and folds them into
+ * a ☰ menu when narrow. The width is measured on the header itself (not the window),
+ * so "Phone width" can shrink it without resizing the browser, and a real small
+ * viewport collapses it too. data-layout says which form is showing.
+ */
+function HamburgerSection() {
+  const { t } = useLang()
+  const siteRef = useRef(null)
+  const btnRef  = useRef(null)
+  const [narrow, setNarrow] = useState(false)
+  const [phone, setPhone]   = useState(false)
+  const [open, setOpen]     = useState(false)
+  const [page, setPage]     = useState('home')
+
+  useEffect(() => {
+    const el = siteRef.current
+    const observer = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width < SITE_NARROW))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  // Becoming wide shows the links inline, so a menu left open would be stale.
+  useEffect(() => { if (!narrow) setOpen(false) }, [narrow])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = e => { if (e.key === 'Escape') { setOpen(false); btnRef.current?.focus() } }
+    const onDown = e => { if (!siteRef.current?.contains(e.target)) setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onDown)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onDown)
+    }
+  }, [open])
+
+  /** Goes to a page; from the folded menu, also closes it and returns focus to ☰. */
+  function choose(key) {
+    setPage(key)
+    if (open) { setOpen(false); btnRef.current?.focus() }
+  }
+
+  const links = SITE_PAGES.map(key => (
+    <li key={key}>
+      <button type="button" className="lab-site-link" data-page={key}
+        aria-current={page === key ? 'page' : undefined} onClick={() => choose(key)}>
+        {t(`site_${key}`)}
+      </button>
+    </li>
+  ))
+
+  return (
+    <section id="sec-nav-hamburger" className="card media-wide">
+      <SectionHeader num="N7" title={t('secN7Title')} locator="#hamburger-btn / aria-expanded / data-layout" />
+      <p className="desc">{t('secN7Desc')}</p>
+      <label className="lab-inline-check" htmlFor="hamburger-phone">
+        <input id="hamburger-phone" type="checkbox" checked={phone}
+          onChange={e => setPhone(e.target.checked)} /> {t('hamburgerPhone')}
+      </label>
+
+      <div ref={siteRef} className={`lab-site ${phone ? 'is-phone' : ''}`} data-testid="site-header"
+        data-layout={narrow ? 'narrow' : 'wide'} data-menu-open={open} data-page={page}>
+        <header className="lab-site-bar">
+          <strong className="lab-site-logo">{t('siteLogo')}</strong>
+          {narrow ? (
+            <button ref={btnRef} id="hamburger-btn" type="button" className="lab-hamburger"
+              aria-expanded={open} aria-controls="hamburger-menu"
+              aria-label={open ? t('hamburgerClose') : t('hamburgerOpen')}
+              onClick={() => setOpen(o => !o)}>
+              <span aria-hidden="true">{open ? '✕' : '☰'}</span>
+            </button>
+          ) : (
+            <nav aria-label={t('siteNavLabel')}><ul className="lab-site-links">{links}</ul></nav>
+          )}
+        </header>
+        {narrow && open && (
+          <nav id="hamburger-menu" className="lab-site-menu" aria-label={t('siteNavLabel')}>
+            <ul>{links}</ul>
+          </nav>
+        )}
+        <div className="lab-site-body" data-testid="site-content">
+          <h3>{t(`site_${page}`)}</h3>
+          <p>{t(`siteText_${page}`)}</p>
+        </div>
+      </div>
+      <Output id="hamburger-status">{t('hamburgerStatus', { page: t(`site_${page}`), layout: t(narrow ? 'hamburgerNarrow' : 'hamburgerWide') })}</Output>
+    </section>
+  )
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
-/** The Navigation page: hero header and the N1–N6 sections in two groups. */
+/** The Navigation page: hero header and the N1–N7 sections in two groups. */
 export default function NavigationPage() {
   const { t, lang } = useLang()
   const { user } = useAuth()
@@ -558,6 +654,7 @@ export default function NavigationPage() {
         <BreadcrumbsSection />
         <ContextMenuSection />
         <DropdownMenuSection />
+        <HamburgerSection />
       </div>
 
       <h2 className="media-group-title">{t('navigationGroupLeaving')}</h2>

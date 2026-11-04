@@ -7,9 +7,9 @@ export default {
     sec09Title: 'Dropdown & Tags',
 
     // ── Section descriptions ──
-    sec07Desc: 'Multi-select using labeled checkboxes.',
-    sec08Desc: 'Single selection via radio buttons.',
-    sec09Desc: 'Native select and a custom tag multi-select.',
+    sec07Desc: 'Tick the skills you know. The line below lists what is ticked.',
+    sec08Desc: 'Choose one plan. Picking another plan clears the first, as radio buttons do.',
+    sec09Desc: 'Choose a country from the list, and click tags to switch them on or off.',
 
     // ── 07 Checkboxes ──
     nothingSelected: 'Nothing selected',
@@ -33,7 +33,7 @@ export default {
 
     // ── 25 Ratings ──
     sec25Title:          'Ratings',
-    sec25Desc:           'Three star ratings: radio inputs, a custom slider with half stars (hover previews, click commits, arrow keys step by 0.5) and a read-only display. Assert data-value or aria-valuenow, not star colours.',
+    sec25Desc:           'Three star ratings: one you click, one that takes half stars, and one you can only read.',
     ratingProductLabel:  'Rate this product (radio inputs)',
     ratingHalfLabel:     'Rate the delivery (half stars)',
     ratingReadonlyLabel: 'Average rating (read-only)',
@@ -45,6 +45,29 @@ export default {
     ratingClear:         'Clear',
     ratingReviews:       '{n} from {count} reviews',
     navRatings:          'Ratings',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip07Steps: [
+      'Tick a few boxes, by clicking either the box or its name.',
+      'Untick one and watch the list update.',
+    ],
+    tip07Check: 'each box\'s checked state and the text of #checkbox-summary. Clicking the name ticks the box too, because of label[for].',
+    tip08Steps: [
+      'Click a plan card.',
+      'Click a different plan: only one stays selected.',
+    ],
+    tip08Check: 'exactly one input[name="plan-type"] is checked, and #selected-plan names it.',
+    tip09Steps: [
+      'Open the Country list and pick one.',
+      'Click several tags; click one again to switch it off.',
+    ],
+    tip09Check: 'the list\'s selected value (#selected-country), and which tags have the tag-active class (#selected-tags).',
+    tip25Steps: [
+      'Click a star in the first row; Clear removes the rating.',
+      'In the second row, hover to preview and click to set. Click the left half of a star for a half star (the right half in Arabic).',
+      'Or click the second row and use the arrow keys, Home and End.',
+    ],
+    tip25Check: 'data-value or aria-valuenow, not the colour of the stars.',
   },
 
   ar: {
@@ -54,9 +77,9 @@ export default {
     sec09Title: 'القائمة المنسدلة والعلامات',
 
     // ── Section descriptions ──
-    sec07Desc: 'تحديد متعدد باستخدام مربعات اختيار مسماة.',
-    sec08Desc: 'تحديد واحد عبر أزرار الاختيار.',
-    sec09Desc: 'قائمة منسدلة أصلية وتحديد علامات مخصص.',
+    sec07Desc: 'حدّد المهارات التي تعرفها. يعرض السطر في الأسفل ما تم تحديده.',
+    sec08Desc: 'اختر خطة واحدة. اختيار خطة أخرى يلغي الأولى، كما تفعل أزرار الاختيار.',
+    sec09Desc: 'اختر بلدًا من القائمة، وانقر على العلامات لتفعيلها أو إلغائها.',
 
     // ── 07 Checkboxes ──
     nothingSelected: 'لم يتم اختيار شيء',
@@ -80,7 +103,7 @@ export default {
 
     // ── 25 Ratings ──
     sec25Title:          'التقييمات',
-    sec25Desc:           'ثلاثة تقييمات بالنجوم: أزرار اختيار، ومنزلق مخصص بأنصاف النجوم (التمرير يعرض معاينة، والنقر يثبّت، والأسهم تغيّر بمقدار 0.5)، وعرض للقراءة فقط. تحقق من data-value أو aria-valuenow وليس من ألوان النجوم.',
+    sec25Desc:           'ثلاثة تقييمات بالنجوم: واحد تنقر عليه، وآخر يقبل أنصاف النجوم، وثالث للقراءة فقط.',
     ratingProductLabel:  'قيّم هذا المنتج (أزرار اختيار)',
     ratingHalfLabel:     'قيّم التوصيل (أنصاف نجوم)',
     ratingReadonlyLabel: 'متوسط التقييم (للقراءة فقط)',
@@ -92,5 +115,28 @@ export default {
     ratingClear:         'مسح',
     ratingReviews:       '{n} من {count} مراجعة',
     navRatings:          'التقييمات',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip07Steps: [
+      'حدّد بعض المربعات، بالنقر على المربع أو على اسمه.',
+      'ألغِ تحديد أحدها وراقب القائمة تتحدّث.',
+    ],
+    tip07Check: 'حالة التحديد لكل مربع ونص #checkbox-summary. النقر على الاسم يحدّد المربع أيضًا بفضل label[for].',
+    tip08Steps: [
+      'انقر على بطاقة خطة.',
+      'انقر على خطة مختلفة: تبقى واحدة فقط محددة.',
+    ],
+    tip08Check: 'أن عنصرًا واحدًا فقط من input[name="plan-type"] محدد، وأن #selected-plan يذكر اسمه.',
+    tip09Steps: [
+      'افتح قائمة «البلد» واختر واحدًا.',
+      'انقر على عدة علامات؛ وانقر على إحداها مرة أخرى لإلغائها.',
+    ],
+    tip09Check: 'القيمة المختارة في القائمة كما في #selected-country، والعلامات التي تحمل الصنف tag-active كما في #selected-tags.',
+    tip25Steps: [
+      'انقر على نجمة في الصف الأول؛ و«مسح» يزيل التقييم.',
+      'في الصف الثاني مرّر الماوس للمعاينة وانقر للتثبيت. انقر على النصف الأيمن من النجمة لنصف نجمة (النصف الأيسر في الإنجليزية).',
+      'أو انقر على الصف الثاني واستخدم مفاتيح الأسهم و Home و End.',
+    ],
+    tip25Check: 'قيمة data-value أو aria-valuenow، وليس لون النجوم.',
   },
 }

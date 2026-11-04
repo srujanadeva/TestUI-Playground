@@ -1,6 +1,6 @@
 # Test Automation Playground
 
-A React frontend built specifically for practising web automation. It covers 27 interaction types on the main page — from basic inputs to Shadow DOM — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
+A React frontend built specifically for practising web automation. It covers 28 interaction types on the main page — from basic inputs to Shadow DOM — each built with deliberate, stable locator attributes so you can focus on writing tests rather than fighting selectors.
 
 The app also includes a login-gated **Test Pet Store** page backed by a real Express + MongoDB API, so you can practise authentication flows (signup, login, remember-me, forgot-password) and full CRUD against a persisted backend — not just client-side state.
 
@@ -80,7 +80,7 @@ You don't need to install anything by hand: the setup script installs what's mis
 | Language | JavaScript (ES Modules) |
 | Package manager | npm |
 
-No external UI libraries, no CSS frameworks. The 27 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
+No external UI libraries, no CSS frameworks. The 28 playground sections are self-contained with no backend dependency; the Test Pet Store page is login-gated and persists to a local MongoDB via the bundled Express API.
 
 ---
 
@@ -236,15 +236,18 @@ npm run preview    # Serves the built output on a local static server
 
 The playground is a React Router app with two kinds of practice targets:
 
-**1. The 27-section playground (`/`, login required)**
+**1. The 28-section playground (`/`, login required)**
 
-- A **fixed sidebar** on the left with collapsible grouped navigation. Click a group header to expand or collapse it. The **Advanced → Data & Tables** sub-group demonstrates nested menu navigation to the Pagination Table. The active section is highlighted as you scroll.
-- A **scrollable content area** on the right with 27 independent sections, each covering one interaction type.
+- A **fixed sidebar** on the left with collapsible grouped navigation. Click a group header to expand or collapse it. The **Advanced → Data & Tables** sub-group demonstrates nested menu navigation to the Pagination Table. The active section is highlighted as you scroll. On a wide screen up to three sections share a row and scroll to the same spot, so clicking a link keeps *that* link highlighted until you scroll by hand, and its card flashes a ring (`data-flash` on the card for about 1.5 s) to show which one you jumped to.
+- A **scrollable content area** on the right with 28 independent sections, each covering one interaction type.
+- Every section header has an **ⓘ button** (`.info-tip-btn`, `aria-expanded`). Hover it, or click / tap / press Enter to pin it open, for a short **Try this** list and a **A test would check:** line. The box (`role="note"`) is only in the DOM while open, so it never covers elements a test is clicking. Escape or a click elsewhere closes it.
+- Sections where you type, drag a slider or pick files (01–06, the search box of 20, and 27) get a **highlight ring** while you work in them. It is drawn with `box-shadow` only, so element positions don't move.
+- Sections that build up state have a **Reset** or **Clear log** button (10, 11, 12, 14, 15 and 29, alongside the existing ones in 25, 27 and 28), so you can start over without reloading.
 - Each section is self-contained and designed around a single testing concern:
   - One interaction type per section — no mixed responsibilities
   - Deliberate, stable locator attributes (`id`, `data-testid`, `data-row-id`, etc.) on every interactive element
   - Visible state feedback after every interaction — output messages, event logs, counters — so assertions have clear targets
-  - No external API calls from within these 27 sections — they work entirely offline once installed
+  - No external API calls from within these 28 sections — they work entirely offline once installed
 
 **2. Auth + Test Pet Store + feature pages (`/login`, `/signup`, `/forgot-password`, `/account`, `/petstore`, `/media`, `/frames`, `/spreadsheet`, `/verification`, `/controls`, `/navigation`, `/data`, `/interactions`, `/live`, `/browser`)**
 
@@ -260,7 +263,7 @@ The playground is a React Router app with two kinds of practice targets:
 - **Spreadsheet** (`/spreadsheet`) — reached from the "📊 Spreadsheet" entry under Frames in the sidebar. One widget so far (S1), an upload-to-table widget backed by the API; see [Spreadsheet Page Reference](#spreadsheet-page-reference).
 - **Verification** (`/verification`) — reached from the "🛡️ Verification" entry under Spreadsheet in the sidebar. Five widgets (V1–V5): CAPTCHA, checkbox CAPTCHA, OTP, selfie and ID-card OCR, backed by the API; see [Verification Page Reference](#verification-page-reference).
 - **Controls** (`/controls`) — "🎛️ Controls" in the Pages group. Eight widgets (C1–C8) for custom form controls; see [Controls Page Reference](#controls-page-reference).
-- **Navigation** (`/navigation`) — "🧭 Navigation" in the Pages group. Six widgets (N1–N6) for menus, breadcrumbs, a drawer and leaving the page; see [Navigation Page Reference](#navigation-page-reference).
+- **Navigation** (`/navigation`) — "🧭 Navigation" in the Pages group. Seven widgets (N1–N7) for menus, breadcrumbs, a drawer, leaving the page and a hamburger menu; see [Navigation Page Reference](#navigation-page-reference).
 - **Data** (`/data`) — reached from the orange "🗂️ Data" entry under Navigation in the sidebar. Seven widgets (D1–D7) for tables, trees, charts, late-loading content and long lists; see [Data Page Reference](#data-page-reference). Works offline: all data is built into the page.
 - **Interactions** (`/interactions`) — "🖐️ Interactions" in the Pages group. Four widgets (I1–I4): resizing, a sortable grid, a command palette, the clipboard; see [Interactions Page Reference](#interactions-page-reference).
 - **Live** (`/live`) — "⏱️ Live" in the Pages group. Four widgets (L1–L4) that change on their own; see [Live Page Reference](#live-page-reference).
@@ -281,18 +284,18 @@ The playground is a React Router app with two kinds of practice targets:
 | 07 | Checkboxes | Check/uncheck items, assert selection summary | `label[for]` |
 | 08 | Radio Group | Select one option, assert the selected plan | `name` attribute |
 | 09 | Dropdown & Tags | Select from native dropdown, toggle tag buttons | `id`, `data-tag` |
-| 10 | Click Counter | Click buttons, assert individual and total counts | `className` |
-| 11 | Double Click | Single-click, double-click, right-click | `data-testid` |
-| 12 | Dynamic Buttons | Observe loading states, appear/disappear, add/remove | `id`, `data-dynamic-id` |
+| 10 | Click Counter | Click buttons, assert individual and total counts; **Reset** sets them back to 0 | `className` |
+| 11 | Double Click | Single-click, double-click, right-click; each is logged with `data-event`. A double-click also logs the two single clicks before it. **Clear log** empties the log | `data-testid` |
+| 12 | Dynamic Buttons | Observe loading states, appear/disappear, add/remove; **Reset** restores the starting state (and cancels a load in progress) | `id`, `data-dynamic-id` |
 | 13 | Mouse Hover | Hover over cards, assert tooltip visibility | `data-testid` |
-| 14 | Focus / Blur | Tab through fields, assert focus/blur events logged | `id` |
-| 15 | Drag & Drop | Drag items to reorder, assert new positions | `data-drag-id` |
+| 14 | Focus / Blur | Tab through fields, assert focus and blur events logged. "Blur" is the browser's event for *leaving* a field; nothing turns blurry. Entries read `Username → entered (focus)` / `Username → left (blur)` and carry `data-field` + `data-event`. **Clear log** empties the log | `id`, `data-event` |
+| 15 | Drag & Drop | Drag items to reorder, assert new positions; **Reset order** puts the list back | `data-drag-id` |
 | 16 | Browser Popups | Trigger alert, prompt, and confirm dialogs | `id` |
 | 17 | Links & Windows | Click anchor, external, download, JS-opened tab/window | `id`, `href`, `target` |
 | 18 | *(moved)* | The iFrame section now lives on the [Frames page](#frames-page-reference) as F1. Number 18 is left unused so the other section numbers stay the same. | — |
 | 19 | Shadow DOM | Type into and read from an encapsulated shadow root | `data-testid`, shadow root |
 | 20 | Pagination Table | Search, paginate, assert row data | `id`, `data-row-id`, `data-page` |
-| 21 | Show / Hide & Tabs | Expand/collapse panels, switch tabs, assert content | `className`, `role` |
+| 21 | Show / Hide & Tabs | Expand/collapse a panel (`aria-expanded` on its button), switch tabs by click or keyboard (arrow keys, Home, End; left and right swap in Arabic), assert content. The tabs follow the ARIA tabs pattern: `aria-selected`, only the selected tab in the Tab order, `aria-controls` / `aria-labelledby` | `className`, `role="tab"`, `aria-selected` |
 | 22 | Popup Alerts | Trigger warning, error, and exception modals, assert visibility and dismiss | `id`, `role` |
 | 23 | Conditional Fields | Reveal hidden fields with a checkbox, then fill and assert them | `id`, `data-testid` |
 | 24 | Delayed Widget | Wait for a widget that loads 1–6 s (random) after the page. Wait for `data-state="loaded"` on `[data-testid="delayed-widget"]`; `data-delay-ms` gives the delay picked. Add `?delay=<ms>` to the URL for a fixed delay. **Reload** repeats with a new delay. | `data-testid`, `data-state` |
@@ -300,6 +303,7 @@ The playground is a React Router app with two kinds of practice targets:
 | 26 | Progress Bar | Start an upload bar that fills in random steps and wait for `aria-valuenow="100"`; tick **Stall at 60% and fail** to wait for `data-state="failed"`; cancel; run an indeterminate task that has no `aria-valuenow` until done | `role="progressbar"`, `aria-valuenow`, `data-state` |
 | 27 | Stepper | 4-step wizard: per-step validation errors, Back, jump back via the step indicator, review page, submit, start over | `id`, `data-step`, `data-state`, `aria-current` |
 | 28 | Signature Pad | Draw on a canvas with mouse down/move/up (touch and pen work too), undo, clear, save as PNG. A single click is rejected as too short | `data-empty`, `data-strokes` |
+| 29 | Snackbar | Raise snackbars that close by themselves after a **random 3–7 s** (picked per snackbar, shown in `data-duration-ms`; no URL override), a delete with **Undo**, an error that stays until ✕, and three at once. Wait for it to go away instead of sleeping; `#snackbar-log` says whether it timed out, was closed or was undone | `data-testid="snackbar"`, `data-kind`, `data-duration-ms` |
 
 ---
 
@@ -312,7 +316,7 @@ The playground is a React Router app with two kinds of practice targets:
 | `/login` | Public | Email + password, remember-me, forgot-password link |
 | `/signup` | Public | Name, email, password, confirm, terms |
 | `/forgot-password` | Public | Stub — always confirms, no email sent |
-| `/` | Protected | The 27-section playground |
+| `/` | Protected | The 28-section playground |
 | `/account` | Protected | Logged-in user's profile + logout |
 | `/petstore` | Protected | Test Pet Store — pet CRUD |
 | `/media` | Protected | Media page — images, videos, banners |
@@ -349,7 +353,7 @@ Passwords are hashed with bcrypt before storage; access tokens are JWTs valid fo
 
 ## Media Page Reference
 
-Every widget exposes its state as a `data-state` attribute, so wait on the attribute instead of sleeping. Each one also shows its state as text in an output line below it. There are no URL settings — each widget always behaves the same way.
+Every widget exposes its state as a `data-state` attribute, so wait on the attribute instead of sleeping. Each one also shows its state as text in an output line below it. The only URL setting is `?carouselInterval=<ms>` (500–60000, default 4000): how long M7 shows each slide while playing.
 
 | # | Widget | What to Practise | Key attributes |
 |---|--------|-----------------|----------------|
@@ -359,7 +363,7 @@ Every widget exposes its state as a `data-state` attribute, so wait on the attri
 | M4 | Video — Plays | Play, pause, mute/unmute with custom buttons; read the time | `data-testid="video-playing"`, `data-state`, `data-muted` |
 | M5 | Video — Broken | Detect a video whose file doesn't exist; buttons are disabled | `data-testid="video-broken"`, `data-state="error"` |
 | M6 | Video — Lazy Load | Scroll inside a box to load the video, then play it | `data-testid="video-lazy"`, `data-state`: `idle` → `loading` → `ready` → … |
-| M7 | Hero Carousel | Move between 3 slides with previous/next/dots; wraps around; no autoplay | `data-testid="hero-carousel"`, `data-active-slide` (1–3) |
+| M7 | Hero Carousel | Move between 3 slides with previous/next/dots; wraps around. **Play** turns on autoplay (off by default); it pauses while the mouse or keyboard focus is inside the carousel, so hovering to click an arrow doesn't race the timer | `data-testid="hero-carousel"`, `data-active-slide` (1–3), `data-autoplay` (`on`/`off`), `data-paused`; `data-testid="hero-autoplay"` (`aria-pressed`) |
 | M8 | Promo Banner | Claim the offer to reveal a code; close it; show it again. Closing is not remembered across reloads | `data-testid="promo-banner"` |
 | M9 | Announcement & Cookie Banners | Close the announcement bar; accept/reject the cookie banner, which blocks the whole page until you choose. Both choices survive a reload; **Reset banners** clears them | `data-testid="announcement-bar"`, `data-testid="cookie-banner"` |
 
@@ -543,6 +547,7 @@ Custom form controls that don't behave like plain inputs. Every widget shows its
 | N4 | Menu with a submenu | Open a menu button, move with arrow keys, open Export's submenu with → or hover, pick an item; Escape returns focus to the button | `#menu-btn` (`aria-expanded`), `#menu-list`, `#menu-item-{duplicate|archive|export|share}`, `#menu-sub-export`, `#menu-item-export-{csv|pdf|json}`; card `data-open`, `data-submenu-open` |
 | N5 | Side drawer | Open a drawer that animates in for 250 ms, fill its filters, apply or close it (✕, backdrop, Escape) | `#drawer-open`, `[data-testid="drawer"]` (`data-state`: `closed` → `opening` → `open` → `closing` → `closed`), `#drawer-close`, `[data-testid="drawer-backdrop"]`, `#drawer-active`, `#drawer-archived`, `#drawer-owner`, `#drawer-apply` |
 | N6 | Unsaved-changes guard | Edit the note, then leave by the card's link or the sidebar: an in-page dialog asks first. Closing or reloading the tab raises the browser's `beforeunload` dialog | `#guard-title`, `#guard-notes`, `#guard-save`, `#guard-leave-link`; card `data-dirty`; `[data-testid="leave-dialog"]` (`data-target`), `#leave-stay`, `#leave-save`, `#leave-discard` |
+| N7 | Hamburger menu | A site header shows its links in a row when wide and folds them behind ☰ below 520 px. Tick **Phone width** (or use a small viewport) to fold it; ☰ opens the menu, and Escape, an outside click or choosing a page closes it, with focus back on ☰ | `[data-testid="site-header"]` (`data-layout`: `wide`/`narrow`, `data-menu-open`, `data-page`), `#hamburger-phone`, `#hamburger-btn` (`aria-expanded`, `aria-controls`), `#hamburger-menu`, `[data-page]` links (`aria-current="page"`), `#hamburger-status` |
 
 **N2 folders:** `Home` › `Projects` › `Website` › (`Design`, `Copy`) and `Mobile app` › `Release 2.4`; `Home` › `Reports` › (`Q3 2026`, `Q4 2026`); `Home` › `Settings`. An unknown `?folder=` falls back to `Home`. The sidebar's active link also has `aria-current="page"`, so scope that locator to `#sec-nav-breadcrumbs`.
 
@@ -646,10 +651,19 @@ A quick cheat sheet of the key element identifiers used across sections.
 #form-success           Form success message (section 06)
 #country-select         Country dropdown (section 09)
 #tag-selector           Tag multi-select container (section 09)
+#counter-reset-btn      Resets all counts to 0 (section 10)
+#click-log              Click event log, newest first (section 11)
+#click-log-clear        Clears the click log (section 11)
 #btn-load               Loading state button (section 12)
 #btn-disappear          Button that hides itself (section 12)
 #btn-reappear           Button that reappears (section 12)
 #btn-add-dynamic        Adds a new button (section 12)
+#dynamic-reset-btn      Restores the starting state (section 12)
+#focus-{username|email|comment}  Focus / Blur fields (section 14)
+#focus-event-log        Focus / blur event log, newest first (section 14)
+#focus-log-clear        Clears the focus / blur log (section 14)
+#drag-reset-btn         Restores the original order (section 15)
+#drag-log               Last move, e.g. Moved "Alpha Task" → position 3 (section 15)
 #btn-alert              Triggers alert dialog (section 16)
 #btn-prompt             Triggers prompt dialog (section 16)
 #btn-confirm            Triggers confirm dialog (section 16)
@@ -668,7 +682,8 @@ A quick cheat sheet of the key element identifiers used across sections.
 #page-info              Pagination info text (section 20)
 #toggle-panel-btn       Expand/collapse button (section 21)
 #collapsible-content    The collapsible panel (section 21)
-#tab-content            Active tab content area (section 21)
+#tab-{details|settings|preview}  Tabs, role="tab" (aria-selected; section 21)
+#tab-content            Active tab panel, role="tabpanel" (section 21)
 #btn-warning-popup      Opens warning modal (section 22)
 #btn-error-popup        Opens error modal (section 22)
 #btn-exception-popup    Opens exception modal (section 22)
@@ -713,6 +728,14 @@ A quick cheat sheet of the key element identifiers used across sections.
 #signature-error        "Signature is too short" error (section 28)
 #signature-output       Saved size and stroke count (section 28)
 #signature-preview      <img> of the saved PNG (section 28)
+#snack-info             Shows "Settings saved" (section 29)
+#snack-delete           Deletes an item and shows a snackbar with Undo (section 29)
+#snack-error            Shows an error that stays until closed (section 29)
+#snack-burst            Shows three snackbars at once (section 29)
+#snack-reset            Clears the snackbars and restores the items (section 29)
+#snack-items            "Items left: N" (section 29)
+#snackbar-log           How the last snackbar closed: timed out / ✕ / undone (section 29)
+#snackbar-stack         Container of the visible snackbars, always in the DOM (section 29)
 ```
 
 ### By `data-testid`
@@ -735,6 +758,9 @@ data-testid="rating-readonly"       Read-only rating, data-value="3.5" (section 
 data-testid="stepper-step-{1..4}"   Step indicator buttons (section 27)
 data-testid="stepper-panel"         Current step's form, data-step="1" … "4" (section 27)
 data-testid="signature-pad"         Signature canvas (section 28)
+data-testid="snackbar"              One snackbar (section 29; role="status", or role="alert" for errors)
+data-testid="snackbar-action"       Its Undo button (section 29)
+data-testid="snackbar-close"        Its ✕ button (section 29)
 ```
 
 ### Sidebar
@@ -876,7 +902,8 @@ data-slide="1" … "3"                    Slides (only the active one is visible
 data-testid="hero-prev"                 Previous slide
 data-testid="hero-next"                 Next slide
 data-testid="hero-dot-1" … "hero-dot-3" Slide dots
-#hero-status                            "Slide n of 3"
+data-testid="hero-autoplay"             Play / Pause autoplay (aria-pressed)
+#hero-status                            "Slide n of 3", plus "playing" / "paused" while autoplay is on
 
 data-testid="promo-banner"              M8 promo banner
 data-testid="promo-cta"                 "Claim offer" button
@@ -898,6 +925,9 @@ data-testid="reset-banners"             Reset banners (also #btn-reset-banners)
 ### By `data-*` attributes
 
 ```
+data-event="{event}"                 Click log entries: the logged text (section 11)
+data-field="username|email|comment" Focus / blur log entries: which field (section 14)
+data-event="focus|blur"             Focus / blur log entries: which event (section 14)
 data-drag-id="drag-1" … "drag-5"    Draggable list items (section 15)
 data-drag-pos="1" … "5"             Current position of each item (section 15)
 data-row-id="EMP001" … "EMP025"     Table rows (section 20)
@@ -914,6 +944,9 @@ data-step="1" … "4"                 Stepper items and panel (section 27)
 data-state="complete|active|upcoming"  Stepper items (section 27)
 data-empty="true|false"             Whether the signature pad has ink (section 28)
 data-strokes="N"                    Number of strokes on the signature pad (section 28)
+data-kind="info|undo|error"         Kind of snackbar (section 29)
+data-duration-ms="3000" … "7000"   How long that snackbar stays; random, absent on errors (section 29)
+data-snack-id="N"                   Unique per snackbar, in the order they opened (section 29)
 ```
 
 ### Frames (`/frames`)
@@ -1182,6 +1215,15 @@ data-testid="navigation-welcome"    Hero welcome chip
 [data-testid="leave-dialog"]        "Leave without saving?" (role="alertdialog", data-target = where you were going)
 #leave-stay / #leave-save / #leave-discard   Dialog buttons
 #guard-status                       "Saved · no changes" / "Unsaved changes" / "Saved"
+
+#sec-nav-hamburger                  N7 card
+#hamburger-phone                    "Phone width" (folds the header without resizing the window)
+[data-testid="site-header"]         The mini site (data-layout: wide / narrow, data-menu-open, data-page)
+#hamburger-btn                      ☰ / ✕ (only while narrow; aria-expanded, aria-controls)
+#hamburger-menu                     The folded menu (only while open)
+[data-page="home|products|pricing|contact"]   Links, inline or in the menu (aria-current="page")
+[data-testid="site-content"]        Body of the chosen page
+#hamburger-status                   "Page: … · Layout: …"
 ```
 
 ### Interactions (`/interactions`)
@@ -1330,7 +1372,12 @@ test-playground/
 │       └── ocr.js           What the simulated OCR returns for each sample ID card
 └── src/
     ├── main.jsx            React root — BrowserRouter + AuthProvider + <App />
-    ├── App.jsx             27 section components, sidebar nav, route shell
+    ├── App.jsx             Routes and the signed-in shell (sidebar + page); sidebar clicks pause the scroll-spy
+    ├── layout/
+    │   └── Sidebar.jsx      Sidebar, plus NAV: the Playground section list
+    ├── playground/
+    │   ├── PlaygroundPage.jsx  The home page: renders sections 01–29 and runs the scroll-spy
+    │   └── {inputs,selection,buttons,events,windows,advanced,workflows}.jsx  The sections, by sidebar group (each with a .strings.js)
     ├── App.css             All styles — layout, components, utilities
     ├── i18n.jsx            English/Arabic translations + LanguageProvider
     ├── api/
@@ -1351,7 +1398,7 @@ test-playground/
     │   ├── petAvatars.js     Emoji avatar mapping
     │   └── api.js            listPets / createPet / updatePet / deletePet
     ├── media/
-    │   └── MediaPage.jsx     Media page — image, video and banner widgets (M1–M9)
+    │   └── MediaPage.jsx     Media page — image, video and banner widgets, carousel with autoplay (M1–M9)
     ├── frames/
     │   └── FramesPage.jsx    Frames page — basic, nested, late-loading, multiple, button-only and cross-origin iframes (F1–F6)
     ├── spreadsheet/
@@ -1361,7 +1408,7 @@ test-playground/
     ├── controls/
     │   └── ControlsPage.jsx  Controls page — combobox, chips, switches, stepper, colour/time pickers, rich text, masks (C1–C8)
     ├── navigation/
-    │   └── NavigationPage.jsx  Navigation page — accordion, breadcrumbs, context menu, submenu, drawer, unsaved guard (N1–N6)
+    │   └── NavigationPage.jsx  Navigation page — accordion, breadcrumbs, context menu, submenu, drawer, unsaved guard, hamburger (N1–N7)
     ├── data/
     │   └── DataPage.jsx      Data page — sortable table, tree, chart, skeleton, infinite + virtual lists, back-to-top (D1–D7)
     ├── interactions/
@@ -1375,7 +1422,7 @@ test-playground/
     │   ├── testvideo.mp4     Video used by the Media page
     │   ├── spreadsheets/     Files for the Spreadsheet page (see its reference)
     │   └── ocr/              Sample ID cards for the Verification page's OCR widget
-    └── ui.jsx              Shared SectionHeader / Output components and the numberParam URL helper
+    └── ui.jsx              Shared SectionHeader (with its ⓘ tip) / Output components, flashSection, and the numberParam URL helper
 ```
 
 ---
@@ -1656,6 +1703,20 @@ page.once('dialog', d => { expect(d.type()).toBe('beforeunload'); d.dismiss() })
 await page.close({ runBeforeUnload: true })
 ```
 
+**Hamburger menu (N7).** The ☰ button only exists while the header is narrow, so wait on `data-layout` first. **Phone width** folds it at any window size; `setViewportSize` to a phone width does too:
+
+```js
+const site = page.getByTestId('site-header')
+await page.locator('#hamburger-phone').check()
+await expect(site).toHaveAttribute('data-layout', 'narrow')
+await page.locator('#hamburger-btn').click()
+await expect(page.locator('#hamburger-btn')).toHaveAttribute('aria-expanded', 'true')
+await page.locator('#hamburger-menu [data-page="pricing"]').click()
+await expect(site).toHaveAttribute('data-page', 'pricing')
+await expect(page.locator('#hamburger-menu')).toHaveCount(0)
+await expect(page.locator('#hamburger-btn')).toBeFocused()
+```
+
 ### Interactions page
 
 **Dragging the divider (I1).** A resize needs mouse down, several moves, and up. Read the result from `aria-valuenow`:
@@ -1933,6 +1994,22 @@ await page.dragAndDrop(
 await expect(page.locator('[data-drag-pos="1"]')).toHaveAttribute('data-drag-id', 'drag-2')
 ```
 
+### Focus / Blur (Section 14)
+
+Blur fires when a field loses focus, so a test has to *leave* the field (Tab or a click elsewhere), not just type. Real forms often validate or save on blur. Assert on `data-field` / `data-event` rather than the log text, which is translated:
+
+```js
+await page.locator('#focus-username').click()
+await page.keyboard.press('Tab')
+const log = page.locator('#focus-event-log .event-entry')
+// Newest first: entering Email, then leaving Username, then entering Username
+await expect(log.nth(0)).toHaveAttribute('data-event', 'focus')
+await expect(log.nth(0)).toHaveAttribute('data-field', 'email')
+await expect(log.nth(1)).toHaveAttribute('data-event', 'blur')
+await expect(log.nth(1)).toHaveAttribute('data-field', 'username')
+await expect(page.locator('#focus-email')).toHaveClass(/input-focused/)
+```
+
 ### Pagination Table (Section 20)
 
 ```js
@@ -1961,6 +2038,18 @@ await page.locator('#toggle-panel-btn').click()
 await expect(page.locator('#collapsible-content')).toBeVisible()
 await page.locator('#toggle-panel-btn').click()
 await expect(page.locator('#collapsible-content')).not.toBeVisible()
+```
+
+### Tabs (Section 21)
+
+The tabs follow the ARIA tabs pattern, so role-based locators work, and the keyboard moves between tabs (in Arabic, ArrowLeft goes to the next tab):
+
+```js
+await page.getByRole('tab', { name: 'Details' }).click()
+await page.keyboard.press('ArrowRight')
+await expect(page.getByRole('tab', { selected: true })).toHaveText('Settings')
+await expect(page.getByRole('tab', { name: 'Settings' })).toBeFocused()
+await expect(page.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'tab-settings')
 ```
 
 ### Ratings (Section 25)
@@ -2048,6 +2137,25 @@ await expect(page.locator('#signature-preview')).toHaveAttribute('src', /^data:i
 
 Selenium: use `ActionChains(driver).move_to_element_with_offset(pad, -100, 0).click_and_hold().move_by_offset(...)...release().perform()`. Cypress: trigger `pointerdown`, `pointermove` and `pointerup` with `clientX`/`clientY`.
 
+### Snackbar (Section 29)
+
+Each snackbar stays for a random 3–7 s, so never sleep a fixed time: assert it appeared, then wait for it to be gone. Allow a timeout above 7 s (Playwright's default `expect` timeout is 5 s). Read `data-duration-ms` if a test needs the exact time:
+
+```js
+await page.locator('#snack-info').click()
+const snack = page.getByTestId('snackbar').filter({ hasText: 'Settings saved' })
+await expect(snack).toBeVisible()
+await expect(snack).toBeHidden({ timeout: 8000 })
+await expect(page.locator('#snackbar-log')).toContainText('timed out')
+
+// Undo has to be clicked before the snackbar times out
+await page.locator('#snack-delete').click()
+await page.getByTestId('snackbar-action').click()
+await expect(page.locator('#snack-items')).toHaveText('Items left: 5')
+```
+
+Snackbars are fixed to the bottom corner, so they can cover a button near the bottom of the screen; Playwright then reports that the snackbar "intercepts pointer events". Close it, or wait for it to go, before clicking there.
+
 ### Media page
 
 ```js
@@ -2091,6 +2199,12 @@ const carousel = page.locator('[data-testid="hero-carousel"]')
 await page.locator('[data-testid="hero-prev"]').click()
 await expect(carousel).toHaveAttribute('data-active-slide', '3')
 await expect(page.locator('[data-slide="3"]')).toBeVisible()
+
+// Autoplay (open /media?carouselInterval=1000 for a faster run). Move the mouse
+// away after clicking Play: hovering the carousel pauses it (data-paused="true").
+await page.locator('[data-testid="hero-autoplay"]').click()
+await page.mouse.move(0, 0)
+await expect(carousel).toHaveAttribute('data-active-slide', '1', { timeout: 3000 })
 
 // Announcement bar stays closed after a reload
 await page.locator('[data-testid="announcement-close"]').click()

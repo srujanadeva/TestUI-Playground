@@ -7,9 +7,9 @@ export default {
     sec21Title: 'Show / Hide & Tabs',
 
     // ── Section descriptions ──
-    sec19Desc: 'Elements encapsulated in a shadow root.',
-    sec20Desc: '25 rows, 5 per page. Filter by name, department, or ID.',
-    sec21Desc: 'Collapsible panel and tab switching for visibility assertions.',
+    sec19Desc: 'An input and a button inside a shadow root. Type some text and press Read to see it shown below.',
+    sec20Desc: '25 employees, 5 per page. Use the page buttons, or type in the search box to filter by name, department or ID.',
+    sec21Desc: 'A button opens and closes a panel, and three tabs switch the content below them.',
 
     // ── 19 Shadow DOM ──
     shadowBadge:       'Shadow DOM',
@@ -46,7 +46,7 @@ export default {
 
     // ── 23 Conditional Fields ──
     sec23Title:               'Conditional Fields',
-    sec23Desc:                'Check the box to reveal hidden fields. Great for practising waitForElement, asserting visibility, and chaining interactions.',
+    sec23Desc:                'Tick the box to show three more fields. Untick it to hide them; what you entered comes back when you tick it again.',
     conditionalToggleLabel:   'Show additional fields',
     conditionalTextLabel:     'Text field',
     conditionalTextPh:        'Type something here…',
@@ -64,7 +64,7 @@ export default {
 
     // ── 24 Delayed Widget ──
     sec24Title:       'Delayed Widget',
-    sec24Desc:        'Loads 1–6 seconds after the page, like a slow API. Wait for data-state="loaded" instead of sleeping. Add ?delay=<ms> to the URL for a fixed delay.',
+    sec24Desc:        'The figures take 1–6 seconds to load, like a slow server. Reload runs it again with a new delay.',
     statOrders:       'Orders',
     statRevenue:      'Revenue',
     statUsers:        'Active users',
@@ -72,6 +72,37 @@ export default {
     delayedLoadedIn:  'Loaded in {seconds} s',
     btnReloadWidget:  'Reload',
     navDelayedWidget: 'Delayed Widget',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip19Steps: [
+      'Type in the dark box and press Read.',
+      'Try to find the input with a normal page selector: it fails, because it is inside the shadow root.',
+    ],
+    tip19Check: 'that #shadow-output shows the typed text, reached by first finding [data-testid="shadow-host"] and then searching inside its shadowRoot.',
+    tip20Steps: [
+      'Click the page numbers, or ‹ › and « ».',
+      'Type "eng" in the search box: only Engineering rows remain and you go back to page 1.',
+      'Type something that matches nothing to see the empty message.',
+    ],
+    tip20Check: 'rows by [data-row-id], the active page button (.page-active), and the #page-info line.',
+    tip21Steps: [
+      'Press Expand Panel to open the panel; press it again to close it.',
+      'Click each tab and watch the content change.',
+      'Click a tab, then use the arrow keys, Home and End to move between tabs. Tab moves on to the content, not to the next tab.',
+    ],
+    tip21Check: 'that #collapsible-content is removed from the page when closed (the button\'s aria-expanded says which), the tab with aria-selected="true", for example getByRole(\'tab\', { selected: true }), and the text of #tab-content.',
+    tip23Steps: [
+      'Tick "Show additional fields".',
+      'Fill in the text field, choose an option and pick a radio button.',
+      'Untick and tick again: your values are still there.',
+    ],
+    tip23Check: 'waiting for #conditional-fields to appear before typing, and the summary in #conditional-output.',
+    tip24Steps: [
+      'Watch the grey placeholders turn into numbers.',
+      'Press Reload to load again; the delay changes each time.',
+      'Add ?delay=0 (or any number of milliseconds) to the URL for a fixed delay.',
+    ],
+    tip24Check: 'waiting for [data-testid="delayed-widget"] to have data-state="loaded", instead of a fixed sleep.',
   },
 
   ar: {
@@ -81,9 +112,9 @@ export default {
     sec21Title: 'إظهار / إخفاء والتبويبات',
 
     // ── Section descriptions ──
-    sec19Desc: 'عناصر محاطة في جذر ظل.',
-    sec20Desc: '25 صفًا، 5 في كل صفحة. الفلترة بالاسم أو القسم أو المعرف.',
-    sec21Desc: 'لوحة قابلة للطي وتبديل التبويبات لتأكيدات الظهور.',
+    sec19Desc: 'حقل وزر داخل جذر ظل (shadow root). اكتب نصًا واضغط «قراءة» ليظهر في الأسفل.',
+    sec20Desc: '25 موظفًا، 5 في كل صفحة. استخدم أزرار الصفحات، أو اكتب في مربع البحث للفلترة بالاسم أو القسم أو المعرّف.',
+    sec21Desc: 'زر يفتح لوحة ويغلقها، وثلاثة تبويبات تبدّل المحتوى تحتها.',
 
     // ── 19 Shadow DOM ──
     shadowBadge:       'نموذج DOM الظلي',
@@ -120,7 +151,7 @@ export default {
 
     // ── 23 Conditional Fields ──
     sec23Title:               'الحقول الشرطية',
-    sec23Desc:                'حدّد المربع لإظهار الحقول المخفية. مثالي للتدرب على waitForElement والتحقق من الظهور والتفاعل المتسلسل.',
+    sec23Desc:                'حدّد المربع لإظهار ثلاثة حقول إضافية. ألغِ التحديد لإخفائها؛ وتعود قيمك عند التحديد مرة أخرى.',
     conditionalToggleLabel:   'عرض الحقول الإضافية',
     conditionalTextLabel:     'حقل النص',
     conditionalTextPh:        'اكتب شيئاً هنا…',
@@ -138,7 +169,7 @@ export default {
 
     // ── 24 Delayed Widget ──
     sec24Title:       'عنصر متأخر التحميل',
-    sec24Desc:        'يُحمَّل بعد 1–6 ثوانٍ من الصفحة، مثل واجهة برمجية بطيئة. انتظر data-state="loaded" بدلاً من الانتظار الثابت. أضف ?delay=<ms> إلى الرابط لتأخير ثابت.',
+    sec24Desc:        'تستغرق الأرقام من 1 إلى 6 ثوانٍ للتحميل، مثل خادم بطيء. «إعادة التحميل» يشغّلها مجددًا بتأخير جديد.',
     statOrders:       'الطلبات',
     statRevenue:      'الإيرادات',
     statUsers:        'المستخدمون النشطون',
@@ -146,5 +177,36 @@ export default {
     delayedLoadedIn:  'تم التحميل في {seconds} ث',
     btnReloadWidget:  'إعادة التحميل',
     navDelayedWidget: 'عنصر متأخر التحميل',
+
+    // ── "Try this" tips (the ⓘ in each header; see SectionHeader) ──
+    tip19Steps: [
+      'اكتب في المربع الداكن واضغط «قراءة».',
+      'حاول العثور على الحقل بمحدد عادي في الصفحة: يفشل، لأنه داخل جذر الظل.',
+    ],
+    tip19Check: 'أن #shadow-output يعرض النص المكتوب، بعد الوصول إليه بالعثور على [data-testid="shadow-host"] أولاً ثم البحث داخل shadowRoot الخاص به.',
+    tip20Steps: [
+      'انقر على أرقام الصفحات، أو ‹ › و « ».',
+      'اكتب "eng" في مربع البحث: تبقى صفوف Engineering فقط وتعود إلى الصفحة 1.',
+      'اكتب شيئًا لا يطابق أي صف لترى رسالة عدم وجود نتائج.',
+    ],
+    tip20Check: 'الصفوف عبر [data-row-id]، وزر الصفحة النشطة (.page-active)، وسطر #page-info.',
+    tip21Steps: [
+      'اضغط «توسيع اللوحة» لفتحها؛ واضغطه مرة أخرى لإغلاقها.',
+      'انقر على كل تبويب وراقب المحتوى يتغيّر.',
+      'انقر على تبويب ثم استخدم مفاتيح الأسهم و Home و End للتنقل بين التبويبات. مفتاح Tab ينقلك إلى المحتوى لا إلى التبويب التالي.',
+    ],
+    tip21Check: 'أن #collapsible-content يُزال من الصفحة عند الإغلاق (وتوضح ذلك خاصية aria-expanded على الزر)، والتبويب الذي يحمل aria-selected="true"، مثل getByRole(\'tab\', { selected: true })، ونص #tab-content.',
+    tip23Steps: [
+      'حدّد «عرض الحقول الإضافية».',
+      'املأ الحقل النصي واختر خيارًا وحدّد زر اختيار.',
+      'ألغِ التحديد ثم حدّد مرة أخرى: قيمك لا تزال موجودة.',
+    ],
+    tip23Check: 'انتظار ظهور #conditional-fields قبل الكتابة، والملخص في #conditional-output.',
+    tip24Steps: [
+      'راقب العناصر الرمادية المؤقتة تتحوّل إلى أرقام.',
+      'اضغط «إعادة التحميل» للتحميل مجددًا؛ يتغيّر التأخير في كل مرة.',
+      'أضف ?delay=0 (أو أي عدد من الملي ثانية) إلى الرابط لتأخير ثابت.',
+    ],
+    tip24Check: 'انتظار أن يحمل [data-testid="delayed-widget"] القيمة data-state="loaded" بدلاً من الانتظار الثابت.',
   },
 }

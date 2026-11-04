@@ -18,7 +18,7 @@ export function HoverSection() {
   const [active, setActive] = useState(null)
   return (
     <section id="sec-hover" className="card">
-      <SectionHeader num="13" title={t('sec13Title')} locator="data-testid" />
+      <SectionHeader num="13" title={t('sec13Title')} locator="data-testid" tip="tip13" />
       <p className="desc">{t('sec13Desc')}</p>
       <div className="hover-cards">
         {HOVER_CARDS.map(c => (
@@ -41,36 +41,53 @@ export function HoverSection() {
 const FOCUS_FIELD_KEYS = ['focusUsername', 'focusEmail', 'focusComment']
 const FOCUS_IDS        = ['username', 'email', 'comment']
 
-/** Three inputs that log their focus and blur events (last 5) and highlight the focused one. */
+/**
+ * Three inputs that log their focus and blur events (last 5) and highlight the focused one.
+ * "Blur" is the browser's event for leaving a field, so the log spells that out. Entries
+ * are stored as field index + event type and worded at render time, so the log
+ * follows a language switch; data-field / data-event give tests text-free values.
+ */
 export function FocusBlurSection() {
   const { t, tArr } = useLang()
   const focusFields = tArr('focusFields')
   const [events, setEvents] = useState([])
   const [active, setActive] = useState('')
-  const log = (label, type) => {
-    setEvents(e => [`${label} → ${type}`, ...e].slice(0, 5))
-    setActive(type === 'focus' ? label : '')
+  const log = (i, type) => {
+    setEvents(e => [{ i, type }, ...e].slice(0, 5))
+    setActive(type === 'focus' ? FOCUS_IDS[i] : '')
   }
+  const fieldLabel = i => focusFields[i] ?? t(FOCUS_FIELD_KEYS[i])
   return (
     <section id="sec-focus" className="card">
-      <SectionHeader num="14" title={t('sec14Title')} locator="id" />
+      <SectionHeader num="14" title={t('sec14Title')} locator="id" tip="tip14" />
       <p className="desc">{t('sec14Desc')}</p>
       {FOCUS_IDS.map((id, i) => {
-        const label = focusFields[i] ?? t(FOCUS_FIELD_KEYS[i])
+        const label = fieldLabel(i)
         return (
           <div key={id} className="form-field">
             <label className="field-label" htmlFor={`focus-${id}`}>{label}</label>
             <input id={`focus-${id}`} type="text"
               placeholder={t('phFocusField', { field: label })}
-              className={active === label ? 'input-focused' : ''}
-              onFocus={() => log(label, 'focus')}
-              onBlur={() => log(label, 'blur')} />
+              className={active === id ? 'input-focused' : ''}
+              onFocus={() => log(i, 'focus')}
+              onBlur={() => log(i, 'blur')} />
           </div>
         )
       })}
+      {/* Above the log on purpose: pressing it blurs the focused field, which adds a log
+          entry; below the log, that entry would push the button away before mouseup and
+          the click would be lost. The blur is cleared along with the rest. */}
+      <div className="button-row">
+        <button id="focus-log-clear" className="btn-secondary" disabled={events.length === 0}
+          onClick={() => setEvents([])}>{t('btnClearLog')}</button>
+      </div>
       {events.length > 0 && (
         <div id="focus-event-log" className="event-log">
-          {events.map((e, i) => <div key={i} className="event-entry">{e}</div>)}
+          {events.map((e, n) => (
+            <div key={n} className="event-entry" data-field={FOCUS_IDS[e.i]} data-event={e.type}>
+              {t(e.type === 'focus' ? 'focusLogEntered' : 'focusLogLeft', { field: fieldLabel(e.i) })}
+            </div>
+          ))}
         </div>
       )}
     </section>
@@ -125,7 +142,7 @@ export function DragDropSection() {
 
   return (
     <section id="sec-dragdrop" className="card">
-      <SectionHeader num="15" title={t('sec15Title')} locator="data-drag-id" />
+      <SectionHeader num="15" title={t('sec15Title')} locator="data-drag-id" tip="tip15" />
       <p className="desc">{t('sec15Desc')}</p>
       <div className="drag-list">
         {items.map((item, idx) => (
@@ -144,6 +161,10 @@ export function DragDropSection() {
             <span className="drag-pos">{idx + 1}</span>
           </div>
         ))}
+      </div>
+      <div className="button-row">
+        <button id="drag-reset-btn" className="btn-secondary" disabled={items === DRAG_KEYS}
+          onClick={() => { setItems(DRAG_KEYS); setLog('') }}>{t('btnResetOrder')}</button>
       </div>
       {log && <Output id="drag-log">{log}</Output>}
     </section>
@@ -275,7 +296,7 @@ export function SignatureSection() {
 
   return (
     <section id="sec-signature" className="card">
-      <SectionHeader num="28" title={t('sec28Title')} locator="canvas / data-empty" />
+      <SectionHeader num="28" title={t('sec28Title')} locator="canvas / data-empty" tip="tip28" />
       <p className="desc">{t('sec28Desc')}</p>
 
       <div className="signature-wrap">

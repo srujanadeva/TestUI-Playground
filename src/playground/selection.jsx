@@ -19,7 +19,7 @@ export function CheckboxSection() {
   const toggle = i => setSelected(p => p.includes(i) ? p.filter(x => x !== i) : [...p, i])
   return (
     <section id="sec-checkbox" className="card">
-      <SectionHeader num="07" title={t('sec07Title')} locator="label[for]" />
+      <SectionHeader num="07" title={t('sec07Title')} locator="label[for]" tip="tip07" />
       <p className="desc">{t('sec07Desc')}</p>
       <div className="checkbox-grid">
         {SKILL_KEYS.map((key, i) => (
@@ -52,7 +52,7 @@ export function RadioSection() {
   const [plan, setPlan] = useState('')
   return (
     <section id="sec-radio" className="card">
-      <SectionHeader num="08" title={t('sec08Title')} locator="name" />
+      <SectionHeader num="08" title={t('sec08Title')} locator="name" tip="tip08" />
       <p className="desc">{t('sec08Desc')}</p>
       <div className="radio-cards">
         {PLANS.map(p => (
@@ -85,7 +85,7 @@ export function DropdownSection() {
 
   return (
     <section id="sec-dropdown" className="card">
-      <SectionHeader num="09" title={t('sec09Title')} locator="id" />
+      <SectionHeader num="09" title={t('sec09Title')} locator="id" tip="tip09" />
       <p className="desc">{t('sec09Desc')}</p>
       <label className="field-label" htmlFor="country-select">{t('labelCountry')}</label>
       <select id="country-select" value={country} onChange={e => setCountry(e.target.value)}>
@@ -162,7 +162,7 @@ export function RatingsSection() {
 
   return (
     <section id="sec-ratings" className="card">
-      <SectionHeader num="25" title={t('sec25Title')} locator="name / role=slider / data-value" />
+      <SectionHeader num="25" title={t('sec25Title')} locator="name / role=slider / data-value" tip="tip25" />
       <p className="desc">{t('sec25Desc')}</p>
 
       <fieldset className="rating-group">

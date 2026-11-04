@@ -53,8 +53,8 @@ export function ShadowDOMSection() {
 
   return (
     <section id="sec-shadow" className="card">
-      <SectionHeader num="19" title={t('sec19Title')} locator="data-testid / shadowRoot" />
-      <p className="desc">{t('sec19Desc')} <code>locator.shadowRoot()</code></p>
+      <SectionHeader num="19" title={t('sec19Title')} locator="data-testid / shadowRoot" tip="tip19" />
+      <p className="desc">{t('sec19Desc')}</p>
       <div ref={hostRef} data-testid="shadow-host" />
     </section>
   )
@@ -91,8 +91,8 @@ export function PaginationTableSection() {
   const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   return (
-    <section id="sec-table" className="card">
-      <SectionHeader num="20" title={t('sec20Title')} locator="id / data-row-id" />
+    <section id="sec-table" className="card card-acting-search">
+      <SectionHeader num="20" title={t('sec20Title')} locator="id / data-row-id" tip="tip20" />
       <p className="desc">{t('sec20Desc')}</p>
       <input id="employee-search" placeholder={t('phSearch')}
         value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
@@ -145,18 +145,45 @@ export function PaginationTableSection() {
 }
 
 // ─── 21. Show / Hide & Tabs ──────────────────────────────────────────────────
-/** A collapsible panel that is removed from the DOM when closed, and a three-tab bar. */
+const TAB_KEYS = ['details', 'settings', 'preview']
+
+/**
+ * A collapsible panel that is removed from the DOM when closed, and a three-tab bar
+ * that follows the ARIA tabs pattern: aria-selected on the chosen tab, only that tab
+ * in the Tab order, and arrow keys / Home / End to move (which also selects).
+ */
 export function ShowHideSection() {
-  const { t, tArr } = useLang()
+  const { t, tArr, lang } = useLang()
   const tabs       = tArr('tabs')
   const tabContent = tArr('tabContent')
   const [open, setOpen] = useState(false)
   const [tab, setTab]   = useState(0)
+  const tabRefs = useRef([])
+
+  function select(i) {
+    const next = (i + TAB_KEYS.length) % TAB_KEYS.length
+    setTab(next)
+    tabRefs.current[next]?.focus()
+  }
+
+  // Left and right swap in RTL, where the first tab is on the right.
+  function onTabKey(e) {
+    const forward  = lang === 'ar' ? 'ArrowLeft' : 'ArrowRight'
+    const backward = lang === 'ar' ? 'ArrowRight' : 'ArrowLeft'
+    if (e.key === forward)       select(tab + 1)
+    else if (e.key === backward) select(tab - 1)
+    else if (e.key === 'Home')   select(0)
+    else if (e.key === 'End')    select(TAB_KEYS.length - 1)
+    else return
+    e.preventDefault()
+  }
+
   return (
     <section id="sec-toggle" className="card">
-      <SectionHeader num="21" title={t('sec21Title')} locator="className / role" />
+      <SectionHeader num="21" title={t('sec21Title')} locator="className / role" tip="tip21" />
       <p className="desc">{t('sec21Desc')}</p>
-      <button className="toggle-btn" id="toggle-panel-btn" onClick={() => setOpen(o => !o)}>
+      <button className="toggle-btn" id="toggle-panel-btn" aria-expanded={open}
+        onClick={() => setOpen(o => !o)}>
         {open ? t('btnCollapsePanel') : t('btnExpandPanel')}
       </button>
       {open && (
@@ -165,14 +192,16 @@ export function ShowHideSection() {
           <code data-testid="secret-value">Secret: PANEL-XYZ-789</code>
         </div>
       )}
-      <div className="tab-bar" role="tablist">
+      <div className="tab-bar" role="tablist" aria-label={t('sec21Title')} onKeyDown={onTabKey}>
         {tabs.map((label, i) => (
-          <button key={i} role="tab" id={`tab-${['details','settings','preview'][i]}`}
+          <button key={i} ref={el => { tabRefs.current[i] = el }} role="tab" id={`tab-${TAB_KEYS[i]}`}
             className={`tab-btn ${tab === i ? 'tab-active' : ''}`}
+            aria-selected={tab === i} aria-controls="tab-content" tabIndex={tab === i ? 0 : -1}
             onClick={() => setTab(i)}>{label}</button>
         ))}
       </div>
-      <div id="tab-content" className="tab-content" role="tabpanel">
+      <div id="tab-content" className="tab-content" role="tabpanel"
+        aria-labelledby={`tab-${TAB_KEYS[tab]}`} tabIndex={0}>
         {tabContent[tab]}
       </div>
     </section>
@@ -193,7 +222,7 @@ export function ConditionalFieldsSection() {
 
   return (
     <section id="sec-conditional" className="card">
-      <SectionHeader num="23" title={t('sec23Title')} locator="id / data-testid" />
+      <SectionHeader num="23" title={t('sec23Title')} locator="id / data-testid" tip="tip23" />
       <p className="desc">{t('sec23Desc')}</p>
 
       <label className="checkbox-label" htmlFor="conditional-toggle">
@@ -291,7 +320,7 @@ export function DelayedWidgetSection() {
 
   return (
     <section id="sec-delayed" className="card">
-      <SectionHeader num="24" title={t('sec24Title')} locator="data-state / data-testid" />
+      <SectionHeader num="24" title={t('sec24Title')} locator="data-state / data-testid" tip="tip24" />
       <p className="desc">{t('sec24Desc')}</p>
 
       <div className="delayed-widget" data-testid="delayed-widget" data-state={state}

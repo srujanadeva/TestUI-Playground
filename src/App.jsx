@@ -1,7 +1,7 @@
 // The app's routes and signed-in layout. Every page except login, signup and
 // forgot-password needs a signed-in user. The home page's practice sections live in
 // src/playground/, the sidebar in src/layout/, and each themed page in its own folder.
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { LanguageProvider, useLang } from './i18n.jsx'
 import LoginPage from './auth/LoginPage.jsx'
@@ -11,6 +11,7 @@ import AccountPage from './auth/AccountPage.jsx'
 import ProtectedRoute from './auth/ProtectedRoute.jsx'
 import Sidebar from './layout/Sidebar.jsx'
 import Playground from './playground/PlaygroundPage.jsx'
+import { flashSection } from './ui.jsx'
 import PetstorePage from './petstore/PetstorePage.jsx'
 import MediaPage from './media/MediaPage.jsx'
 import FramesPage from './frames/FramesPage.jsx'
@@ -48,14 +49,34 @@ function Shell() {
   const contentRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
+  // True from a sidebar click until the user scrolls by hand. Several sections share
+  // a grid row and scroll to the same spot, so the scroll-spy can't tell which one
+  // was clicked; while paused, the clicked one stays highlighted.
+  const spyPaused = useRef(false)
+  const spySetActive = useCallback(value => { if (!spyPaused.current) setActive(value) }, [])
+
+  useEffect(() => {
+    const content = contentRef.current
+    const resume = () => { spyPaused.current = false }
+    const events = ['wheel', 'touchmove', 'pointerdown']
+    events.forEach(e => content.addEventListener(e, resume, { passive: true }))
+    window.addEventListener('keydown', resume)
+    return () => {
+      events.forEach(e => content.removeEventListener(e, resume))
+      window.removeEventListener('keydown', resume)
+    }
+  }, [])
 
   /**
    * Goes to a Playground section: scrolls to it when already on the home page,
    * otherwise navigates to /#id and lets Playground scroll once it has mounted.
    */
   function handlePlaygroundItem(id) {
+    setActive(id)
+    spyPaused.current = true
     if (location.pathname === '/') {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      flashSection(id)
     } else {
       navigate(`/#${id}`)
     }
@@ -66,7 +87,7 @@ function Shell() {
       <Sidebar active={active} onPlaygroundItem={handlePlaygroundItem} />
       <main className="content" ref={contentRef}>
         <Routes>
-          <Route index element={<Playground contentRef={contentRef} setActive={setActive} />} />
+          <Route index element={<Playground contentRef={contentRef} setActive={spySetActive} />} />
           {PAGES.map(({ path, Page }) => <Route key={path} path={path} element={<Page />} />)}
           {/* Unknown paths go back to the home page. */}
           <Route path="*" element={<Navigate to="/" replace />} />

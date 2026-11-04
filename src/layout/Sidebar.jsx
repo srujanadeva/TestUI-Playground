@@ -29,6 +29,7 @@ export const NAV = [
   { id: 'sec-popups',      labelKey: 'navBrowserPopups',    groupKey: 'navWindows' },
   { id: 'sec-windows',     labelKey: 'navLinksWindows',     groupKey: 'navWindows' },
   { id: 'sec-popup-alerts',labelKey: 'navPopupAlerts',      groupKey: 'navWindows' },
+  { id: 'sec-snackbar',    labelKey: 'navSnackbar',         groupKey: 'navWindows' },
   { id: 'sec-shadow',      labelKey: 'navShadowDOM',        groupKey: 'navAdvanced' },
   { id: 'sec-table',       labelKey: 'navPaginationTable',  groupKey: 'navAdvanced', subGroupKey: 'navDataTables' },
   { id: 'sec-toggle',      labelKey: 'navShowHide',         groupKey: 'navAdvanced' },
